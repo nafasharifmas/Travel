@@ -1,0 +1,41 @@
+@import "leaflet/dist/leaflet.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-ivory-100 text-charcoal-950 font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Accessible focus ring from WCAG 2.2 AA spec */
+  :focus-visible {
+    @apply outline-none ring-2 ring-gold-500 ring-offset-2;
+  }
+}
+
+/* Leaflet map styles overrides for smooth modern integration */
+.leaflet-container {
+  font-family: inherit;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+  z-index: 10;
+}
+
+.custom-marker-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.custom-marker-pin:hover {
+  transform: scale(1.15);
+}
