@@ -44,6 +44,30 @@
       scroll-behavior: auto !important;
     }
   }
+
+  /* ---------- Dark theme: system surface + headings ----------
+     Headings take their colour from the base h1–h4 rule above (no utility
+     class on the element), so they need their own dark remap — placed in
+     @layer base so any text-colour utility in the markup still wins. */
+  html.dark {
+    color-scheme: dark; /* scrollbars, form controls follow the theme */
+  }
+
+  .dark h1,
+  .dark h2,
+  .dark h3,
+  .dark h4 {
+    color: #f3f8fb;
+  }
+
+  .dark ::selection {
+    background: rgba(0, 191, 196, 0.35);
+    color: #f3f8fb;
+  }
+
+  .dark :focus-visible {
+    --tw-ring-offset-color: #0b1f33;
+  }
 }
 
 @layer components {
@@ -136,35 +160,30 @@
 
   /* ---------- Transparent / Liquid Glass Header ---------- */
   .liquid-glass-header {
-    background: linear-gradient(
-      180deg,
-      rgba(5, 16, 28, 0.55) 0%,
-      rgba(5, 16, 28, 0.25) 60%,
-      transparent 100%
-    );
+    background: transparent;
     border-bottom: 1px solid transparent;
     box-shadow: none;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .liquid-glass-header.is-scrolled {
-    background: rgba(6, 18, 32, 0.88);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border-bottom: 0;
-    box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+    box-shadow: none;
   }
 
   /* Liquid interactive pill */
   .liquid-glass-pill {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(16, 42, 67, 0.12);
     box-shadow: 
       inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
       0 4px 14px -2px rgba(0, 0, 0, 0.25);
-    color: #ffffff;
+    color: #102a43;
     transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -180,14 +199,14 @@
 
   /* Liquid round icon buttons (search, theme) */
   .liquid-glass-btn-round {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(16, 42, 67, 0.12);
     box-shadow: 
       inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
       0 3px 10px -1px rgba(0, 0, 0, 0.2);
-    color: #ffffff;
+    color: #102a43;
     transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -249,6 +268,51 @@
 
   .liquid-btn-ocean:active {
     transform: scale(0.97);
+  }
+
+  /* ---------- Dark theme remaps for component classes ----------
+     Component classes inline their colours through @apply, so their elements
+     never carry bg-white / text-navy-600 class names and the utility-level
+     dark remap further down cannot see them. These live in @layer components
+     so real utilities in the markup still beat them. */
+  .dark .btn-secondary {
+    background-color: #102a43;
+    color: #7fcbeb;
+    border-color: rgba(127, 203, 235, 0.35);
+  }
+
+  .dark .btn-secondary:hover {
+    background-color: #163a56;
+    border-color: #3aa9d8;
+  }
+
+  .dark .btn-ghost {
+    color: #a9c4d5;
+  }
+
+  .dark .btn-ghost:hover {
+    background-color: rgba(34, 78, 114, 0.5);
+    color: #d9edf7;
+  }
+
+  .dark .eyebrow {
+    color: #7fcbeb;
+  }
+
+  .dark .chip {
+    color: #f3f8fb;
+  }
+
+  .dark .chip:hover {
+    color: #7fcbeb;
+  }
+
+  .dark .field-label {
+    color: #a9c4d5;
+  }
+
+  .dark .card-hover:hover {
+    border-color: rgba(127, 203, 235, 0.45);
   }
 }
 
@@ -333,13 +397,13 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(16, 42, 67, 0.18);
   border-radius: 9999px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  color: #102a43;
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 
@@ -350,8 +414,8 @@
 
 .theme-toggle:hover {
   transform: translateY(-1px) scale(1.05);
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 109, 170, 0.4);
   box-shadow: 
     inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4),
     0 6px 18px -2px rgba(0, 0, 0, 0.3);
@@ -414,23 +478,40 @@
   }
 }
 
-/* Existing palette utility classes are remapped here so every screen follows
-   the selected theme, including legacy page components. */
+/* ------------------------------------------------------------------
+   Dark theme — utility-level remap.
+   Scoped by utility ROLE: `bg-white` and `text-white` are different class
+   names, so dark surfaces can flip while inverse text on dark sections
+   keeps its colour. These rules are unlayered on purpose — they must beat
+   Tailwind's base/components/utilities layers — which is also why literal
+   exceptions (e.g. dark ink on gold) are written as more specific rules
+   right here.
+   ------------------------------------------------------------------ */
+
+/* Surfaces: page, raised cards, recessed chips, tinted bands. */
 .dark body,
-.dark .bg-ivory-100,
-.dark .bg-white {
+.dark .bg-ivory-100 {
   background-color: #0b1f33;
+  color: #d9edf7;
+}
+
+.dark .bg-white {
+  background-color: #102a43;
   color: #d9edf7;
 }
 
 .dark .bg-ivory-50,
 .dark .bg-navy-50,
-.dark .bg-ocean-50 {
-  background-color: #102a43;
+.dark .bg-ocean-50,
+.dark .bg-turquoise-50,
+.dark .bg-sunset-50 {
+  background-color: #0c2237;
 }
 
 .dark .bg-ivory-200,
 .dark .bg-navy-100,
+.dark .bg-navy-200,
+.dark .bg-sand-50,
 .dark .bg-sand-100,
 .dark .bg-sand-200,
 .dark .bg-stone-100,
@@ -438,25 +519,91 @@
   background-color: #163a56;
 }
 
-/* Opacity-bearing section utilities are emitted as class attributes with a
-   slash, so map them explicitly as well. These are the light editorial
-   bands used by How It Works and the Journal sections. */
-.dark [class*="bg-ivory-200/"] {
-  background-color: rgba(16, 42, 67, 0.96);
+.dark .bg-navy-300 {
+  background-color: #35618a;
 }
 
+/* High-alpha white overlays are surfaces too; the low-alpha ones are scrims
+   over photography and stay as they are. */
+.dark .bg-white\/95,
+.dark .bg-white\/90,
+.dark [class*="bg-ivory-200/"],
+.dark [class*="bg-ivory-100/"] {
+  background-color: rgba(16, 42, 67, 0.94);
+}
 
+.dark [class*="bg-navy-50/"],
+.dark [class*="bg-ocean-50/"],
+.dark [class*="bg-sand-50/"],
+.dark [class*="bg-sunset-50/"] {
+  background-color: rgba(22, 58, 86, 0.6);
+}
+
+/* Semantic badge tints (success / warning / error / archived). */
+.dark .bg-emerald-50,
+.dark .bg-emerald-100,
+.dark .hover\:bg-emerald-50:hover,
+.dark .hover\:bg-emerald-100:hover {
+  background-color: rgba(16, 185, 129, 0.13);
+}
+
+.dark .bg-red-50,
+.dark .bg-red-100,
+.dark .hover\:bg-red-50:hover,
+.dark .hover\:bg-red-100:hover {
+  background-color: rgba(244, 63, 94, 0.14);
+}
+
+.dark .bg-amber-50,
+.dark .bg-amber-100,
+.dark .hover\:bg-amber-50:hover,
+.dark .hover\:bg-amber-100:hover {
+  background-color: rgba(245, 158, 11, 0.14);
+}
+
+.dark .bg-sunset-100,
+.dark .hover\:bg-sunset-100:hover {
+  background-color: rgba(249, 122, 46, 0.16);
+}
+
+/* Hover fills that would otherwise flash light. */
+.dark .hover\:bg-white:hover,
+.dark .hover\:bg-ocean-50:hover,
+.dark .hover\:bg-ocean-100:hover,
+.dark .hover\:bg-navy-50:hover,
+.dark .hover\:bg-navy-100:hover,
+.dark .hover\:bg-navy-900:hover,
+.dark .hover\:bg-sand-50:hover,
+.dark .hover\:bg-sand-50\/70:hover,
+.dark .hover\:bg-sand-100:hover,
+.dark .hover\:bg-sand-200:hover,
+.dark .hover\:bg-sand-200\/70:hover,
+.dark .group:hover .group-hover\:bg-ocean-50 {
+  background-color: #163a56;
+}
+
+.dark .hover\:bg-navy-100\/70:hover {
+  background-color: rgba(34, 78, 114, 0.5);
+}
+
+/* Strong ink → near-white. */
 .dark .text-navy-900,
 .dark .text-navy-800,
 .dark .text-charcoal-950,
+.dark .text-charcoal-900,
+.dark .text-charcoal-800,
 .dark .text-stone-900,
 .dark .text-stone-800,
 .dark .text-stone-700,
-.dark .text-charcoal-900,
-.dark .text-charcoal-800 {
+.dark .hover\:text-navy-800:hover,
+.dark .hover\:text-navy-900:hover,
+.dark .hover\:text-charcoal-950:hover,
+.dark .hover\:text-stone-800:hover,
+.dark .hover\:text-stone-900:hover {
   color: #f3f8fb;
 }
 
+/* Body / muted ink → cool light grey. */
 .dark .text-navy-700,
 .dark .text-navy-600,
 .dark .text-navy-500,
@@ -477,13 +624,85 @@
   color: #e7f3f8;
 }
 
+/* Ocean accents — icons, links, labels. Hovering always brightens. */
+.dark .text-ocean-500,
+.dark .hover\:text-ocean-500:hover {
+  color: #3aa9d8;
+}
+
+.dark .text-ocean-600,
+.dark .text-ocean-700,
+.dark [class*="text-ocean-600/"],
+.dark .hover\:text-ocean-600:hover,
+.dark .hover\:text-ocean-700:hover,
+.dark .group:hover .group-hover\:text-ocean-600 {
+  color: #7fcbeb;
+}
+
+/* Brand + semantic accent text (badges, status pills). */
+.dark .text-turquoise-700 {
+  color: #6fdfdd;
+}
+
+.dark .text-sunset-600,
+.dark .text-sunset-700 {
+  color: #ffb07a;
+}
+
+.dark .text-gold-600,
+.dark .text-gold-700,
+.dark .hover\:text-gold-700:hover {
+  color: #f6e3a6;
+}
+
+.dark .text-emerald-600,
+.dark .text-emerald-700,
+.dark .text-emerald-800 {
+  color: #6ee7b7;
+}
+
+.dark .hover\:text-emerald-950:hover {
+  color: #d1fae5;
+}
+
+.dark .text-red-500,
+.dark .text-red-600,
+.dark .text-red-700,
+.dark .text-red-800 {
+  color: #fda4af;
+}
+
+.dark .hover\:text-red-600:hover,
+.dark .hover\:text-red-700:hover,
+.dark .hover\:text-red-800:hover {
+  color: #fecdd3;
+}
+
+.dark .text-amber-600,
+.dark .text-amber-700,
+.dark .text-amber-800 {
+  color: #fcd34d;
+}
+
+/* Borders, dividers, hairlines. */
 .dark .border-navy-100,
 .dark .border-navy-200,
 .dark .border-sand-200,
-.dark .border-sand-300 {
+.dark .border-sand-300,
+.dark [class*="border-sand-400/"],
+.dark .divide-sand-100 > :not([hidden]) ~ :not([hidden]) {
   border-color: rgba(127, 203, 235, 0.22);
 }
 
+.dark .border-red-200 {
+  border-color: rgba(251, 113, 133, 0.4);
+}
+
+.dark .border-emerald-200 {
+  border-color: rgba(110, 231, 183, 0.4);
+}
+
+/* Component surfaces (their colours are inlined via @apply). */
 .dark .card,
 .dark .field,
 .dark .chip:not(.chip-active):not([class*="bg-"]) {
@@ -496,6 +715,15 @@
   color: #7896a8;
 }
 
+/* Dark ink sitting on bright gold must stay dark (admin avatars, gold CTAs,
+   the gold file-upload button). */
+.dark .bg-gold-500.text-charcoal-950,
+.dark .bg-gold-500 .text-charcoal-950,
+.dark .file\:bg-gold-500::file-selector-button {
+  color: #14324d;
+}
+
+/* Map chrome — the tiles stay light (they are imagery), controls follow. */
 .dark .leaflet-container {
   background: #163a56;
 }
@@ -506,13 +734,14 @@
   border-color: rgba(127, 203, 235, 0.25);
 }
 
+.dark .leaflet-bar a:hover,
+.dark .leaflet-bar a:focus {
+  background: #163a56;
+  color: #f3f8fb;
+}
+
 .dark .liquid-glass-header {
-  background: linear-gradient(
-    180deg,
-    rgba(5, 16, 28, 0.55) 0%,
-    rgba(5, 16, 28, 0.25) 60%,
-    transparent 100%
-  );
+  background: transparent;
   border-bottom: none !important;
   box-shadow: none !important;
 }
@@ -522,9 +751,11 @@
 }
 
 .dark .liquid-glass-header.is-scrolled {
-  background: rgba(6, 18, 32, 0.92);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-bottom: 0 !important;
-  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: none !important;
 }
 
 .dark .liquid-glass-pill {
