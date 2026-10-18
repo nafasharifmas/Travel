@@ -7,7 +7,9 @@ import {
   AdminMetrics,
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// The local Laravel API runs on port 8000 by default. VITE_API_URL remains the
+// deployment hook for environments where the API is hosted elsewhere.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
 class ApiService {
   private getToken(): string | null {
