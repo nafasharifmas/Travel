@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useItinerary } from '../../context/ItineraryContext';
 import { useAuth } from '../../context/AuthContext';
 import { SavePromptModal } from './SavePromptModal';
@@ -9,11 +9,54 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
-  Calendar,
   Save,
   Route,
   Sparkles,
 } from 'lucide-react';
+
+const DRAWER_TITLE_ID = 'itinerary-drawer-title';
+
+/**
+ * Presentation-only shell that owns the slide-in transition. It is mounted only
+ * while the drawer is open, so the enter animation replays on every open and no
+ * cross-render animation state leaks out of the drawer.
+ */
+const DrawerShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [shown, setShown] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Flip to the "in" position on the next frame so the transition actually runs.
+    const frame = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  // Move focus into the panel when it opens.
+  useEffect(() => {
+    panelRef.current?.focus();
+  }, []);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={DRAWER_TITLE_ID}
+      className={`fixed inset-0 z-50 flex justify-end bg-navy-950/50 backdrop-blur-sm transition-opacity duration-300 ease-premium ${
+        shown ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className={`flex h-full w-full max-w-md flex-col bg-white shadow-card-hover outline-none transition-transform duration-300 ease-premium ${
+          shown ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
 
 export const ItineraryDrawer: React.FC = () => {
   const {
@@ -28,199 +71,209 @@ export const ItineraryDrawer: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
+  // Escape closes the drawer. The plan lives in ItineraryContext, so nothing is lost.
+  // Deliberately no backdrop-click close: an accidental click must not interrupt editing.
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsDrawerOpen(false);
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isDrawerOpen, setIsDrawerOpen]);
+
   if (!isDrawerOpen) return null;
 
   // Approximate duration calculation: ~2.5 hrs per stop + travel
   const estimatedHours = stops.length * 2.5;
 
+  const iconButtonClass =
+    'grid h-11 w-11 shrink-0 place-items-center rounded-full text-navy-500 transition-colors hover:bg-navy-100 hover:text-navy-800 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent';
+
   return (
     <>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="One-day itinerary builder drawer"
-        className="fixed inset-0 z-50 flex justify-end bg-espresso-950/50 backdrop-blur-sm transition-opacity"
-      >
-        <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between text-espresso-950 animate-in slide-in-from-right duration-250">
-          {/* Drawer Header */}
-          <div className="bg-[#1c1917] text-white p-5 border-b border-sand-200/10">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
-                <Route className="w-4 h-4" />
-                One-Day Expedition Plan
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsDrawerOpen(false)}
-                aria-label="Close itinerary drawer"
-                className="p-1 text-sand-400 hover:text-white rounded-full hover:bg-white/10 transition-colors focus:ring-2 focus:ring-amber-500"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <h2 className="text-xl font-bold font-sans">
-              Day Journey Draft
-            </h2>
-
-            <div className="flex items-center gap-4 text-xs text-sand-300 mt-2">
-              <span className="flex items-center gap-1 font-semibold text-white">
-                <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                {stops.length} {stops.length === 1 ? 'Stop' : 'Stops'} Selected
-              </span>
-              {stops.length > 0 && (
-                <span className="flex items-center gap-1 text-sand-300">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  ~{estimatedHours} Hours Total
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Stops List */}
-          <div
-            className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#faf8f5]"
-            aria-live="polite"
-          >
-            {stops.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-stone-500">
-                <div className="w-14 h-14 rounded-2xl bg-sand-200/60 flex items-center justify-center text-stone-400 mb-3">
-                  <MapPin className="w-7 h-7 text-amber-600" />
-                </div>
-                <h3 className="text-base font-bold text-stone-800">
-                  Your day plan is empty
-                </h3>
-                <p className="text-xs text-stone-500 mt-1 max-w-xs leading-relaxed">
-                  Browse verified places in the catalogue and tap "Add to Plan" to assemble your coherent 1-day trip.
-                </p>
-              </div>
-            ) : (
-              stops.map((stop, index) => {
-                const place = stop.place;
-                return (
-                  <div
-                    key={stop.place_id}
-                    className="bg-white rounded-xl p-3.5 border border-sand-200 shadow-sm space-y-2.5 transition-all hover:border-amber-400"
-                  >
-                    {/* Header: Sequence Number & Controls */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-amber-500 text-espresso-950 font-black text-xs flex items-center justify-center shadow-sm">
-                          {index + 1}
-                        </span>
-                        <h4 className="text-xs font-bold text-stone-900 truncate max-w-[200px]">
-                          {place?.name || `Place #${stop.place_id}`}
-                        </h4>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => reorderStop(index, 'up')}
-                          disabled={index === 0}
-                          aria-label={`Move ${place?.name} up`}
-                          className="p-1 rounded text-stone-400 hover:text-stone-800 hover:bg-sand-100 disabled:opacity-20 transition-colors"
-                        >
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => reorderStop(index, 'down')}
-                          disabled={index === stops.length - 1}
-                          aria-label={`Move ${place?.name} down`}
-                          className="p-1 rounded text-stone-400 hover:text-stone-800 hover:bg-sand-100 disabled:opacity-20 transition-colors"
-                        >
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeStop(stop.place_id)}
-                          aria-label={`Remove ${place?.name} from plan`}
-                          className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors ml-1"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Thumbnail & Timing */}
-                    <div className="flex items-center gap-3">
-                      {place?.primary_photo && (
-                        <img
-                          src={place.primary_photo}
-                          alt={place.name}
-                          className="w-14 h-11 object-cover rounded-lg shrink-0 border border-sand-200"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3 h-3 text-stone-400 shrink-0" />
-                          <input
-                            type="time"
-                            value={stop.visit_time || ''}
-                            onChange={(e) =>
-                              updateStop(stop.place_id, undefined, e.target.value)
-                            }
-                            placeholder="Planned time"
-                            aria-label={`Planned time for ${place?.name}`}
-                            className="text-xs bg-sand-50 border border-sand-200 rounded px-2 py-1 text-stone-800 font-medium focus:ring-1 focus:ring-amber-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Optional Stop Notes */}
-                    <div>
-                      <input
-                        type="text"
-                        value={stop.notes || ''}
-                        onChange={(e) =>
-                          updateStop(stop.place_id, e.target.value, undefined)
-                        }
-                        placeholder="Optional stop notes (e.g. entrance ticket / best photo spot)"
-                        aria-label={`Notes for ${place?.name}`}
-                        className="w-full text-xs bg-sand-50/70 border border-sand-200 rounded-lg px-2.5 py-1.5 text-stone-700 placeholder-stone-400 focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                      />
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Drawer Footer Actions */}
-          <div className="p-4 bg-white border-t border-sand-200 space-y-2">
-            {!isAuthenticated && stops.length > 0 && (
-              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900 mb-2">
-                <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p>
-                  <strong>Guest Mode:</strong> Your draft is saved in this browser session. Sign in to permanently save and sync your trip.
-                </p>
-              </div>
-            )}
-
+      <DrawerShell>
+        {/* Drawer header */}
+        <header className="shrink-0 bg-navy-900 px-5 pb-4 pt-5 text-white">
+          <div className="flex items-start justify-between gap-3">
+            <span className="eyebrow text-turquoise-300">
+              <Route className="h-3.5 w-3.5" />
+              One-Day Route Plan
+            </span>
             <button
               type="button"
-              disabled={stops.length === 0}
-              onClick={() => setIsSaveModalOpen(true)}
-              className="w-full py-3 px-4 bg-amber-500 hover:bg-amber-400 text-espresso-950 font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.01]"
+              onClick={() => setIsDrawerOpen(false)}
+              aria-label="Close itinerary drawer"
+              className="-mr-1.5 -mt-1 grid h-11 w-11 shrink-0 place-items-center rounded-full text-navy-300 transition-colors hover:bg-white/10 hover:text-white"
             >
-              <Save className="w-4 h-4" />
-              {isAuthenticated ? 'Save Itinerary' : 'Save & Preserve Plan'}
+              <X className="h-5 w-5" />
             </button>
+          </div>
 
+          <h2 id={DRAWER_TITLE_ID} className="mt-2 font-serif text-h4 text-white">
+            Day Journey Draft
+          </h2>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-navy-300">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-white">
+              <MapPin className="h-4 w-4 text-turquoise-300" />
+              {stops.length} {stops.length === 1 ? 'Stop' : 'Stops'} Selected
+            </span>
             {stops.length > 0 && (
-              <button
-                type="button"
-                onClick={clearPlan}
-                className="w-full py-2 text-xs text-stone-500 hover:text-red-600 transition-colors font-semibold"
-              >
-                Clear Day Plan
-              </button>
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-turquoise-300" />
+                ~{estimatedHours} Hours Total
+              </span>
             )}
           </div>
+        </header>
+
+        {/* Scrollable body */}
+        <div
+          className="thin-scroll flex-1 space-y-3 overflow-y-auto bg-ivory-100 p-4"
+          aria-live="polite"
+        >
+          {stops.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+              <div className="mb-4 grid h-16 w-16 place-items-center rounded-media border border-ocean-100 bg-ocean-50 text-ocean-500">
+                <MapPin className="h-8 w-8" />
+              </div>
+              <h3 className="text-base font-serif font-bold text-navy-900">
+                Your day plan is empty
+              </h3>
+              <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-navy-500">
+                Browse verified places in the catalogue and tap "Add to Plan" to assemble your
+                coherent 1-day trip.
+              </p>
+            </div>
+          ) : (
+            stops.map((stop, index) => {
+              const place = stop.place;
+              return (
+                <article
+                  key={stop.place_id}
+                  className="rounded-card border border-navy-200 bg-white p-3.5 shadow-card transition-all duration-300 ease-premium hover:border-ocean-200 hover:shadow-card-hover"
+                >
+                  {/* Sequence number, place name & controls */}
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ocean-500 text-xs font-bold text-white">
+                      {index + 1}
+                    </span>
+                    <h4 className="min-w-0 flex-1 truncate text-sm font-bold text-navy-900">
+                      {place?.name || `Place #${stop.place_id}`}
+                    </h4>
+
+                    <div className="-mr-1.5 flex shrink-0 items-center">
+                      <button
+                        type="button"
+                        onClick={() => reorderStop(index, 'up')}
+                        disabled={index === 0}
+                        aria-label={`Move ${place?.name} up`}
+                        className={iconButtonClass}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => reorderStop(index, 'down')}
+                        disabled={index === stops.length - 1}
+                        aria-label={`Move ${place?.name} down`}
+                        className={iconButtonClass}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeStop(stop.place_id)}
+                        aria-label={`Remove ${place?.name} from plan`}
+                        className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Thumbnail & planned time */}
+                  <div className="mt-3 flex items-start gap-3">
+                    {place?.primary_photo && (
+                      <img
+                        src={place.primary_photo}
+                        alt={place.name}
+                        loading="lazy"
+                        className="h-16 w-16 shrink-0 rounded-media border border-navy-200 object-cover"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <label htmlFor={`stop-time-${stop.place_id}`} className="field-label">
+                        Planned time
+                      </label>
+                      <div className="relative">
+                        <Clock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-500" />
+                        <input
+                          id={`stop-time-${stop.place_id}`}
+                          type="time"
+                          value={stop.visit_time || ''}
+                          onChange={(e) => updateStop(stop.place_id, undefined, e.target.value)}
+                          placeholder="Planned time"
+                          className="field pl-10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Optional stop notes */}
+                  <div className="mt-3">
+                    <label htmlFor={`stop-notes-${stop.place_id}`} className="field-label">
+                      Stop notes
+                    </label>
+                    <input
+                      id={`stop-notes-${stop.place_id}`}
+                      type="text"
+                      value={stop.notes || ''}
+                      onChange={(e) => updateStop(stop.place_id, e.target.value, undefined)}
+                      placeholder="Optional stop notes (e.g. entrance ticket / best photo spot)"
+                      className="field"
+                    />
+                  </div>
+                </article>
+              );
+            })
+          )}
         </div>
-      </div>
+
+        {/* Sticky footer actions */}
+        <footer className="shrink-0 space-y-2.5 border-t border-navy-200 bg-white p-4">
+          {!isAuthenticated && stops.length > 0 && (
+            <div className="flex items-start gap-2.5 rounded-btn border border-sunset-200 bg-sunset-50 p-3 text-xs text-navy-700">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-sunset-500" />
+              <p>
+                <strong className="font-bold text-navy-900">Guest Mode:</strong> Your draft is
+                saved in this browser session. Sign in to permanently save and sync your trip.
+              </p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            disabled={stops.length === 0}
+            onClick={() => setIsSaveModalOpen(true)}
+            className="btn-conversion w-full"
+          >
+            <Save className="h-4 w-4" />
+            {isAuthenticated ? 'Save Itinerary' : 'Save & Preserve Plan'}
+          </button>
+
+          {stops.length > 0 && (
+            <button
+              type="button"
+              onClick={clearPlan}
+              className="btn-ghost w-full text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              Clear Day Plan
+            </button>
+          )}
+        </footer>
+      </DrawerShell>
 
       <SavePromptModal
         isOpen={isSaveModalOpen}
@@ -229,4 +282,3 @@ export const ItineraryDrawer: React.FC = () => {
     </>
   );
 };
-
