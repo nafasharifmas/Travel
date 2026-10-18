@@ -371,5 +371,8 @@ class DatabaseSeeder extends Seeder
             'categories_count' => count($categories),
             'environment' => 'production_seed',
         ], $admin);
+
+        // Kalmunai area-of-interest catalogue.
+        $this->call(AoiPlacesSeeder::class);
     }
 }

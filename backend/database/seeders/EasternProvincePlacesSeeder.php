@@ -99,8 +99,7 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => 'Open 24 hours (Best views: Sunrise 05:45 - 07:00 AM)',
                 'contact_info' => 'Maruthamunai Community Tourism Society | +94 67 222 9110',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Maruthamunai_beach.jpg/1280px-Maruthamunai_beach.jpg',
                 ],
             ],
             [
@@ -115,8 +114,7 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => 'Beach: Open 24h | Mosque: 04:30 AM - 09:30 PM',
                 'contact_info' => 'Kalmunai Coastal Tourism Committee | +94 67 222 1445',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Seashore_-_Kalmunai_Beach.jpg/1280px-Seashore_-_Kalmunai_Beach.jpg',
                 ],
             ],
             [
@@ -131,8 +129,8 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => '04:30 AM - 09:30 PM (Daily prayers)',
                 'contact_info' => 'Mosque Administration Board | +94 67 222 3550',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1577717903315-1691ae25ab3f?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Heritage_Museum%2C_Kattankudy.jpg/1280px-Heritage_Museum%2C_Kattankudy.jpg',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Deegawapi.jpg/1280px-Deegawapi.jpg',
                 ],
             ],
             [
@@ -147,8 +145,8 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => 'Open 24 hours (Best birdwatching: 06:00 - 08:30 AM & 16:30 - 18:00 PM)',
                 'contact_info' => 'Koddaikallar Eco-Tourism Group | +94 65 222 4118',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Nintavur_Beach.jpg/1280px-Nintavur_Beach.jpg',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Kallady_Beach_05.jpg/1280px-Kallady_Beach_05.jpg',
                 ],
             ],
             [
@@ -163,8 +161,7 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => 'Open 24 hours (Fishing activities best seen: 06:00 - 09:00 AM)',
                 'contact_info' => 'Palamunai Fisheries Society | +94 67 222 5590',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Nintavur_Beach.jpg/1280px-Nintavur_Beach.jpg',
                 ],
             ],
             [
@@ -179,8 +176,8 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => '06:00 AM - 08:30 PM (Daily)',
                 'contact_info' => 'Nintavur Pradeshiya Sabha Tourism | +94 67 225 0244',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Nintavur_Beach.jpg/1280px-Nintavur_Beach.jpg',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Heritage_Museum%2C_Kattankudy.jpg/1280px-Heritage_Museum%2C_Kattankudy.jpg',
                 ],
             ],
             [
@@ -195,8 +192,8 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => '06:00 AM - 12:30 PM & 04:30 PM - 08:00 PM (Daily Pooja times at 07:00, 11:30, 18:30)',
                 'contact_info' => 'Temple Trustee Board | +94 65 224 8120',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1588598198321-9735fd52455d?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Deegawapi.jpg/1280px-Deegawapi.jpg',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Heritage_Museum%2C_Kattankudy.jpg/1280px-Heritage_Museum%2C_Kattankudy.jpg',
                 ],
             ],
             [
@@ -211,8 +208,8 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => '08:30 AM - 05:00 PM (Closed during Friday Jumu\'ah 12:00 - 14:00)',
                 'contact_info' => 'Museum Curator Office | +94 65 224 7880',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Heritage_Museum%2C_Kattankudy.jpg/1280px-Heritage_Museum%2C_Kattankudy.jpg',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Deegawapi.jpg/1280px-Deegawapi.jpg',
                 ],
             ],
             [
@@ -227,8 +224,8 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => 'Open 24 hours (Evening breeze & sunset: 17:00 - 18:45)',
                 'contact_info' => 'Batticaloa Tourism Information Centre | +94 65 222 2270',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Kallady_Beach_05.jpg/1280px-Kallady_Beach_05.jpg',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Maruthamunai_beach.jpg/1280px-Maruthamunai_beach.jpg',
                 ],
             ],
             [
@@ -243,8 +240,8 @@ class EasternProvincePlacesSeeder extends Seeder
                 'opening_hours' => '06:00 AM - 06:30 PM (Daily)',
                 'contact_info' => 'Archaeological Department Ampara | +94 63 222 2105',
                 'photos' => [
-                    'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=1200&q=80',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Deegawapi.jpg/1280px-Deegawapi.jpg',
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Heritage_Museum%2C_Kattankudy.jpg/1280px-Heritage_Museum%2C_Kattankudy.jpg',
                 ],
             ],
         ];
