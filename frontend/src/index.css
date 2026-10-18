@@ -5,24 +5,299 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-ivory-100 text-charcoal-950 font-sans antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
-  /* Accessible focus ring from WCAG 2.2 AA spec */
+  body {
+    @apply bg-ivory-100 text-navy-600 font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-serif text-navy-900;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Accessible focus ring (WCAG 2.2 AA) */
   :focus-visible {
-    @apply outline-none ring-2 ring-gold-500 ring-offset-2;
+    @apply outline-none ring-2 ring-ocean-500 ring-offset-2 ring-offset-white rounded-[4px];
+  }
+
+  /* Respect reduced motion preferences globally */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-/* Leaflet map styles overrides for smooth modern integration */
+@layer components {
+  /* ---------- Layout primitives ---------- */
+  .container-page {
+    @apply w-full max-w-content mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-shell {
+    @apply py-12 sm:py-16 lg:py-[88px];
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-1.5 text-[11px] font-sans font-bold uppercase tracking-[0.22em] text-ocean-600;
+  }
+
+  /* ---------- Buttons (Visitflow standardized) ---------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-btn
+      text-sm font-semibold transition-all duration-200 ease-premium
+      focus-visible:ring-2 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none
+      whitespace-nowrap;
+  }
+
+  .btn-primary {
+    @apply btn bg-ocean-500 text-white shadow-card hover:bg-ocean-600
+      hover:shadow-card-hover active:scale-[0.98] focus-visible:ring-ocean-500;
+  }
+
+  .btn-conversion {
+    @apply btn bg-sunset-400 text-navy-950 font-bold shadow-card
+      hover:bg-sunset-500 hover:shadow-card-hover active:scale-[0.98] focus-visible:ring-sunset-400;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-ocean-600 border border-ocean-200
+      hover:border-ocean-500 hover:bg-ocean-50 active:scale-[0.98] focus-visible:ring-ocean-500;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-navy-700 hover:bg-navy-100/70 focus-visible:ring-ocean-500;
+  }
+
+  .btn-on-dark {
+    @apply btn bg-white/10 text-white border border-white/20 backdrop-blur-sm
+      hover:bg-white/20 hover:border-white/30 active:scale-[0.98] focus-visible:ring-white;
+  }
+
+  .btn-sm {
+    @apply min-h-[40px] px-4 text-xs;
+  }
+
+  /* ---------- Chips / pills ---------- */
+  .chip {
+    @apply inline-flex items-center gap-1.5 min-h-[38px] px-4 rounded-pill border
+      text-xs font-semibold tracking-wide transition-all duration-200
+      border-navy-200 bg-white text-navy-700 hover:border-ocean-400 hover:text-ocean-600;
+  }
+
+  .chip-active,
+  .chip.chip-active,
+  button.chip-active {
+    @apply border-ocean-500 bg-ocean-500 text-white shadow-card hover:text-white hover:bg-ocean-600;
+    background-color: #006DAA !important;
+    color: #ffffff !important;
+    border-color: #006DAA !important;
+  }
+
+  /* ---------- Cards ---------- */
+  .card {
+    @apply bg-white border border-navy-200 rounded-card shadow-card
+      transition-all duration-300 ease-premium;
+  }
+
+  .card-hover {
+    @apply hover:-translate-y-1 hover:shadow-card-hover hover:border-ocean-200;
+  }
+
+  /* ---------- Forms ---------- */
+  .field {
+    @apply w-full min-h-[44px] px-3.5 py-2.5 rounded-btn border border-navy-500 bg-white
+      text-sm text-navy-900 placeholder-navy-500 transition-all duration-200
+      focus:border-ocean-500 focus:ring-2 focus:ring-ocean-500/25 focus:outline-none;
+  }
+
+  .field-label {
+    @apply block text-xs font-bold uppercase tracking-[0.14em] text-navy-500 mb-1.5;
+  }
+
+  /* ---------- Transparent / Liquid Glass Header ---------- */
+  .liquid-glass-header {
+    background: linear-gradient(
+      180deg,
+      rgba(5, 16, 28, 0.55) 0%,
+      rgba(5, 16, 28, 0.25) 60%,
+      transparent 100%
+    );
+    border-bottom: 1px solid transparent;
+    box-shadow: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .liquid-glass-header.is-scrolled {
+    background: rgba(6, 18, 32, 0.88);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 0;
+    box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Liquid interactive pill */
+  .liquid-glass-pill {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+      0 4px 14px -2px rgba(0, 0, 0, 0.25);
+    color: #ffffff;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .liquid-glass-pill:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 
+      inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4),
+      0 6px 20px -2px rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+  }
+
+  /* Liquid round icon buttons (search, theme) */
+  .liquid-glass-btn-round {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+      0 3px 10px -1px rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .liquid-glass-btn-round:hover {
+    transform: translateY(-1px) scale(1.05);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 
+      inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4),
+      0 6px 18px -2px rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+  }
+
+  /* Liquid glossy CTA buttons */
+  .liquid-btn-sunset {
+    background: linear-gradient(135deg, #ff9f43 0%, #ff6b35 50%, #f04e23 100%);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 
+      inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1.5px 2px 0 rgba(140, 30, 0, 0.35),
+      0 6px 20px -2px rgba(255, 107, 53, 0.45),
+      0 2px 6px rgba(0, 0, 0, 0.1);
+    color: #ffffff;
+    font-weight: 700;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .liquid-btn-sunset:hover {
+    transform: translateY(-1px) scale(1.02);
+    background: linear-gradient(135deg, #ffaa5b 0%, #ff7947 50%, #f55a30 100%);
+    box-shadow: 
+      inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.9),
+      0 8px 26px -2px rgba(255, 107, 53, 0.6);
+    color: #ffffff;
+  }
+
+  .liquid-btn-sunset:active {
+    transform: scale(0.97);
+  }
+
+  .liquid-btn-ocean {
+    background: linear-gradient(180deg, #1aa3e6 0%, #006daa 55%, #005687 100%);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 
+      inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.55),
+      inset 0 -1.5px 2px 0 rgba(0, 48, 87, 0.35),
+      0 6px 18px -2px rgba(0, 109, 170, 0.38),
+      0 2px 6px rgba(0, 0, 0, 0.08);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .liquid-btn-ocean:hover {
+    transform: translateY(-1px) scale(1.02);
+    background: linear-gradient(180deg, #33aee8 0%, #0077b8 55%, #006096 100%);
+    box-shadow: 
+      inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.7),
+      0 8px 24px -2px rgba(0, 109, 170, 0.48);
+  }
+
+  .liquid-btn-ocean:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Leaflet map integration */
 .leaflet-container {
   font-family: inherit;
   width: 100%;
   height: 100%;
-  border-radius: 0.75rem;
-  z-index: 10;
+  background: #eef4f8;
+  z-index: 0;
+}
+
+/* Touch-friendly map controls (44px targets, spec minimum) */
+.leaflet-touch .leaflet-bar a,
+.leaflet-touch .leaflet-control-zoom-in,
+.leaflet-touch .leaflet-control-zoom-out {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  font-size: 20px;
+}
+
+.leaflet-bar a {
+  color: #102a43;
+}
+
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+  background: #f1f5f9;
+  color: #075985;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(11, 31, 51, 0.22);
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: #475569;
+  font-size: 20px;
+  padding: 6px 8px 0 0;
+}
+
+.leaflet-container a {
+  color: #006daa;
 }
 
 .custom-marker-pin {
@@ -32,10 +307,248 @@
   border-radius: 50%;
   color: white;
   font-weight: bold;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(16, 42, 67, 0.28);
   transition: transform 0.2s ease;
 }
 
 .custom-marker-pin:hover {
   transform: scale(1.15);
+}
+
+/* Keep scrollbars tidy inside scrollable panels */
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- Site-wide dark theme ---------- */
+.theme-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+    0 3px 10px -1px rgba(0, 0, 0, 0.2);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px) scale(1.05);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4),
+    0 6px 18px -2px rgba(0, 0, 0, 0.3);
+  color: #38bdf8;
+}
+
+.theme-toggle:active {
+  transform: scale(0.94);
+}
+
+.theme-toggle__icon {
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease;
+}
+
+.theme-toggle__icon--sun {
+  transform: rotate(0deg) scale(1);
+  opacity: 1;
+}
+
+.theme-toggle__icon--moon {
+  transform: rotate(-90deg) scale(0.2);
+  opacity: 0;
+}
+
+.dark .theme-toggle {
+  color: #fde047;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+    0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.dark .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35),
+    0 6px 18px -2px rgba(0, 0, 0, 0.35);
+  color: #fef08a;
+}
+
+.dark .theme-toggle__icon--sun {
+  transform: rotate(90deg) scale(0.2);
+  opacity: 0;
+}
+
+.dark .theme-toggle__icon--moon {
+  transform: rotate(0deg) scale(1);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle,
+  .theme-toggle__icon {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* Existing palette utility classes are remapped here so every screen follows
+   the selected theme, including legacy page components. */
+.dark body,
+.dark .bg-ivory-100,
+.dark .bg-white {
+  background-color: #0b1f33;
+  color: #d9edf7;
+}
+
+.dark .bg-ivory-50,
+.dark .bg-navy-50,
+.dark .bg-ocean-50 {
+  background-color: #102a43;
+}
+
+.dark .bg-ivory-200,
+.dark .bg-navy-100,
+.dark .bg-sand-100,
+.dark .bg-sand-200,
+.dark .bg-stone-100,
+.dark .bg-stone-200 {
+  background-color: #163a56;
+}
+
+/* Opacity-bearing section utilities are emitted as class attributes with a
+   slash, so map them explicitly as well. These are the light editorial
+   bands used by How It Works and the Journal sections. */
+.dark [class*="bg-ivory-200/"] {
+  background-color: rgba(16, 42, 67, 0.96);
+}
+
+
+.dark .text-navy-900,
+.dark .text-navy-800,
+.dark .text-charcoal-950,
+.dark .text-stone-900,
+.dark .text-stone-800,
+.dark .text-stone-700,
+.dark .text-charcoal-900,
+.dark .text-charcoal-800 {
+  color: #f3f8fb;
+}
+
+.dark .text-navy-700,
+.dark .text-navy-600,
+.dark .text-navy-500,
+.dark .text-stone-600,
+.dark .text-stone-500,
+.dark .text-stone-400,
+.dark .text-sand-600,
+.dark .text-sand-500,
+.dark .text-sand-400,
+.dark .text-sand-300 {
+  color: #a9c4d5;
+}
+
+.dark .text-sand-200,
+.dark .text-sand-100,
+.dark .text-ivory-100,
+.dark .text-ivory-50 {
+  color: #e7f3f8;
+}
+
+.dark .border-navy-100,
+.dark .border-navy-200,
+.dark .border-sand-200,
+.dark .border-sand-300 {
+  border-color: rgba(127, 203, 235, 0.22);
+}
+
+.dark .card,
+.dark .field,
+.dark .chip:not(.chip-active):not([class*="bg-"]) {
+  background-color: #102a43;
+  border-color: rgba(127, 203, 235, 0.28);
+  color: #f3f8fb;
+}
+
+.dark .field::placeholder {
+  color: #7896a8;
+}
+
+.dark .leaflet-container {
+  background: #163a56;
+}
+
+.dark .leaflet-bar a {
+  color: #d9edf7;
+  background: #102a43;
+  border-color: rgba(127, 203, 235, 0.25);
+}
+
+.dark .liquid-glass-header {
+  background: linear-gradient(
+    180deg,
+    rgba(5, 16, 28, 0.55) 0%,
+    rgba(5, 16, 28, 0.25) 60%,
+    transparent 100%
+  );
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+.dark .liquid-glass-header::before {
+  display: none !important;
+}
+
+.dark .liquid-glass-header.is-scrolled {
+  background: rgba(6, 18, 32, 0.92);
+  border-bottom: 0 !important;
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .liquid-glass-pill {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.25), 0 4px 14px -2px rgba(0, 0, 0, 0.25);
+}
+
+.dark .liquid-glass-pill:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4), 0 6px 20px -2px rgba(0, 0, 0, 0.35);
+}
+
+.dark .liquid-glass-btn-round {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.25), 0 3px 10px -1px rgba(0, 0, 0, 0.2);
+}
+
+.dark .liquid-glass-btn-round:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4), 0 6px 18px -2px rgba(0, 0, 0, 0.3);
 }

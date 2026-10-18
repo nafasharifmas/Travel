@@ -1,145 +1,142 @@
 import React, { useState } from 'react';
 import { ASSETS } from '../../data/assetsManifest';
 import { RevealOnScroll } from '../common/RevealOnScroll';
-import { Compass, Sparkles, ArrowRight, X, Check, MapPin } from 'lucide-react';
+import { Sparkles, ArrowRight, X, Check, Landmark, Mountain, Waves, Bird } from 'lucide-react';
+
+type Experience = (typeof ASSETS.experiences)[number];
+
+const ICONS: Record<string, React.ElementType> = {
+  'slow-cultural': Landmark,
+  'alpine-wilderness': Mountain,
+  'coastal-lagoon': Waves,
+  'wildlife-ecology': Bird,
+};
 
 export const ExperienceSection: React.FC = () => {
-  const [selectedExp, setSelectedExp] = useState<any | null>(null);
+  const [selectedExp, setSelectedExp] = useState<Experience | null>(null);
 
   return (
-    <section id="experiences" className="py-24 px-4 sm:px-6 lg:px-8 bg-forest-950 text-white relative overflow-hidden">
-      {/* Background ambient lighting */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-forest-800/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gold-600/10 rounded-full blur-3xl pointer-events-none" />
+    <section id="experiences" className="section-shell relative bg-navy-950 text-white overflow-hidden">
+      {/* Ambient depth */}
+      <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-ocean-500/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[28rem] h-[28rem] bg-turquoise-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto space-y-16 relative z-10">
-        {/* Section Title */}
+      <div className="container-page space-y-12 relative z-10">
         <RevealOnScroll direction="up">
           <div className="text-center max-w-3xl mx-auto space-y-4">
-            <span className="text-[11px] font-serif uppercase tracking-[0.25em] text-gold-400 font-bold flex items-center justify-center gap-1.5">
+            <span className="eyebrow justify-center text-turquoise-300">
               <Sparkles className="w-3.5 h-3.5" />
-              Ways of Seeing
+              Ways of seeing
             </span>
-            <h2 className="text-3xl sm:text-5xl font-serif font-bold text-ivory-50 tracking-tight">
-              Signature Experiences
-            </h2>
-            <p className="text-sm sm:text-base text-sand-300 font-sans font-light leading-relaxed">
-              We design journeys around depth rather than distance. Four distinct philosophies for experiencing the natural and cultural architecture of our world.
+            <h2 className="text-h2 text-white">Signature Experiences</h2>
+            <p className="text-sm sm:text-base text-navy-200 leading-relaxed">
+              We design journeys around depth rather than distance — four distinct philosophies for
+              experiencing the natural and cultural architecture of a place.
             </p>
           </div>
         </RevealOnScroll>
 
-        {/* 4 Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {ASSETS.experiences.map((exp, idx) => (
-            <RevealOnScroll key={exp.id} direction="up" delayMs={100 * (idx + 1)}>
-              <div
-                onClick={() => setSelectedExp(exp)}
-                className="group relative h-[420px] rounded-3xl overflow-hidden cursor-pointer border border-sand-400/15 bg-forest-900/40 p-6 flex flex-col justify-between transition-all duration-300 hover:border-gold-400/50 hover:shadow-2xl hover:-translate-y-1"
-              >
-                {/* Background Image with Overlay */}
-                <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {ASSETS.experiences.map((exp, idx) => {
+            const Icon = ICONS[exp.id] ?? Sparkles;
+            return (
+              <RevealOnScroll key={exp.id} direction="up" delayMs={100 * (idx + 1)} className="h-full">
+                <button
+                  type="button"
+                  onClick={() => setSelectedExp(exp)}
+                  className="group relative block w-full h-full min-h-[380px] rounded-media overflow-hidden text-left border border-white/10 hover:border-turquoise-400/50 transition-all duration-300 ease-premium hover:-translate-y-1 shadow-card"
+                >
                   <img
                     src={exp.image}
                     alt={exp.title}
                     loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-45 group-hover:opacity-60"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/70 to-forest-950/30" />
-                </div>
+                  {/* Stronger overlay to keep text AA-readable */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/80 to-navy-950/35" />
 
-                {/* Top Badge */}
-                <div className="relative z-10 flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full bg-forest-900/80 backdrop-blur-md text-[10px] font-mono tracking-widest uppercase text-gold-400 border border-gold-500/20">
-                    {exp.badge}
-                  </span>
-                  <span className="text-xs font-serif text-sand-300">
-                    0{idx + 1}
-                  </span>
-                </div>
+                  <div className="relative z-10 flex flex-col justify-between h-full p-6">
+                    <div className="flex items-center justify-between">
+                      <span className="grid place-items-center w-11 h-11 rounded-2xl bg-navy-950/65 backdrop-blur-md border border-white/20 text-turquoise-300">
+                        <Icon className="w-5 h-5" />
+                      </span>
+                      <span className="text-xs font-semibold text-navy-100 px-2.5 py-1 rounded-pill bg-navy-950/75 border border-white/15">
+                        {exp.badge}
+                      </span>
+                    </div>
 
-                {/* Bottom Narrative */}
-                <div className="relative z-10 space-y-2">
-                  <span className="text-[10px] font-serif uppercase tracking-widest text-gold-300/80">
-                    {exp.eyebrow}
-                  </span>
-                  <h3 className="text-xl font-serif font-bold text-ivory-50 group-hover:text-gold-300 transition-colors">
-                    {exp.title}
-                  </h3>
-                  <p className="text-xs text-sand-300 font-light line-clamp-3 leading-relaxed">
-                    {exp.description}
-                  </p>
-
-                  <div className="pt-2 flex items-center gap-1 text-xs font-semibold text-gold-400 group-hover:translate-x-1 transition-transform">
-                    <span>Explore Experience</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <div className="space-y-2 mt-6">
+                      <span className="text-[11px] uppercase tracking-[0.16em] text-turquoise-300 font-semibold">
+                        {exp.eyebrow}
+                      </span>
+                      <h3 className="text-xl font-bold font-serif text-white leading-snug">
+                        {exp.title}
+                      </h3>
+                      <p className="text-xs text-navy-200 line-clamp-3 leading-relaxed">
+                        {exp.description}
+                      </p>
+                      <span className="inline-flex items-center gap-1.5 pt-2 text-xs font-semibold text-turquoise-300 group-hover:gap-2.5 transition-all">
+                        Explore experience
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </RevealOnScroll>
-          ))}
+                </button>
+              </RevealOnScroll>
+            );
+          })}
         </div>
       </div>
 
-      {/* Experience Detail Modal */}
+      {/* Experience detail modal */}
       {selectedExp && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/80 backdrop-blur-md animate-in fade-in"
+          aria-label={selectedExp.title}
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-md animate-fadeIn"
+          onClick={() => setSelectedExp(null)}
         >
-          <div className="bg-charcoal-900 border border-sand-400/20 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl text-ivory-100 animate-in zoom-in-95">
-            <div className="relative h-56">
-              <img
-                src={selectedExp.image}
-                alt={selectedExp.title}
-                className="w-full h-full object-cover"
-              />
+          <div
+            className="bg-white rounded-media w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-card-hover text-navy-900 animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative h-52">
+              <img src={selectedExp.image} alt={selectedExp.title} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy-950/70 to-transparent" />
               <button
                 type="button"
                 onClick={() => setSelectedExp(null)}
                 aria-label="Close dialog"
-                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-charcoal-950/80 backdrop-blur-sm text-sand-200 hover:text-white flex items-center justify-center"
+                className="absolute top-4 right-4 grid place-items-center w-10 h-10 rounded-full bg-white/90 text-navy-800 hover:bg-white"
               >
                 <X className="w-5 h-5" />
               </button>
-              <div className="absolute bottom-4 left-6">
-                <span className="px-3 py-1 rounded-full bg-gold-500 text-charcoal-950 font-bold text-[10px] uppercase tracking-wider">
-                  {selectedExp.badge}
-                </span>
-              </div>
+              <span className="absolute bottom-4 left-6 px-3 py-1 rounded-pill bg-turquoise-500 text-navy-950 text-[10px] font-bold uppercase tracking-wider">
+                {selectedExp.badge}
+              </span>
             </div>
 
             <div className="p-6 sm:p-8 space-y-4">
-              <span className="text-xs font-serif uppercase tracking-widest text-gold-400">
-                {selectedExp.eyebrow}
-              </span>
-              <h3 className="text-2xl font-serif font-bold text-ivory-50">
-                {selectedExp.title}
-              </h3>
-              <p className="text-sm text-sand-200 font-light leading-relaxed">
-                {selectedExp.description}
-              </p>
+              <span className="eyebrow">{selectedExp.eyebrow}</span>
+              <h3 className="text-h3">{selectedExp.title}</h3>
+              <p className="text-sm text-navy-600 leading-relaxed">{selectedExp.description}</p>
 
-              <div className="p-4 bg-forest-900/50 rounded-2xl border border-forest-700/30 text-xs text-sand-300 space-y-1.5">
-                <p className="font-bold text-gold-300">Expedition Notes:</p>
-                <p className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-gold-400 shrink-0" />
-                  Small group departures limited to 8 travelers
+              <div className="p-4 rounded-card bg-ocean-50 border border-ocean-100 space-y-2 text-sm text-navy-700">
+                <p className="font-semibold text-ocean-600">How Visitflow maps it</p>
+                <p className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-ocean-500 shrink-0 mt-0.5" />
+                  Every stop carries verified coordinates you can route between.
                 </p>
-                <p className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-gold-400 shrink-0" />
-                  Tailored sequence order with localized host guides
+                <p className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-ocean-500 shrink-0 mt-0.5" />
+                  Sequence your day plan, then save or reopen it any time.
                 </p>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedExp(null)}
-                  className="px-5 py-2.5 bg-gold-500 hover:bg-gold-400 text-charcoal-950 font-bold rounded-xl text-xs uppercase tracking-wider transition-all"
-                >
-                  Close Overview
+              <div className="flex justify-end pt-1">
+                <button type="button" onClick={() => setSelectedExp(null)} className="btn-primary">
+                  Close
                 </button>
               </div>
             </div>
@@ -149,4 +146,3 @@ export const ExperienceSection: React.FC = () => {
     </section>
   );
 };
-
