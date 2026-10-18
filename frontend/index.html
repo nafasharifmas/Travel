@@ -2,16 +2,52 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/visitflow-mark.png" />
+    <link rel="apple-touch-icon" href="/visitflow-mark.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aether Expeditions — The World, More Intimately</title>
-    <meta name="description" content="Thoughtfully curated journeys for the places that stay with you long after you return. Discover destinations, signature experiences, and real-time route planning." />
-    <!-- Preconnect & Editorial Typography (Cormorant Garamond, Playfair Display, DM Sans) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#006DAA" />
+    <title>Visitflow — Find your way to somewhere extraordinary</title>
+    <meta
+      name="description"
+      content="Visitflow is a modern travel discovery platform for the Eastern Corridor and beyond: real destinations, verified coordinates, interactive route maps and itinerary planning."
+    />
+    <meta property="og:title" content="Visitflow — Find your way to somewhere extraordinary" />
+    <meta
+      property="og:description"
+      content="Discover real destinations with verified coordinates, plan coherent routes and save your journeys."
+    />
+    <meta property="og:type" content="website" />
+    <!-- Editorial typography: Playfair Display (headings) + Inter (interface) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Resolve theme before first paint so dark mode never flashes light -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('visitflow-theme');
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          var root = document.documentElement;
+          if (theme === 'dark') root.classList.add('dark');
+          root.setAttribute('data-theme', theme);
+          root.style.colorScheme = theme;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#0B1F33' : '#006DAA');
+        } catch (e) {
+          /* storage blocked: fall back to light */
+        }
+      })();
+    </script>
   </head>
-  <body class="bg-[#faf8f5] text-[#1a1816] antialiased selection:bg-[#d4af37]/30 selection:text-[#1a1816]">
+  <body class="bg-ivory-100 text-navy-600 antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

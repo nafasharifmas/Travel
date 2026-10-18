@@ -1,174 +1,202 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, Globe, Heart, ShieldCheck, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Mail, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+
+interface FooterLink {
+  label: string;
+  to: string;
+}
+
+const EXPLORE_LINKS: FooterLink[] = [
+  { label: 'All Destinations', to: '/explore' },
+  { label: 'Maruthamunai Beach', to: '/places/maruthamunai-beach' },
+  { label: 'Kallady Beach', to: '/places/kallady-beach' },
+  { label: 'Deegawapi Raja Maha Vihara', to: '/places/deegawapi-raja-maha-vihara' },
+  { label: 'Kattankudy Heritage Museum', to: '/places/kattankudy-heritage-museum' },
+];
+
+const DISCOVER_LINKS: FooterLink[] = [
+  { label: 'Featured Destinations', to: '/#destinations' },
+  { label: 'Signature Experiences', to: '/#experiences' },
+  { label: 'How Visitflow Works', to: '/#how-it-works' },
+  { label: 'Travel Journal', to: '/#journal' },
+  { label: 'Saved Itineraries', to: '/itineraries' },
+];
 
 export const SiteFooter: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'error' | 'success'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  const validate = (value: string) => {
+    if (!value.trim()) return 'Please enter your email address.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())) {
+      return 'Please enter a valid email address.';
+    }
+    return null;
+  };
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes('@')) return;
-    setSubscribed(true);
+    const message = validate(email);
+    if (message) {
+      setError(message);
+      setStatus('error');
+      return;
+    }
+    setError(null);
+    setStatus('success');
     setEmail('');
   };
 
   return (
-    <footer className="bg-charcoal-950 text-sand-300 border-t border-sand-400/15 pt-16 pb-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <footer className="bg-navy-900 text-navy-300">
+      <div className="container-page py-14 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
-          {/* Brand Info (4 cols) */}
-          <div className="md:col-span-4 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gold-500 text-charcoal-950 flex items-center justify-center font-black">
-                <Compass className="w-5 h-5 text-charcoal-950" />
-              </div>
-              <span className="text-xl font-serif font-bold tracking-[0.15em] text-ivory-50 uppercase">
-                Aether Expeditions
+          {/* Brand */}
+          <div className="md:col-span-4 space-y-5">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-3.5 group focus:outline-none"
+              aria-label="Visitflow home"
+            >
+              <img
+                src="/visitflow-emblem.png"
+                alt="Visitflow"
+                className="h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-md"
+              />
+              <span className="text-2xl font-bold tracking-tight text-white font-sans group-hover:text-turquoise-300 transition-colors">
+                Visitflow
               </span>
-            </div>
+            </Link>
 
-            <p className="text-xs text-sand-400 leading-relaxed font-light max-w-sm">
-              Thoughtfully curated journeys for places that stay with you long after you return. Combining digital editorial storytelling with real-time spatial route discovery.
+            <p className="text-sm text-navy-300/90 leading-relaxed max-w-sm">
+              A modern travel discovery platform for the places that stay with you. Real destinations,
+              verified coordinates, and coherent routes you can actually follow.
             </p>
 
-            <div className="flex items-center gap-4 text-xs text-sand-400 pt-1">
-              <span className="inline-flex items-center gap-1 font-mono text-[11px]">
-                <ShieldCheck className="w-3.5 h-3.5 text-gold-400" />
-                Verified Catalogue
-              </span>
-              <span className="inline-flex items-center gap-1 font-mono text-[11px]">
-                <Globe className="w-3.5 h-3.5 text-sky-400" />
-                7.4394° N, 81.8172° E Anchor
-              </span>
-            </div>
+            <span className="inline-flex items-center gap-1.5 text-xs text-navy-400">
+              <ShieldCheck className="w-4 h-4 text-turquoise-400" />
+              Verified destination catalogue
+            </span>
           </div>
 
-          {/* Quick Nav Links (2 cols) */}
-          <div className="md:col-span-2 space-y-3">
-            <h4 className="text-xs font-serif uppercase tracking-widest text-gold-400 font-bold">
-              Destinations
-            </h4>
-            <ul className="space-y-2 text-xs font-light">
-              <li>
-                <Link to="/explore" className="hover:text-gold-300 transition-colors">
-                  Dolomites, Italy
-                </Link>
-              </li>
-              <li>
-                <Link to="/explore" className="hover:text-gold-300 transition-colors">
-                  Kyoto, Japan
-                </Link>
-              </li>
-              <li>
-                <Link to="/places/maruthamunai-beach" className="hover:text-gold-300 transition-colors">
-                  Eastern Shore (0.5 km)
-                </Link>
-              </li>
-              <li>
-                <Link to="/places/sigiriya-ancient-rock-citadel" className="hover:text-gold-300 transition-colors">
-                  Sigiriya Ancient Citadel
-                </Link>
-              </li>
-              <li>
-                <Link to="/explore" className="hover:text-gold-300 transition-colors font-medium text-gold-400">
-                  All Mapped Places →
-                </Link>
-              </li>
+          {/* Explore */}
+          <nav className="md:col-span-2 space-y-3" aria-label="Explore destinations">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-white">Explore</h2>
+            <ul className="space-y-2.5 text-sm">
+              {EXPLORE_LINKS.map((link) => (
+                <li key={link.label}>
+                  <Link to={link.to} className="text-navy-300/90 hover:text-turquoise-300 transition-colors">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </nav>
 
-          {/* Experiences & Journal (2 cols) */}
-          <div className="md:col-span-2 space-y-3">
-            <h4 className="text-xs font-serif uppercase tracking-widest text-gold-400 font-bold">
-              Journal & Notes
-            </h4>
-            <ul className="space-y-2 text-xs font-light">
-              <li>
-                <a href="#journal" className="hover:text-gold-300 transition-colors">
-                  The Quiet Side of Kyoto
-                </a>
-              </li>
-              <li>
-                <a href="#journal" className="hover:text-gold-300 transition-colors">
-                  High Alta Via Dolomiti
-                </a>
-              </li>
-              <li>
-                <a href="#journal" className="hover:text-gold-300 transition-colors">
-                  Eastern Shoreline Solitude
-                </a>
-              </li>
-              <li>
-                <Link to="/itineraries" className="hover:text-gold-300 transition-colors">
-                  Personal Day Plans
-                </Link>
-              </li>
+          {/* Discover */}
+          <nav className="md:col-span-2 space-y-3" aria-label="Discover">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-white">Discover</h2>
+            <ul className="space-y-2.5 text-sm">
+              {DISCOVER_LINKS.map((link) => (
+                <li key={link.label}>
+                  <Link to={link.to} className="text-navy-300/90 hover:text-turquoise-300 transition-colors">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </nav>
 
-          {/* Newsletter Demo (4 cols) */}
+          {/* Newsletter */}
           <div className="md:col-span-4 space-y-3">
-            <h4 className="text-xs font-serif uppercase tracking-widest text-gold-400 font-bold">
-              Field Dispatches Newsletter
-            </h4>
-            <p className="text-xs text-sand-400 leading-relaxed font-light">
-              Receive seasonal essays, newly mapped routes, and quiet travel photography once a month.
+            <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-white">
+              Field Dispatches
+            </h2>
+            <p className="text-sm text-navy-300/90 leading-relaxed">
+              Seasonal essays, newly mapped routes, and quiet travel photography — once a month.
             </p>
 
-            {subscribed ? (
-              <div className="p-3 bg-forest-900/60 border border-gold-500/30 rounded-2xl flex items-center gap-2 text-xs text-gold-300">
-                <CheckCircle2 className="w-4 h-4 text-gold-400 shrink-0" />
-                <span>Thank you. You will receive our next seasonal dispatch.</span>
+            {status === 'success' ? (
+              <div className="flex items-center gap-2 p-3.5 rounded-btn bg-white/5 border border-turquoise-400/40 text-sm text-turquoise-200">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-turquoise-300" />
+                <span>You're subscribed. Look out for the next dispatch.</span>
               </div>
             ) : (
-              <form onSubmit={handleSubscribe} className="flex gap-2">
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Your email address"
-                  className="w-full px-4 py-2.5 bg-charcoal-900 border border-sand-400/20 rounded-full text-xs text-ivory-100 placeholder-stone-500 focus:outline-none focus:border-gold-500 font-sans"
-                />
-                <button
-                  type="submit"
-                  aria-label="Subscribe to dispatches"
-                  className="px-4 py-2.5 rounded-full bg-gold-500 hover:bg-gold-400 text-charcoal-950 font-bold text-xs uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+              <form onSubmit={handleSubscribe} noValidate className="space-y-2">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400" />
+                    <input
+                      type="email"
+                      inputMode="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (status === 'error') {
+                          setStatus('idle');
+                          setError(null);
+                        }
+                      }}
+                      placeholder="you@example.com"
+                      aria-label="Email address"
+                      aria-invalid={status === 'error'}
+                      className="w-full min-h-[44px] pl-10 pr-3 rounded-btn bg-white/5 border border-white/15 text-sm text-white placeholder-navy-400 focus:outline-none focus:border-turquoise-400 focus:ring-2 focus:ring-turquoise-400/25"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    aria-label="Subscribe to field dispatches"
+                    className="grid place-items-center w-11 h-11 rounded-btn bg-turquoise-500 hover:bg-turquoise-400 text-navy-950 transition-colors shrink-0"
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+                {status === 'error' && error && (
+                  <p role="alert" className="flex items-center gap-1.5 text-xs text-red-300">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {error}
+                  </p>
+                )}
               </form>
             )}
           </div>
         </div>
 
-        {/* FR-14 Attribution & Copyright Line */}
-        <div className="pt-8 border-t border-sand-400/10 flex flex-col sm:flex-row items-center justify-between text-xs text-sand-400 gap-4">
-          <p>
-            © {currentYear} Aether Expeditions · Built on Visitflow Production Baseline.
-          </p>
+        {/* Legal + attribution */}
+        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs text-navy-400">
+          <p>© {currentYear} Visitflow. All rights reserved.</p>
 
-          <p className="text-[11px] text-stone-500 flex items-center gap-1">
-            Spatial data &copy;{' '}
-            <a
-              href="https://www.openstreetmap.org/copyright"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gold-400 underline hover:text-gold-300"
-            >
-              OpenStreetMap
-            </a>{' '}
-            contributors (FR-14 compliance)
-          </p>
-
-          <p className="flex items-center gap-1 text-[11px]">
-            Designed with <Heart className="w-3 h-3 text-gold-500 fill-gold-500" /> for purposeful discovery
+          <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center">
+            <span>
+              Destination photography via{' '}
+              <a
+                href="https://commons.wikimedia.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-turquoise-300 underline underline-offset-2 hover:text-turquoise-200"
+              >
+                Wikimedia Commons
+              </a>
+            </span>
+            <span className="hidden sm:inline text-white/60">•</span>
+            <span>
+              Map data ©{' '}
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-turquoise-300 underline underline-offset-2 hover:text-turquoise-200"
+              >
+                OpenStreetMap
+              </a>{' '}
+              contributors
+            </span>
           </p>
         </div>
       </div>
     </footer>
   );
 };
-

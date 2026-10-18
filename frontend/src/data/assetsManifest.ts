@@ -1,17 +1,16 @@
 /**
- * Centralized Asset Manifest for Aether Expeditions
- * High-resolution verified travel photography curated with consistent cinematic tone:
- * Warm sunlit tones, dramatic mountain vistas, serene coastal waters, and atmospheric cultural scenes.
+ * Centralized Asset Manifest for Visitflow.
+ * Verified travel photography (Wikimedia Commons) and curated category imagery,
+ * kept intentionally coastal and Eastern-Corridor focused.
  */
 
 export const ASSETS = {
   hero: {
-    // Real Eastern Shore photograph: Maruthamunai beach lighthouse view (Wikimedia Commons)
-    image:
-      'https://upload.wikimedia.org/wikipedia/commons/9/96/Maruthamunai_beach_light_house_view.jpg',
+    // Animated coastal aerial supplied for the Visitflow landing hero.
+    image: '/visitflow-hero.mp4',
     poster:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Maruthamunai_beach_light_house_view.jpg/1280px-Maruthamunai_beach_light_house_view.jpg',
-    alt: 'Sunrise over Maruthamunai beach and its lighthouse on the Eastern Shore of Sri Lanka',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Maruthamunai_beach.jpg/1280px-Maruthamunai_beach.jpg',
+    alt: 'Aerial view of turquoise ocean waves and a tropical beach on Sri Lanka’s eastern coast',
   },
   /**
    * Real Eastern Province corridor destinations (slugs match the public places
@@ -26,9 +25,9 @@ export const ASSETS = {
       tag: 'Corridor Stop #1 · Sunrise Shore',
       categories: ['coastal'],
       image:
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Maruthamunai_beach_light_house_view.jpg/1280px-Maruthamunai_beach_light_house_view.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Maruthamunai_beach.jpg/1280px-Maruthamunai_beach.jpg',
       creditUrl:
-        'https://commons.wikimedia.org/wiki/File:Maruthamunai_beach_light_house_view.jpg',
+        'https://commons.wikimedia.org/wiki/File:Maruthamunai_beach.jpg',
       description:
         'The golden sunrise shoreline where the Eastern corridor begins — palm-shaded fisherman’s lanes, outrigger canoes, and a coastal lighthouse watching over the reef.',
       duration: 'Half Day',
@@ -120,7 +119,7 @@ export const ASSETS = {
       title: 'Slow Travel & Cultural Immersion',
       eyebrow: 'Tradition & Craft',
       description: 'Step into traditional weaving hamlets, centuries-old shrines, and private tea estates guided by local heritage keepers.',
-      image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Heritage_Museum%2C_Kattankudy.jpg/1280px-Heritage_Museum%2C_Kattankudy.jpg',
       badge: 'Heritage',
     },
     {
@@ -128,7 +127,7 @@ export const ASSETS = {
       title: 'Remote Mountain Expeditions',
       eyebrow: 'Solitude & Scale',
       description: 'High-altitude ridges, secluded valleys, and dramatic sunrises where silence and scale redefine your sense of horizon.',
-      image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Deegawapi.jpg/1280px-Deegawapi.jpg',
       badge: 'Adventures',
     },
     {
@@ -136,7 +135,7 @@ export const ASSETS = {
       title: 'Coastal Escapes & Lagoon Sanctuaries',
       eyebrow: 'Ocean & Still Water',
       description: 'Pristine shorelines, outrigger fishing routines, and tranquil catamaran passages between ocean reefs and interior lagoons.',
-      image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Kallady_Beach_05.jpg/1280px-Kallady_Beach_05.jpg',
       badge: 'Marine',
     },
     {
@@ -144,41 +143,42 @@ export const ASSETS = {
       title: 'Wildlife & Biodiversity Corridors',
       eyebrow: 'Living Ecosystems',
       description: 'Encounter wild Asian elephants, coastal bird sanctuaries, and rare flora within protected reserve boundaries.',
-      image: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=800&q=80',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Nintavur_Beach.jpg/1280px-Nintavur_Beach.jpg',
       badge: 'Ecology',
     },
   ],
   editorial: {
     feature: {
       headline: 'Some places change your perspective.',
-      subhead: 'The art of unhurried exploration in the world’s quietest corners.',
-      body: 'True journeying is not measured by the velocity of your transit, but by the stillness you allow to settle over your senses. When you step off the congested tourist circuits into coastal handloom villages or high mountain passes at dawn, the world reveals its true texture.',
+      subhead: 'The art of unhurried exploration, one shoreline at a time.',
+      body: 'True journeying is not measured by the speed of your transit, but by the stillness you allow to settle over your senses. Step off the congested circuits and the Eastern Shore begins to speak in its native cadence — outrigger canoes returning through the surf, handloom shuttles in artisan cottages, and lagoon water going glass-still at dusk.',
       location: 'Eastern Shore Corridor · 7.4394° N, 81.8172° E',
       stat: '100% Curated · 0 Crowds · 1 Coherent Route',
-      image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1600&q=85',
-      alt: 'Ancient coastal fortress and ocean ramparts under golden morning sunlight',
+      image:
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Maruthamunai_beach.jpg/1280px-Maruthamunai_beach.jpg',
+      alt: 'Golden sunrise shoreline at Maruthamunai on the Eastern Shore of Sri Lanka',
     },
   },
   journal: [
     {
-      id: 'kyoto-quiet-side',
-      topic: 'Cultural Heritage',
-      title: 'The Quiet Side of Kyoto',
-      summary: 'Wandering through moss-carpeted cedar paths and ancient teahouses before the morning bells break the temple silence.',
+      id: 'deegawapi-pillared-sanctum',
+      topic: 'Heritage & Faith',
+      title: 'The Pillared Sanctum of Deegawapi',
+      summary: 'Thousands of stone pillars rise from the dry-zone forest at one of the Eastern Province’s most storied Buddhist sites.',
       readTime: '6 min read',
       date: 'Autumn 2026',
-      image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80',
-      content: `In Kyoto's eastern hills, the early light arrives not with fanfare, but as a slow filtration through towering cryptomeria pines. While most travelers congregate around the famous vermilion gates at midday, the true soul of the old capital breathes in the first hour after dawn. Here, monks rake raked-gravel gardens into precise waves representing the cosmic ocean, and steam rises softly from cedar tubs in quiet machiya merchant houses. A slower approach reveals courtyard gardens where every moss-covered stone has been deliberately positioned for three hundred years.`,
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Deegawapi.jpg/1280px-Deegawapi.jpg',
+      content: `Approached through scrub forest near Ampara, Deegawapi announces itself slowly — first as a low ridge of ruined platforms, then as a field of stone pillars standing in ranks where a great chapter house once held its roof. Each pillar carries the ghost of a beam, and walking between them is a little like reading a building that has been erased down to its own skeleton. Local custodians keep the site immaculate, and the vihara remains an active place of worship rather than only a monument. Late-afternoon light turns the granite gold and the surrounding forest pours with birdsong, making the stillness feel deliberate.`,
     },
     {
-      id: 'dolomites-slower-journey',
-      topic: 'Alpine Expeditions',
-      title: 'A Slower Journey Through the Dolomites',
-      summary: 'Tracing the high alta via footpaths between remote rifugios, where alpine limestone glows terracotta at sunset.',
-      readTime: '8 min read',
+      id: 'kattankudy-living-archive',
+      topic: 'Community & Craft',
+      title: 'Kattankudy’s Living Archive',
+      summary: 'A coastal town’s heritage museum keeps the memory of trade, craft and daily life on the Batticaloa peninsula.',
+      readTime: '5 min read',
       date: 'Summer 2026',
-      image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=800&q=80',
-      content: `The Enrosadira is the Ladin word for the phenomenon that turns the Pale Mountains into burning embers at dusk. Walking between high-altitude huts, your pack feels lighter with each passing col. Up here, above the treeline at 2,400 meters, cell service evaporates, replaced by the steady clank of distant cowbells and the whistle of alpine marmots. Dinner is hearty polenta with wild foraged chanterelles, eaten beside wood stoves while topographic route maps are studied by lantern light for tomorrow's descent through the larch valleys.`,
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Heritage_Museum%2C_Kattankudy.jpg/1280px-Heritage_Museum%2C_Kattankudy.jpg',
+      content: `Kattankudy runs narrow and long along the sea, and its museum is a fine distillation of that compressed coastal life. Inside, cases hold fishing tackle, handloom textiles and household objects that trace a community’s relationship with the ocean and with trade routes that reached across the bay. The story told here is not of grand monuments but of ordinary ingenuity — how a town fed itself, built its houses, and carried its crafts forward. It is a useful pause between beaches, and a reminder that the Eastern Shore’s richest heritage is often domestic.`,
     },
     {
       id: 'eastern-shoreline-solitude',
@@ -187,13 +187,14 @@ export const ASSETS = {
       summary: 'From the quiet sunrise at Maruthamunai to the tranquil lagoon waters of Koddaikallar and the fishing outriggers of Palamunai.',
       readTime: '5 min read',
       date: 'Spring 2026',
-      image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Nintavur_Beach.jpg/1280px-Nintavur_Beach.jpg',
       content: `At latitude 7.4394° N, the sunrise begins as a violet brushstroke across the open Indian Ocean. By 6:00 AM, the beach at Maruthamunai is alive with quiet purpose—wooden outrigger canoes arriving through gentle surf with the morning catch, and the rhythmic clatter of handloom shuttles beginning in nearby artisan cottages. Continuing south toward Kalmunai's illuminated beach mosque and Koddaikallar lagoon, the landscape shifts between open ocean spray and mirror-still inland waters where white egrets wade in tranquility.`,
     },
   ],
   cta: {
-    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2000&q=80',
-    alt: 'Dramatic sunrise silhouette over misty peaks and ancient rock fortress',
+    image:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Kallady_Beach_05.jpg/1280px-Kallady_Beach_05.jpg',
+    alt: 'Wide ocean bay at Kallady beach, Batticaloa, on the Eastern Shore of Sri Lanka',
   },
 };
 

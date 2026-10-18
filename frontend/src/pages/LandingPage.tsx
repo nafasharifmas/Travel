@@ -24,32 +24,25 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-100 text-charcoal-950 font-sans selection:bg-gold-500/25 selection:text-charcoal-950">
-      {/* SECTION 2: Cinematic Hero */}
+    <div className="min-h-screen bg-ivory-100 text-navy-600 font-sans">
+      {/* Cinematic hero with floating destination search */}
       <HeroSection
         onExploreClick={handleExploreClick}
         onDiscoverClick={handleDiscoverClick}
       />
 
-      {/* SECTION 3: Interactive Travel Search (Floating Panel) */}
       <TravelSearch />
 
-      {/* SECTION 4: Curated Destinations */}
       <DestinationSection />
 
-      {/* SECTION 5: Signature Experiences */}
       <ExperienceSection />
 
-      {/* SECTION 6: Immersive Editorial Feature */}
       <EditorialFeature />
 
-      {/* SECTION 7: How It Works */}
       <HowItWorks />
 
-      {/* SECTION 8: Featured Journal */}
       <JournalSection />
 
-      {/* SECTION 9: Final Call to Action */}
       <FinalCallToAction />
     </div>
   );
