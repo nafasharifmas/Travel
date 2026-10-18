@@ -3,18 +3,18 @@ import { Place, Category } from '../types';
 import { api } from '../services/api';
 import { PlaceCard } from '../components/discovery/PlaceCard';
 import { MapCanvas } from '../components/discovery/MapCanvas';
+import { useGeolocation } from '../hooks/useGeolocation';
 import {
   DEFAULT_USER_LOCATION,
   calculateDistanceKm,
   EASTERN_PROVINCE_ORDER,
+  EASTERN_CORRIDOR_BOUNDS,
 } from '../utils/geo';
 import {
   Compass,
-  Sparkles,
-  Map,
+  Map as MapIcon,
   List,
   AlertCircle,
-  Loader2,
   Navigation,
   LocateFixed,
   Route as RouteIcon,
@@ -25,7 +25,42 @@ import {
   Grid3X3,
   Columns2,
   RotateCcw,
+  Waves,
+  Landmark,
+  MapPin,
 } from 'lucide-react';
+
+type ScopeTab = 'eastern' | 'all' | 'coastal' | 'heritage';
+type DistanceFilter = 'all' | '5' | '10' | '25';
+
+const SCOPE_TABS: { id: ScopeTab; label: string; icon: React.ElementType; hint?: string }[] = [
+  { id: 'eastern', label: 'Eastern Coast Corridor', icon: Navigation, hint: '10 stops' },
+  { id: 'all', label: 'All Sri Lanka', icon: Compass },
+  { id: 'coastal', label: 'Coastal & Marine', icon: Waves },
+  { id: 'heritage', label: 'Sacred & Cultural', icon: Landmark },
+];
+
+const DISTANCE_OPTIONS: { id: DistanceFilter; label: string }[] = [
+  { id: 'all', label: 'Any distance' },
+  { id: '5', label: 'Within 5 km' },
+  { id: '10', label: 'Within 10 km' },
+  { id: '25', label: 'Within 25 km' },
+];
+
+const CardSkeleton: React.FC = () => (
+  <div className="card overflow-hidden animate-pulse">
+    <div className="aspect-[16/10] bg-navy-100" />
+    <div className="p-5 space-y-3">
+      <div className="h-4 w-3/4 rounded bg-navy-100" />
+      <div className="h-3 w-full rounded bg-navy-100" />
+      <div className="h-3 w-5/6 rounded bg-navy-100" />
+      <div className="pt-3 border-t border-navy-100 flex justify-between">
+        <div className="h-3 w-24 rounded bg-navy-100" />
+        <div className="h-8 w-28 rounded-btn bg-navy-100" />
+      </div>
+    </div>
+  </div>
+);
 
 export const PublicDiscoveryPage: React.FC = () => {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -35,21 +70,32 @@ export const PublicDiscoveryPage: React.FC = () => {
 
   // Filter state
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [sort, setSort] = useState('distance_asc'); // Default: closest to user location!
+  const [distanceFilter, setDistanceFilter] = useState<DistanceFilter>('all');
+  const [sort, setSort] = useState('distance_asc');
   const [selectedPlaceForMap, setSelectedPlaceForMap] = useState<Place | null>(null);
   const [hoveredPlace, setHoveredPlace] = useState<Place | null>(null);
 
-  // Scope Tab: 'eastern' (the 10 core destinations within 25 km), 'all' (all 23), 'heritage', 'coastal'
-  const [scopeTab, setScopeTab] = useState<'eastern' | 'all' | 'heritage' | 'coastal'>('eastern');
+  // Geographic scope: 'eastern' (the 10 core destinations), 'all', 'coastal', 'heritage'
+  const [scopeTab, setScopeTab] = useState<ScopeTab>('eastern');
 
   // Desktop view mode: 'split' | 'cards' | 'map'
   const [desktopView, setDesktopView] = useState<'split' | 'cards' | 'map'>('split');
 
-  // Mobile layout switcher: 'cards' | 'map'
+  // Mobile/tablet layout switcher: 'cards' | 'map'
   const [mobileTab, setMobileTab] = useState<'cards' | 'map'>('cards');
 
-  // Load initial categories
+  // Mobile filter drawer
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
+  // Real device geolocation with a hard fallback to the verified origin anchor.
+  const geo = useGeolocation();
+  const origin = geo.coordinates;
+  const originLat = origin[0];
+  const originLng = origin[1];
+
+  // Load categories
   useEffect(() => {
     api
       .getCategories()
@@ -57,35 +103,58 @@ export const PublicDiscoveryPage: React.FC = () => {
       .catch((err) => console.error('Failed to load categories:', err));
   }, []);
 
-  // Fetch places
+  // Debounce the free-text search so typing does not hammer the API (250 ms).
   useEffect(() => {
+    const handle = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => window.clearTimeout(handle);
+  }, [search]);
+
+  // Fetch places whenever the debounced search or category changes.
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setError(null);
 
     api
       .getPlaces({
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         category: selectedCategory || undefined,
       })
       .then((res) => {
-        let fetched = res.places;
-        setPlaces(fetched);
+        if (cancelled) return;
+        setPlaces(res.places);
       })
       .catch((err) => {
-        setError(err.message || 'Failed to fetch places catalogue.');
+        if (cancelled) return;
+        setError(err.message || 'Failed to fetch the destination catalogue.');
       })
       .finally(() => {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       });
-  }, [search, selectedCategory]);
 
-  // Filter and sort places in memory based on scopeTab and sort options
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch, selectedCategory]);
+
+  // Lock body scroll while the mobile filter drawer is open.
+  useEffect(() => {
+    document.body.style.overflow = isFiltersOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFiltersOpen]);
+
+  // Filter + sort in memory (scope, distance, ordering).
   const displayedPlaces = useMemo(() => {
+    const distanceFromOrigin = (p: Place): number | null =>
+      p.lat && p.lng ? calculateDistanceKm(originLat, originLng, p.lat, p.lng) : null;
+
     let list = [...places];
 
-    // Filter by Scope Tab
     if (scopeTab === 'eastern') {
-      // The 10 Eastern Province places within 25 km of 7.439374, 81.817172
+      // The Eastern corridor is a fixed geographic definition (anchored at Maruthamunai),
+      // independent of the visitor's device location.
       list = list.filter((p) => {
         if (!p.lat || !p.lng) return false;
         const d = calculateDistanceKm(
@@ -113,23 +182,17 @@ export const PublicDiscoveryPage: React.FC = () => {
       });
     }
 
-    // Sort places
-    if (sort === 'distance_asc') {
-      list.sort((a, b) => {
-        const dA = calculateDistanceKm(
-          DEFAULT_USER_LOCATION[0],
-          DEFAULT_USER_LOCATION[1],
-          a.lat,
-          a.lng
-        );
-        const dB = calculateDistanceKm(
-          DEFAULT_USER_LOCATION[0],
-          DEFAULT_USER_LOCATION[1],
-          b.lat,
-          b.lng
-        );
-        return dA - dB;
+    // Distance ceiling relative to the active origin.
+    if (distanceFilter !== 'all') {
+      const limit = Number(distanceFilter);
+      list = list.filter((p) => {
+        const d = distanceFromOrigin(p);
+        return d !== null && d <= limit;
       });
+    }
+
+    if (sort === 'distance_asc') {
+      list.sort((a, b) => (distanceFromOrigin(a) ?? Infinity) - (distanceFromOrigin(b) ?? Infinity));
     } else if (sort === 'stop_order') {
       list.sort((a, b) => {
         const orderA = a.slug ? EASTERN_PROVINCE_ORDER[a.slug] || 999 : 999;
@@ -141,234 +204,370 @@ export const PublicDiscoveryPage: React.FC = () => {
     }
 
     return list;
-  }, [places, scopeTab, sort]);
+  }, [places, scopeTab, sort, distanceFilter, originLat, originLng]);
 
   const handleResetFilters = () => {
     setSearch('');
+    setDebouncedSearch('');
     setSelectedCategory(null);
+    setDistanceFilter('all');
     setSort('distance_asc');
     setScopeTab('eastern');
     setSelectedPlaceForMap(null);
   };
 
-  const activeFiltersCount =
-    (search ? 1 : 0) +
-    (selectedCategory ? 1 : 0) +
-    (sort !== 'distance_asc' ? 1 : 0) +
-    (scopeTab !== 'eastern' ? 1 : 0);
+  const activeFilters = useMemo(() => {
+    const list: { key: string; label: string; clear: () => void }[] = [];
+    if (search) list.push({ key: 'search', label: `“${search}”`, clear: () => setSearch('') });
+    if (selectedCategory) {
+      const cat = categories.find((c) => c.slug === selectedCategory);
+      list.push({
+        key: 'category',
+        label: cat?.name || selectedCategory,
+        clear: () => setSelectedCategory(null),
+      });
+    }
+    if (distanceFilter !== 'all') {
+      const opt = DISTANCE_OPTIONS.find((o) => o.id === distanceFilter);
+      list.push({
+        key: 'distance',
+        label: opt?.label || `Within ${distanceFilter} km`,
+        clear: () => setDistanceFilter('all'),
+      });
+    }
+    if (scopeTab !== 'eastern') {
+      const tab = SCOPE_TABS.find((t) => t.id === scopeTab);
+      list.push({ key: 'scope', label: tab?.label || scopeTab, clear: () => setScopeTab('eastern') });
+    }
+    if (sort !== 'distance_asc') {
+      const label =
+        sort === 'stop_order' ? 'Corridor sequence' : sort === 'name_asc' ? 'Name A–Z' : sort;
+      list.push({ key: 'sort', label: label, clear: () => setSort('distance_asc') });
+    }
+    return list;
+  }, [search, selectedCategory, distanceFilter, scopeTab, sort, categories]);
+
+  const activeFiltersCount = activeFilters.length;
+  const originLabel = geo.isUsingDeviceLocation ? 'your location' : 'the Maruthamunai anchor';
+
+  const proximitySortLabel = geo.isUsingDeviceLocation
+    ? 'Proximity (nearest to my location)'
+    : 'Proximity (nearest to 7.4394, 81.8172)';
+
+  const handleSelectOnMap = (p: Place) => {
+    setSelectedPlaceForMap(p);
+    if (window.innerWidth < 1024) setMobileTab('map');
+  };
+
+  /* ---------------------------------------------------------------- toolbar */
+  const CategorySelect = (
+    <label className="flex items-center gap-1.5 text-xs font-semibold text-navy-600">
+      <SlidersHorizontal className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+      <span className="sr-only sm:not-sr-only">Category</span>
+      <select
+        value={selectedCategory || ''}
+        onChange={(e) => setSelectedCategory(e.target.value || null)}
+        aria-label="Filter by category"
+        className="field !w-auto py-2 text-xs font-semibold"
+      >
+        <option value="">All Categories ({categories.length})</option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.slug}>
+            {c.name}
+            {c.places_count !== undefined ? ` (${c.places_count})` : ''}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  const DistanceSelect = (
+    <label className="flex items-center gap-1.5 text-xs font-semibold text-navy-600">
+      <MapPin className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+      <span className="sr-only sm:not-sr-only">Distance</span>
+      <select
+        value={distanceFilter}
+        onChange={(e) => setDistanceFilter(e.target.value as DistanceFilter)}
+        aria-label="Filter by distance"
+        className="field !w-auto py-2 text-xs font-semibold"
+      >
+        {DISTANCE_OPTIONS.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  const SortSelect = (
+    <label className="flex items-center gap-1.5 text-xs font-semibold text-navy-600">
+      <ArrowUpDown className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+      <span className="sr-only sm:not-sr-only">Sort</span>
+      <select
+        value={sort}
+        onChange={(e) => setSort(e.target.value)}
+        aria-label="Sort destinations"
+        className="field !w-auto py-2 text-xs font-semibold"
+      >
+        <option value="distance_asc">{proximitySortLabel}</option>
+        <option value="stop_order">Corridor sequence (#1 to #10)</option>
+        <option value="name_asc">Name (A – Z)</option>
+      </select>
+    </label>
+  );
+
+  const ViewSwitcher = (
+    <div
+      className="hidden lg:flex items-center gap-1 bg-navy-100 p-1 rounded-btn border border-navy-200"
+      role="group"
+      aria-label="Display mode"
+    >
+      {(
+        [
+          { id: 'split', icon: Columns2, title: 'Split: cards and map' },
+          { id: 'cards', icon: Grid3X3, title: 'Cards grid only' },
+          { id: 'map', icon: MapIcon, title: 'Map only' },
+        ] as const
+      ).map((v) => (
+        <button
+          key={v.id}
+          type="button"
+          onClick={() => setDesktopView(v.id)}
+          aria-pressed={desktopView === v.id}
+          title={v.title}
+          aria-label={v.title}
+          className={`grid place-items-center w-9 h-9 rounded-[9px] transition-all ${
+            desktopView === v.id
+              ? 'bg-white text-ocean-600 shadow-sm'
+              : 'text-navy-500 hover:text-navy-900'
+          }`}
+        >
+          <v.icon className="w-4 h-4" />
+        </button>
+      ))}
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-ivory-100 pt-20">
-      {/* Editorial Header Section */}
-      <section className="bg-charcoal-950 text-white border-b border-sand-400/15 py-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto space-y-5">
-          {/* Eyebrow and Origin Telemetry Pill */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/15 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-wider uppercase">
-              <Sparkles className="w-3.5 h-3.5" />
-              Spatial Trajectory & Route Discovery
-            </div>
+    <div className="min-h-screen bg-ivory-100 pt-16 lg:pt-[76px]">
+      {/* ---------- Compact discovery hero ---------- */}
+      <section className="hidden">
+        <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-turquoise-500/20 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-28 -left-10 w-80 h-80 rounded-full bg-ocean-400/20 blur-3xl pointer-events-none" />
 
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-950/80 border border-sky-400/40 text-sky-200 text-xs font-bold shadow-sm">
-              <LocateFixed className="w-4 h-4 text-sky-400" />
-              <span>
-                Anchor: <strong>7.439374, 81.817172</strong> (Maruthamunai / Kalmunai)
+        <div className="container-page relative z-10 py-10 lg:py-14 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="eyebrow text-turquoise-300">
+              <RouteIcon className="w-3.5 h-3.5" />
+              Route discovery
+            </span>
+
+            {/* Verified origin context + opt-in device location */}
+            <div className="hidden flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-pill bg-white/10 border border-white/20 backdrop-blur-md text-[11px] text-white">
+                <LocateFixed className="w-3.5 h-3.5 text-turquoise-300" />
+                <span>
+                  {geo.isUsingDeviceLocation ? 'Your location' : 'Anchor'}:{' '}
+                  <strong className="font-semibold">
+                    {origin[0].toFixed(4)}, {origin[1].toFixed(4)}
+                  </strong>
+                </span>
               </span>
+
+              <button
+                type="button"
+                onClick={geo.isUsingDeviceLocation ? geo.resetToAnchor : geo.requestLocation}
+                disabled={geo.status === 'locating'}
+                className="btn-on-dark btn-sm"
+              >
+                <LocateFixed className="w-3.5 h-3.5 text-turquoise-300" />
+                {geo.status === 'locating'
+                  ? 'Locating…'
+                  : geo.isUsingDeviceLocation
+                  ? 'Reset to anchor'
+                  : 'Use my location'}
+              </button>
             </div>
           </div>
 
-          <div className="max-w-3xl space-y-2">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-ivory-50 tracking-tight leading-[1.15]">
-              Explore the <span className="text-gold-400">Eastern Corridor</span> & Beyond
+          <div className="max-w-3xl space-y-3">
+            <h1 className="text-h1 text-white">
+              Explore the <span className="italic text-turquoise-300">Eastern Corridor</span> &amp;
+              Beyond
             </h1>
-            <p className="text-sand-300 text-xs sm:text-sm leading-relaxed font-sans max-w-2xl">
-              Immerse yourself in verified coastal sanctuaries, sacred temples, and historic trade museums. All spatial trajectories and travel times are measured continuously from your coordinates at <strong>7.439374, 81.817172</strong>.
+            <p className="text-sm sm:text-base text-navy-100 leading-relaxed max-w-2xl">
+              Verified coastal sanctuaries, sacred temples and living heritage museums — every
+              distance measured from {originLabel} at{' '}
+              <strong className="font-semibold text-white">
+                {origin[0].toFixed(4)}, {origin[1].toFixed(4)}
+              </strong>
+              .
             </p>
           </div>
 
-          {/* Curated Scope Switcher Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pt-2 scrollbar-none">
-            <button
-              type="button"
-              onClick={() => setScopeTab('eastern')}
-              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                scopeTab === 'eastern'
-                  ? 'bg-gold-500 text-charcoal-950 shadow-md font-black'
-                  : 'bg-charcoal-900 text-sand-300 hover:bg-charcoal-850 hover:text-white border border-sand-400/15'
-              }`}
+          {geo.error && (
+            <div
+              role="status"
+              className="inline-flex items-start gap-2 px-3.5 py-2.5 rounded-btn bg-navy-950/50 border border-white/15 text-[11px] text-navy-100 max-w-xl"
             >
-              <Navigation className="w-3.5 h-3.5 text-sky-400" />
-              Eastern Coast Corridor (&lt;25 km)
-              <span className="px-1.5 py-0.5 rounded-md bg-charcoal-950/40 text-[10px]">
-                10 Stops
-              </span>
-            </button>
+              <AlertCircle className="w-3.5 h-3.5 text-turquoise-300 shrink-0 mt-0.5" />
+              <span>{geo.error}</span>
+            </div>
+          )}
 
+          {/* Scope tabs */}
+          <div
+            className="flex items-center gap-2 overflow-x-auto pb-1"
+            role="group"
+            aria-label="Geographic scope"
+          >
+            {SCOPE_TABS.map((tab) => {
+              const active = scopeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setScopeTab(tab.id)}
+                  aria-pressed={active}
+                  className={`shrink-0 inline-flex items-center gap-2 min-h-[40px] px-4 rounded-pill text-xs font-semibold border transition-all duration-200 ${
+                    active
+                      ? 'bg-turquoise-500 text-navy-950 border-transparent shadow-card'
+                      : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                  {tab.hint && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded-pill text-[10px] ${
+                        active ? 'bg-navy-950/25 text-navy-950' : 'bg-white/15 text-white'
+                      }`}
+                    >
+                      {tab.hint}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
             <button
               type="button"
-              onClick={() => setScopeTab('all')}
-              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                scopeTab === 'all'
-                  ? 'bg-gold-500 text-charcoal-950 shadow-md font-black'
-                  : 'bg-charcoal-900 text-sand-300 hover:bg-charcoal-850 hover:text-white border border-sand-400/15'
-              }`}
+              onClick={() => {
+                setScopeTab('eastern');
+                setDistanceFilter('10');
+                setSort('distance_asc');
+              }}
+              className="shrink-0 inline-flex items-center gap-2 min-h-[40px] px-4 rounded-pill text-xs font-semibold border border-sunset-300/70 bg-sunset-400 text-navy-950 shadow-card transition-colors hover:bg-sunset-300"
             >
               <Compass className="w-3.5 h-3.5" />
-              All Sri Lanka
-              <span className="px-1.5 py-0.5 rounded-md bg-charcoal-950/40 text-[10px]">
-                23 Places
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setScopeTab('coastal')}
-              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                scopeTab === 'coastal'
-                  ? 'bg-gold-500 text-charcoal-950 shadow-md font-black'
-                  : 'bg-charcoal-900 text-sand-300 hover:bg-charcoal-850 hover:text-white border border-sand-400/15'
-              }`}
-            >
-              🌊 Coastal & Marine
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setScopeTab('heritage')}
-              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                scopeTab === 'heritage'
-                  ? 'bg-gold-500 text-charcoal-950 shadow-md font-black'
-                  : 'bg-charcoal-900 text-sand-300 hover:bg-charcoal-850 hover:text-white border border-sand-400/15'
-              }`}
-            >
-              🏛️ Sacred & Cultural
+              Suitable places
             </button>
           </div>
         </div>
       </section>
 
-      {/* Control Surface: Search, Categories & View Switcher */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-        <div className="bg-white rounded-2xl p-4 border border-sand-200/90 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-sand-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search destinations, beaches, lagoons, temples or museums..."
-              className="w-full pl-10 pr-9 py-2.5 bg-sand-50/80 border border-sand-200 rounded-xl text-xs sm:text-sm text-charcoal-950 placeholder-sand-500 focus:bg-white focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
-            />
-            {search && (
+      {/* ---------- Unified filter toolbar ---------- */}
+      <div className="container-page pt-5">
+        <div className="card p-3 sm:p-4 space-y-3">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-500 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search beaches, lagoons, temples or museums…"
+                aria-label="Search destinations"
+                className="field pl-10 pr-10"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 grid place-items-center w-7 h-7 rounded-full text-navy-500 hover:text-navy-900 hover:bg-navy-100"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Desktop filters */}
+              <div className="hidden lg:flex flex-wrap items-center gap-3">
+                {CategorySelect}
+                {DistanceSelect}
+                {SortSelect}
+                {ViewSwitcher}
+              </div>
+
+              {/* Mobile filter trigger */}
               <button
                 type="button"
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-sand-500 hover:text-charcoal-950"
+                onClick={() => setIsFiltersOpen(true)}
+                className="lg:hidden btn-secondary btn-sm"
+                aria-haspopup="dialog"
+                aria-expanded={isFiltersOpen}
               >
-                <X className="w-3.5 h-3.5" />
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+                {activeFiltersCount > 0 && (
+                  <span className="grid place-items-center min-w-[18px] h-[18px] px-1 rounded-full bg-ocean-500 text-white text-[10px] font-black">
+                    {activeFiltersCount}
+                  </span>
+                )}
               </button>
-            )}
+
+              {activeFiltersCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-btn text-xs font-bold text-sunset-600 bg-sunset-50 hover:bg-sunset-100 border border-sunset-200 transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Category Dropdown & Proximity Sort */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-charcoal-700 font-semibold">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-gold-600" />
-              <select
-                value={selectedCategory || ''}
-                onChange={(e) => setSelectedCategory(e.target.value || null)}
-                className="px-3 py-2 bg-sand-50 border border-sand-200 rounded-xl text-xs font-semibold text-charcoal-900 focus:ring-1 focus:ring-gold-500"
-              >
-                <option value="">All Categories ({categories.length})</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.slug}>
-                    {c.name} {c.places_count !== undefined ? `(${c.places_count})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Active filters + result count */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-navy-100">
+            <span className="text-xs font-semibold text-navy-700 pt-1.5">
+              {loading ? 'Loading…' : `${displayedPlaces.length} destinations`}
+            </span>
+            <span className="text-[11px] text-navy-500 pt-1.5">
+              · measured from {originLabel}
+            </span>
 
-            <div className="flex items-center gap-1.5 text-xs text-charcoal-700 font-semibold">
-              <ArrowUpDown className="w-3.5 h-3.5 text-gold-600" />
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="px-3 py-2 bg-sand-50 border border-sand-200 rounded-xl text-xs font-semibold text-charcoal-900 focus:ring-1 focus:ring-gold-500"
-              >
-                <option value="distance_asc">Proximity (Nearest to 7.4394, 81.8172)</option>
-                <option value="stop_order">Corridor Sequence (#1 to #10)</option>
-                <option value="name_asc">Name (A – Z)</option>
-              </select>
-            </div>
-
-            {/* Desktop View Switcher */}
-            <div className="hidden lg:flex items-center gap-1 bg-sand-100 p-1 rounded-xl border border-sand-200">
+            {activeFilters.map((f) => (
               <button
+                key={f.key}
                 type="button"
-                onClick={() => setDesktopView('split')}
-                title="Split screen (Cards & Map)"
-                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                  desktopView === 'split'
-                    ? 'bg-white text-charcoal-950 shadow-sm'
-                    : 'text-charcoal-700 hover:text-charcoal-950'
-                }`}
+                onClick={f.clear}
+                className="inline-flex items-center gap-1.5 pt-1.5 text-[11px] font-semibold text-ocean-700 bg-ocean-50 border border-ocean-100 px-2.5 py-1 rounded-pill hover:bg-ocean-100 transition-colors"
               >
-                <Columns2 className="w-4 h-4" />
+                {f.label}
+                <X className="w-3 h-3" />
+                <span className="sr-only">Remove filter</span>
               </button>
-              <button
-                type="button"
-                onClick={() => setDesktopView('cards')}
-                title="Cards grid only"
-                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                  desktopView === 'cards'
-                    ? 'bg-white text-charcoal-950 shadow-sm'
-                    : 'text-charcoal-700 hover:text-charcoal-950'
-                }`}
-              >
-                <Grid3X3 className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setDesktopView('map')}
-                title="Interactive map only"
-                className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                  desktopView === 'map'
-                    ? 'bg-white text-charcoal-950 shadow-sm'
-                    : 'text-charcoal-700 hover:text-charcoal-950'
-                }`}
-              >
-                <Map className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Reset Filters Button */}
-            {activeFiltersCount > 0 && (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Reset
-              </button>
-            )}
+            ))}
           </div>
         </div>
 
-        {/* Mobile Tab Switcher */}
-        <div className="flex lg:hidden items-center justify-between mt-3 bg-white p-2 rounded-xl border border-sand-200 shadow-sm">
-          <span className="text-xs font-bold text-charcoal-800 pl-2">
-            {displayedPlaces.length} Destinations
+        {/* Mobile / tablet cards ↔ map switch */}
+        <div className="flex lg:hidden items-center justify-between mt-3 card p-2">
+          <span className="text-xs font-bold text-navy-800 pl-2">
+            {displayedPlaces.length} destinations
           </span>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setMobileTab('cards')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                mobileTab === 'cards'
-                  ? 'bg-gold-500 text-charcoal-950 shadow-sm'
-                  : 'text-charcoal-700 hover:bg-sand-100'
+              aria-pressed={mobileTab === 'cards'}
+              className={`inline-flex items-center gap-1.5 min-h-[38px] px-3 rounded-btn text-xs font-bold transition-colors ${
+                mobileTab === 'cards' ? 'bg-ocean-500 text-white shadow-card' : 'text-navy-600 hover:bg-navy-100'
               }`}
             >
               <List className="w-3.5 h-3.5" />
@@ -377,72 +576,63 @@ export const PublicDiscoveryPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setMobileTab('map')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                mobileTab === 'map'
-                  ? 'bg-gold-500 text-charcoal-950 shadow-sm'
-                  : 'text-charcoal-700 hover:bg-sand-100'
+              aria-pressed={mobileTab === 'map'}
+              className={`inline-flex items-center gap-1.5 min-h-[38px] px-3 rounded-btn text-xs font-bold transition-colors ${
+                mobileTab === 'map' ? 'bg-ocean-500 text-white shadow-card' : 'text-navy-600 hover:bg-navy-100'
               }`}
             >
-              <Map className="w-3.5 h-3.5" />
+              <MapIcon className="w-3.5 h-3.5" />
               Live Route Map
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Discovery Canvas */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      {/* ---------- Discovery canvas ---------- */}
+      <div className="container-page py-6 pb-16">
         {loading ? (
-          <div className="py-28 flex flex-col items-center justify-center text-charcoal-600">
-            <Loader2 className="w-9 h-9 text-gold-500 animate-spin mb-3" />
-            <p className="text-sm font-serif font-bold text-charcoal-900">
-              Measuring spatial coordinates and routes...
-            </p>
-            <p className="text-xs text-sand-500 mt-1">
-              Calculating distances from 7.439374, 81.817172
-            </p>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))}
+            </div>
+            <div className="hidden lg:block lg:col-span-5 h-[min(75vh,760px)] rounded-card bg-navy-100 animate-pulse" />
           </div>
         ) : error ? (
-          <div className="my-10 p-8 bg-red-50 border border-red-200 rounded-3xl text-center text-red-900 max-w-2xl mx-auto space-y-3">
-            <AlertCircle className="w-9 h-9 text-red-600 mx-auto" />
-            <h3 className="text-base font-bold">Failed to load destination catalogue</h3>
-            <p className="text-xs text-red-700">{error}</p>
-            <button
-              onClick={handleResetFilters}
-              className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold shadow-sm"
-            >
-              Reset Filters
+          <div className="my-6 p-8 card max-w-2xl mx-auto text-center space-y-3">
+            <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
+            <h2 className="text-h4 text-navy-900">Failed to load the destination catalogue</h2>
+            <p className="text-sm text-navy-500">{error}</p>
+            <p className="text-xs text-navy-500">
+              The Visitflow API is not reachable right now. Distances and routes appear once the
+              catalogue loads.
+            </p>
+            <button type="button" onClick={handleResetFilters} className="btn-primary">
+              <RotateCcw className="w-4 h-4" />
+              Reset filters and retry
             </button>
           </div>
         ) : displayedPlaces.length === 0 ? (
-          <div className="my-12 py-16 text-center bg-white rounded-3xl border border-sand-200 p-8 max-w-xl mx-auto shadow-sm space-y-3">
-            <Compass className="w-12 h-12 text-sand-400 mx-auto" />
-            <h3 className="text-lg font-serif font-bold text-charcoal-950">
-              No destinations match your criteria
-            </h3>
-            <p className="text-xs text-charcoal-600 max-w-sm mx-auto">
-              Try adjusting your search keywords, broadening your category selection, or switching back to the Eastern Coast Corridor.
+          <div className="my-6 py-14 px-6 card max-w-xl mx-auto text-center space-y-3">
+            <Compass className="w-12 h-12 text-navy-300 mx-auto" />
+            <h2 className="text-h4 text-navy-900">No destinations match your criteria</h2>
+            <p className="text-sm text-navy-500">
+              Try a different keyword, widen the distance, or return to the Eastern Coast Corridor.
             </p>
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="mt-2 px-5 py-2.5 bg-gold-500 text-charcoal-950 rounded-xl text-xs font-bold shadow-md hover:bg-gold-400"
-            >
-              View 10 Eastern Coast Stops
+            <button type="button" onClick={handleResetFilters} className="btn-primary">
+              Back to the 10 Eastern stops
             </button>
           </div>
         ) : (
-          /* View Mode Render: Split, Cards Only, or Map Only */
           <div
             className={`grid gap-6 items-start ${
-              desktopView === 'split'
-                ? 'grid-cols-1 lg:grid-cols-12'
-                : 'grid-cols-1'
+              desktopView === 'split' ? 'grid-cols-1 lg:grid-cols-12' : 'grid-cols-1'
             }`}
           >
-            {/* Left Cards Feed Column */}
+            {/* Cards column */}
             <div
-              className={`space-y-4 ${
+              className={`${
                 desktopView === 'split'
                   ? 'lg:col-span-7'
                   : desktopView === 'cards'
@@ -450,71 +640,133 @@ export const PublicDiscoveryPage: React.FC = () => {
                   : 'hidden'
               } ${mobileTab === 'map' ? 'hidden lg:block' : 'block'}`}
             >
-              {/* Counter and proximity indicator */}
-              <div className="flex items-center justify-between text-xs text-charcoal-600 font-medium px-1">
-                <span>
-                  Showing <strong>{displayedPlaces.length}</strong> destinations · Measured from{' '}
-                  <span className="font-semibold text-charcoal-900">7.4394, 81.8172</span>
-                </span>
-
-                {scopeTab === 'eastern' && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                    <Navigation className="w-3 h-3 text-amber-600" />
-                    Eastern Province Strip
-                  </span>
-                )}
-              </div>
-
-              {/* Cards Grid */}
-              <div
-                className={`grid gap-5 ${
-                  desktopView === 'cards'
-                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-                    : 'grid-cols-1 sm:grid-cols-2'
-                }`}
-              >
+              <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
                 {displayedPlaces.map((place) => (
                   <PlaceCard
                     key={place.id}
                     place={place}
+                    userLocation={origin}
                     isSelected={
-                      selectedPlaceForMap?.id === place.id ||
-                      hoveredPlace?.id === place.id
+                      selectedPlaceForMap?.id === place.id || hoveredPlace?.id === place.id
                     }
                     onHover={setHoveredPlace}
-                    onSelectOnMap={(p) => {
-                      setSelectedPlaceForMap(p);
-                      if (window.innerWidth < 1024) {
-                        setMobileTab('map');
-                      }
-                    }}
+                    onSelectOnMap={handleSelectOnMap}
                   />
                 ))}
               </div>
+
+              {desktopView === 'cards' && (
+                <p className="text-[11px] text-navy-500 mt-4 text-center">
+                  Route map hidden in cards-only mode — switch to split view to see markers.
+                </p>
+              )}
             </div>
 
-            {/* Right Sticky Map Canvas Column */}
+            {/* Sticky map column */}
             <div
               className={`${
                 desktopView === 'split'
-                  ? 'lg:col-span-5 lg:sticky lg:top-24 h-[480px] lg:h-[calc(100vh-120px)]'
+                  ? 'lg:col-span-5 lg:sticky lg:top-[92px]'
                   : desktopView === 'map'
-                  ? 'col-span-1 h-[78vh]'
+                  ? 'col-span-1'
                   : 'hidden'
               } ${mobileTab === 'cards' ? 'hidden lg:block' : 'block'}`}
             >
-              <MapCanvas
-                places={displayedPlaces}
-                selectedPlace={selectedPlaceForMap || hoveredPlace}
-                onSelectPlace={(p) => setSelectedPlaceForMap(p)}
-                userLocation={DEFAULT_USER_LOCATION}
-                showRoute={true}
-                height="100%"
-              />
+              <div
+                className={`rounded-card overflow-hidden border border-navy-200 shadow-card ${
+                  desktopView === 'split'
+                    ? 'h-[65vh] lg:h-[min(75vh,760px)]'
+                    : 'h-[70vh] lg:h-[min(78vh,820px)]'
+                }`}
+              >
+                <MapCanvas
+                  places={displayedPlaces}
+                  selectedPlace={selectedPlaceForMap || hoveredPlace}
+                  onSelectPlace={(p) => setSelectedPlaceForMap(p)}
+                  userLocation={origin}
+                  showRoute={true}
+                  height="100%"
+                />
+              </div>
+
+              {/* Route summary under the sticky map */}
+              <div className="hidden lg:flex items-center justify-between gap-3 mt-3 text-[11px] text-navy-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <RouteIcon className="w-3.5 h-3.5 text-ocean-500" />
+                  {selectedPlaceForMap
+                    ? `Route line drawn to ${selectedPlaceForMap.name}`
+                    : 'Select a destination to draw its route'}
+                </span>
+                <span className="text-navy-500">
+                  Map data © OpenStreetMap · corridor bounds{' '}
+                  {EASTERN_CORRIDOR_BOUNDS[0][0].toFixed(2)}–{EASTERN_CORRIDOR_BOUNDS[1][0].toFixed(2)}° N
+                </span>
+              </div>
             </div>
           </div>
         )}
-      </main>
+      </div>
+
+      {/* ---------- Mobile filter drawer ---------- */}
+      {isFiltersOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Filter destinations"
+          className="lg:hidden fixed inset-0 z-[70] flex items-end bg-navy-950/60 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setIsFiltersOpen(false)}
+        >
+          <div
+            className="w-full max-h-[85vh] overflow-y-auto thin-scroll bg-white rounded-t-media shadow-card-hover"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-navy-100 px-5 py-4 flex items-center justify-between">
+              <h2 className="text-h4">Filters</h2>
+              <button
+                type="button"
+                onClick={() => setIsFiltersOpen(false)}
+                aria-label="Close filters"
+                className="grid place-items-center w-10 h-10 rounded-full text-navy-600 hover:bg-navy-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-5">
+              <div className="space-y-1.5">
+                <span className="field-label">Category</span>
+                {CategorySelect}
+              </div>
+              <div className="space-y-1.5">
+                <span className="field-label">Distance</span>
+                {DistanceSelect}
+              </div>
+              <div className="space-y-1.5">
+                <span className="field-label">Sort</span>
+                {SortSelect}
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-navy-100 p-4 flex gap-2.5">
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="btn-secondary flex-1"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsFiltersOpen(false)}
+                className="btn-primary flex-1"
+              >
+                Show {displayedPlaces.length} results
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
