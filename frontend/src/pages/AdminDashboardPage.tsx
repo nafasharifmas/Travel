@@ -7,6 +7,7 @@ import {
   User,
   AuditLogItem,
   AdminMetrics,
+  MediaItem,
 } from '../types';
 import {
   AdminSidebar,
@@ -167,6 +168,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadPlaceId, setUploadPlaceId] = useState<number | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [editingMedia, setEditingMedia] = useState<MediaItem | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -264,7 +266,7 @@ export const AdminDashboardPage: React.FC = () => {
       lng: 80.76,
       opening_hours: '08:00 AM - 05:00 PM',
       contact_info: '',
-      photo_url: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80',
+      photo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Maruthamunai_beach.jpg/1280px-Maruthamunai_beach.jpg',
     });
     setIsPlaceModalOpen(true);
   };
@@ -421,14 +423,31 @@ export const AdminDashboardPage: React.FC = () => {
     if (!uploadPlaceId || !uploadFile) return;
 
     try {
-      await api.uploadPlacePhoto(uploadPlaceId, uploadFile);
-      setMessage('Photograph uploaded, validated, and stored securely.');
+      await api.uploadPlacePhoto(uploadPlaceId, uploadFile, editingMedia?.is_primary ?? false);
+      if (editingMedia) {
+        await api.deletePlaceMedia(editingMedia.id);
+      }
+      setMessage(editingMedia ? 'Photograph replaced successfully.' : 'Photograph uploaded, validated, and stored securely.');
       setIsUploadModalOpen(false);
       setUploadFile(null);
+      setEditingMedia(null);
       loadPlaces();
       loadAuditLogs();
     } catch (err: any) {
       alert(err.message || 'Failed to upload photo.');
+    }
+  };
+
+  const handleDeletePhoto = async (media: MediaItem) => {
+    if (!window.confirm(`Delete ${media.original_name || 'this photograph'}? This cannot be undone.`)) return;
+
+    try {
+      await api.deletePlaceMedia(media.id);
+      setMessage('Photograph deleted successfully.');
+      loadPlaces();
+      loadAuditLogs();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete photo.');
     }
   };
 
@@ -459,6 +478,8 @@ export const AdminDashboardPage: React.FC = () => {
   const adminCount = usersList.filter((u) => u.role === 'admin').length;
   const activeUserCount = usersList.filter((u) => u.is_active).length;
 
+  const uploadPlace = uploadPlaceId ? places.find((place) => place.id === uploadPlaceId) : null;
+
   return (
     <div className="min-h-screen bg-ivory-100 text-charcoal-950">
       {/* CRM Sidebar Navigation */}
@@ -485,7 +506,7 @@ export const AdminDashboardPage: React.FC = () => {
           onAddPlace={handleOpenPlaceCreate}
         />
 
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           {/* Feedback banners */}
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex items-center justify-between shadow-sm">
@@ -1236,7 +1257,7 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
           )}
-        </main>
+        </div>
       </div>
 
       {/* Place Create/Edit Modal */}
@@ -1478,6 +1499,48 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleUploadPhoto} className="space-y-4 text-xs">
+              {uploadPlace?.media && uploadPlace.media.length > 0 && (
+                <div className="space-y-2">
+                  <p className="font-bold text-stone-700">Existing photographs</p>
+                  <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                    {uploadPlace.media.map((media) => (
+                      <div key={media.id} className="flex items-center gap-3 rounded-xl border border-sand-200 p-2">
+                        <img src={media.url} alt={media.original_name || 'Place photograph'} className="h-12 w-16 rounded-lg object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[11px] font-semibold text-charcoal-950">{media.original_name || 'Photograph'}</p>
+                          {media.is_primary && <span className="text-[10px] font-bold text-amber-700">Primary photo</span>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setEditingMedia(media); setUploadFile(null); }}
+                          className="rounded-lg p-1.5 text-stone-500 hover:bg-sand-100 hover:text-charcoal-950"
+                          title="Replace photo"
+                          aria-label={`Replace ${media.original_name || 'photograph'}`}
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePhoto(media)}
+                          className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700"
+                          title="Delete photo"
+                          aria-label={`Delete ${media.original_name || 'photograph'}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {editingMedia && (
+                <div className="flex items-center justify-between rounded-xl bg-ocean-50 px-3 py-2 text-[11px] text-ocean-700">
+                  <span>Replacing {editingMedia.original_name || 'selected photograph'}</span>
+                  <button type="button" onClick={() => setEditingMedia(null)} className="font-bold hover:underline">Clear</button>
+                </div>
+              )}
+
               <div className="p-3 bg-gold-500/[0.07] rounded-xl border border-gold-500/25 text-stone-700 text-[11px] leading-relaxed">
                 Server-side validated: Accepted types: JPEG, PNG, WEBP. Max size: 5 MB. Stored outside the public code tree.
               </div>
@@ -1506,7 +1569,7 @@ export const AdminDashboardPage: React.FC = () => {
                   disabled={!uploadFile}
                   className="px-5 py-2 bg-gold-500 hover:bg-gold-400 text-charcoal-950 rounded-xl font-bold shadow-sm disabled:opacity-50 transition-colors"
                 >
-                  Upload & Validate
+                  {editingMedia ? 'Replace & Validate' : 'Upload & Validate'}
                 </button>
               </div>
             </form>
