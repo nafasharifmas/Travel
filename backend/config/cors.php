@@ -19,7 +19,13 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    // Comma-separated list of origins allowed to call the API. Defaults to `*`
+    // for local development; set CORS_ALLOWED_ORIGINS to your deployed frontend
+    // origin(s) in production, e.g. "https://visitflow.vercel.app".
+    'allowed_origins' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('CORS_ALLOWED_ORIGINS', '*')),
+    ))),
 
     'allowed_origins_patterns' => [],
 
