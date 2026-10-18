@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ItineraryProvider } from './context/ItineraryContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { SiteHeader } from './components/navigation/SiteHeader';
 import { SiteFooter } from './components/landing/SiteFooter';
 import { ItineraryDrawer } from './components/itinerary/ItineraryDrawer';
@@ -20,7 +21,7 @@ const AppShell: React.FC = () => {
   const isConsoleRoute = location.pathname.startsWith('/admin');
 
   return (
-    <div className="min-h-screen flex flex-col bg-ivory-100 selection:bg-gold-500/25 selection:text-charcoal-950 font-sans">
+    <div className="min-h-screen flex flex-col bg-ivory-100 selection:bg-ocean-500/20 selection:text-navy-900 font-sans">
       {!isConsoleRoute && <SiteHeader />}
       <main className="flex-1">
         <Routes>
@@ -40,11 +41,13 @@ const AppShell: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ItineraryProvider>
-          <AppShell />
-        </ItineraryProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ItineraryProvider>
+            <AppShell />
+          </ItineraryProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };
