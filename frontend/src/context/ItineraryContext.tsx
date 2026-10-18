@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Place, ItineraryStop } from '../types';
-import { useAuth } from './AuthContext';
 import { api } from '../services/api';
 
 interface ItineraryContextType {
@@ -24,7 +23,6 @@ const STORAGE_KEY = 'visitflow_guest_itinerary';
 const ItineraryContext = createContext<ItineraryContextType | undefined>(undefined);
 
 export const ItineraryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
   const [stops, setStops] = useState<ItineraryStop[]>(() => {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY);

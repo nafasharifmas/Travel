@@ -277,7 +277,15 @@ export const PlaceDetailPage: React.FC = () => {
         </div>
       </section>
 
-    
+      {/* ---------------- Photograph gallery ---------------- */}
+      <section className="container-page pt-8">
+        <PhotoGallery
+          photos={photos}
+          activeIndex={activePhotoIdx}
+          onSelect={setActivePhotoIdx}
+          placeName={place.name}
+        />
+      </section>
 
         {/* Two-column context: narrative left, location right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start pt-2 sm:pt-4">
