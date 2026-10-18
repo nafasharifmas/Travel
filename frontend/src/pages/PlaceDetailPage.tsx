@@ -4,6 +4,7 @@ import { Place } from '../types';
 import { api } from '../services/api';
 import { useItinerary } from '../context/ItineraryContext';
 import { MapCanvas } from '../components/discovery/MapCanvas';
+import { PhotoGallery } from '../components/detail/PhotoGallery';
 import {
   DEFAULT_USER_LOCATION,
   calculateDistanceKm,
@@ -26,8 +27,12 @@ import {
   Navigation,
   Route as RouteIcon,
   LocateFixed,
-  Calendar,
   Info,
+  Images,
+  ShieldCheck,
+  ArrowRight,
+  ListChecks,
+  ChevronRight,
 } from 'lucide-react';
 
 export const PlaceDetailPage: React.FC = () => {
@@ -67,35 +72,41 @@ export const PlaceDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-24 flex flex-col items-center justify-center p-8 bg-ivory-100 text-charcoal-700">
-        <Loader2 className="w-10 h-10 text-gold-500 animate-spin mb-3" />
-        <p className="text-base font-serif font-bold text-charcoal-900">
-          Accessing Curated Destination Dossier...
-        </p>
-        <p className="text-xs text-sand-500 mt-1">Retrieving verified spatial coordinates and route trajectories</p>
+      <div className="min-h-screen bg-ivory-100">
+        <div className="container-page pt-20 lg:pt-24 pb-16">
+          <div
+            role="status"
+            aria-live="polite"
+            className="card max-w-2xl mx-auto p-10 flex flex-col items-center justify-center text-center gap-3 animate-fadeIn"
+          >
+            <Loader2 className="w-9 h-9 text-ocean-500 animate-spin" aria-hidden="true" />
+            <p className="text-h4">Loading destination details…</p>
+            <p className="text-sm text-navy-500">
+              Retrieving verified coordinates and route information.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !place) {
     return (
-      <div className="min-h-screen pt-28 px-4 bg-ivory-100">
-        <div className="max-w-2xl mx-auto p-10 bg-white rounded-3xl border border-sand-300 text-center space-y-4 shadow-sm">
-          <AlertTriangle className="w-12 h-12 text-amber-600 mx-auto" />
-          <h2 className="text-2xl font-serif font-bold text-charcoal-950">
-            Destination Dossier Unavailable
-          </h2>
-          <p className="text-sm text-charcoal-700 font-sans">
-            {error || 'This sanctuary cannot be found or is currently archived from the discovery catalogue.'}
-          </p>
-          <div className="pt-2">
-            <Link
-              to="/explore"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-500 text-charcoal-950 rounded-xl font-bold text-xs shadow-md hover:bg-gold-400"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Return to Places Catalogue
-            </Link>
+      <div className="min-h-screen bg-ivory-100">
+        <div className="container-page pt-20 lg:pt-24 pb-16">
+          <div className="card max-w-2xl mx-auto p-8 sm:p-10 text-center space-y-4">
+            <AlertTriangle className="w-12 h-12 text-sunset-500 mx-auto" aria-hidden="true" />
+            <h2 className="text-h3">Destination unavailable</h2>
+            <p className="text-sm text-navy-500 leading-relaxed">
+              {error ||
+                'This destination cannot be found or is currently archived from the discovery catalogue.'}
+            </p>
+            <div className="pt-2 flex justify-center">
+              <Link to="/explore" className="btn-primary">
+                <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                Back to destinations
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -103,13 +114,16 @@ export const PlaceDetailPage: React.FC = () => {
   }
 
   const inPlan = isPlaceInPlan(place.id);
+  const placeholderPhoto =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0B1F33"/><stop offset="100%" stop-color="#075985"/></linearGradient></defs><rect width="1200" height="800" fill="url(#g)"/><text x="600" y="390" text-anchor="middle" font-family="Georgia, serif" font-size="46" fill="#7FCBEB">Visitflow</text><text x="600" y="446" text-anchor="middle" font-family="Inter, sans-serif" font-size="24" fill="#CBD5E1">Photograph on record</text></svg>`
+    );
+
   const photos =
     place.media && place.media.length > 0
       ? place.media.map((m) => m.url)
-      : [
-          place.primary_photo ||
-            'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80',
-        ];
+      : [place.primary_photo || placeholderPhoto];
 
   const distanceKm =
     place.lat && place.lng
@@ -126,263 +140,350 @@ export const PlaceDetailPage: React.FC = () => {
 
   const stopNumber = place.slug ? EASTERN_PROVINCE_ORDER[place.slug] : undefined;
 
+  const hasCoordinates = typeof place.lat === 'number' && typeof place.lng === 'number';
+  const coordinatesLabel = hasCoordinates
+    ? `${place.lat.toFixed(5)}, ${place.lng.toFixed(5)}`
+    : 'Coordinates not listed';
+
+  const mediaCount = place.media && place.media.length > 0 ? place.media.length : null;
+
+  const originLabel = `Maruthamunai Basecamp (${DEFAULT_USER_LOCATION[0].toFixed(
+    4
+  )}, ${DEFAULT_USER_LOCATION[1].toFixed(4)})`;
+
   return (
-    <div className="min-h-screen bg-ivory-100 pt-20 pb-16">
-      {/* Top Header Bar */}
-      <section className="bg-charcoal-950 text-white border-b border-sand-400/15 py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <Link
-            to="/explore"
-            className="inline-flex items-center gap-2 text-xs font-bold text-sand-300 hover:text-white bg-charcoal-900 px-3.5 py-2 rounded-xl border border-sand-400/20 transition-all"
-          >
-            <ArrowLeft className="w-4 h-4 text-gold-400" />
-            Back to Discovery Catalogue
-          </Link>
+    <div className="min-h-screen bg-ivory-100 pb-16 sm:pb-20">
+      {/* ---------------- Hero band (clears the fixed 76px header) ---------------- */}
+      <section className="relative overflow-hidden bg-navy-900 text-white pt-20 lg:pt-24 pb-10 sm:pb-14">
+        <img
+          src={photos[0]}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-65"
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-navy-900/55 via-navy-900/68 to-navy-950/82 pointer-events-none"
+          aria-hidden="true"
+        />
+        <div className="container-page relative space-y-7">
+          {/* Breadcrumb + utility actions */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <nav aria-label="Breadcrumb">
+              <ol className="flex flex-wrap items-center gap-1.5 text-xs text-white/70">
+                <li>
+                  <Link to="/" className="hover:text-white transition-colors">
+                    Home
+                  </Link>
+                </li>
+                <li aria-hidden="true">
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </li>
+                <li>
+                  <Link to="/explore" className="hover:text-white transition-colors">
+                    Destinations
+                  </Link>
+                </li>
+                <li aria-hidden="true">
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </li>
+                <li aria-current="page" className="text-white font-semibold truncate max-w-[60vw] sm:max-w-xs">
+                  {place.name}
+                </li>
+              </ol>
+            </nav>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleShare}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-sand-300 hover:text-white bg-charcoal-900 px-3.5 py-2 rounded-xl border border-sand-400/20 shadow-sm transition-all"
-            >
-              <Share2 className="w-3.5 h-3.5 text-gold-400" />
-              {copied ? 'Link Copied!' : 'Share Dossier'}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Dossier Surface */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Destination Header Panel */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-sand-200/90 shadow-sm space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {stopNumber && (
-              <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500 text-charcoal-950 shadow-sm">
-                Corridor Stop #{stopNumber}
-              </span>
-            )}
-
-            {place.category && (
-              <span
-                className="px-3.5 py-1 rounded-full text-xs font-bold text-white shadow-sm"
-                style={{ backgroundColor: place.category.color || '#d4af37' }}
-              >
-                {place.category.name}
-              </span>
-            )}
-
-            <span className="inline-flex items-center gap-1 text-xs text-charcoal-600 bg-sand-100 px-3 py-1 rounded-full font-medium">
-              <Sparkles className="w-3.5 h-3.5 text-gold-600" />
-              Verified Destination
-            </span>
-          </div>
-
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <h1 className="text-3xl sm:text-5xl font-serif font-bold text-charcoal-950 tracking-tight leading-tight">
-                {place.name}
-              </h1>
-              {place.address && (
-                <p className="flex items-center gap-2 text-xs sm:text-sm text-charcoal-700 font-sans font-medium">
-                  <MapPin className="w-4 h-4 text-gold-600 shrink-0" />
-                  {place.address}
-                </p>
-              )}
-            </div>
-
-            {/* Quick Action Button */}
-            <div className="shrink-0 flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Link to="/explore" className="btn-on-dark btn-sm min-h-[44px]">
+                <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                Back
+              </Link>
               <button
                 type="button"
-                onClick={() => addPlaceToPlan(place)}
-                className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-bold shadow-md transition-all hover:scale-102 ${
-                  inPlan
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    : 'bg-gold-500 hover:bg-gold-400 text-charcoal-950'
-                }`}
+                onClick={handleShare}
+                aria-label={copied ? 'Link copied to clipboard' : 'Copy link to this destination'}
+                className="btn-on-dark btn-sm min-h-[44px]"
               >
-                {inPlan ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Included in Day Plan
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4" />
-                    Add to Expedition Plan
-                  </>
-                )}
+                <Share2 className="w-4 h-4" aria-hidden="true" />
+                {copied ? 'Link Copied!' : 'Share'}
               </button>
             </div>
           </div>
 
-          {/* Spatial Trajectory Banner */}
-          {distanceKm !== null && (
-            <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-sky-950 to-charcoal-900 border border-sky-800/40 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 shrink-0">
-                  <Navigation className="w-5 h-5 text-sky-400" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-sky-300">
-                    Spatial Route Measured from Maruthamunai Basecamp
-                  </p>
-                  <p className="text-xs sm:text-sm font-semibold text-white">
-                    <strong>{formatDistance(distanceKm)}</strong> directly from origin [7.439374, 81.817172]
-                    {travelTimeMins && (
-                      <span className="text-sand-300 font-normal">
-                        {' '}· ~{travelTimeMins} min via coastal road / tuk-tuk
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 text-xs font-bold text-sky-200 border border-white/10">
-                <RouteIcon className="w-3.5 h-3.5 text-sky-400" />
-                Live Trajectory Active
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Photography Showcase Grid */}
-        <div className="space-y-4">
-          <div className="relative aspect-[16/9] lg:aspect-[21/9] rounded-3xl overflow-hidden shadow-xl border border-sand-200 bg-charcoal-950">
-            <img
-              src={photos[activePhotoIdx]}
-              alt={`${place.name} preview ${activePhotoIdx + 1}`}
-              className="w-full h-full object-cover transition-opacity duration-300"
-            />
-          </div>
-
-          {photos.length > 1 && (
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
-              {photos.map((url, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setActivePhotoIdx(idx)}
-                  className={`relative w-24 h-16 rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${
-                    activePhotoIdx === idx
-                      ? 'border-gold-500 ring-2 ring-gold-500/50 scale-102'
-                      : 'border-sand-300 opacity-70 hover:opacity-100'
-                  }`}
-                >
-                  <img src={url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Two-Column Deep Context: Left Narrative, Right Embedded Map */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Narrative Column (7 cols) */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-sand-200/90 shadow-sm space-y-5">
-              <div className="border-b border-sand-100 pb-3">
-                <span className="text-xs font-bold text-gold-700 uppercase tracking-widest">
-                  Editorial Overview & Significance
+          {/* Title block */}
+          <div className="max-w-3xl space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {stopNumber && (
+                <span className="chip bg-sunset-400 border-sunset-400 text-navy-950 font-bold hover:bg-sunset-400 hover:border-sunset-400 hover:text-navy-950">
+                  <RouteIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                  Corridor stop #{stopNumber}
                 </span>
-                <h3 className="text-xl sm:text-2xl font-serif font-bold text-charcoal-950 mt-1">
-                  About this destination
-                </h3>
-              </div>
+              )}
 
-              <p className="text-sm sm:text-base text-charcoal-800 leading-relaxed font-sans">
-                {place.description}
-              </p>
+              {place.category && (
+                <span
+                  className="chip text-white border-transparent hover:text-white hover:border-transparent"
+                  style={{ backgroundColor: place.category.color || '#006DAA' }}
+                >
+                  {place.category.name}
+                </span>
+              )}
 
-              {/* Logistics & Practical Info Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-sand-100">
-                {place.opening_hours && (
-                  <div className="p-4 bg-sand-50/70 rounded-2xl border border-sand-200/80 space-y-1">
-                    <span className="text-[11px] font-bold text-charcoal-600 uppercase tracking-wider flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-gold-600" />
-                      Opening Hours & Best Light
-                    </span>
-                    <p className="text-xs font-semibold text-charcoal-900">
-                      {place.opening_hours}
-                    </p>
-                  </div>
-                )}
-
-                {place.contact_info && (
-                  <div className="p-4 bg-sand-50/70 rounded-2xl border border-sand-200/80 space-y-1">
-                    <span className="text-[11px] font-bold text-charcoal-600 uppercase tracking-wider flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-gold-600" />
-                      Contact & Tourism Society
-                    </span>
-                    <p className="text-xs font-semibold text-charcoal-900 break-words">
-                      {place.contact_info}
-                    </p>
-                  </div>
-                )}
-              </div>
+              <span className="chip bg-white/10 border-white/20 text-white hover:bg-white/10 hover:border-white/20 hover:text-white">
+                <ShieldCheck className="w-3.5 h-3.5 text-turquoise-300" aria-hidden="true" />
+                Verified destination
+              </span>
             </div>
 
-            {/* Nearby Highlights Along This Corridor */}
-            {place.nearby_suggestions && place.nearby_suggestions.length > 0 && (
-              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-sand-200/90 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-charcoal-950 flex items-center gap-2">
-                    <Compass className="w-4 h-4 text-gold-600" />
-                    Nearby Sanctuaries on this Corridor
-                  </h3>
-                  <Link
-                    to="/explore"
-                    className="text-xs font-bold text-gold-600 hover:text-gold-700"
-                  >
-                    View All →
-                  </Link>
-                </div>
+            <h1 className="text-h1 text-white">{place.name}</h1>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {place.nearby_suggestions.map((rec) => (
-                    <Link
-                      key={rec.id}
-                      to={`/places/${rec.slug || rec.id}`}
-                      className="group p-3 rounded-2xl border border-sand-200 hover:border-gold-500 transition-all bg-sand-50/60 hover:bg-white hover:shadow-md"
-                    >
-                      {rec.primary_photo && (
-                        <div className="aspect-[4/3] rounded-xl overflow-hidden mb-2 bg-sand-200">
-                          <img
-                            src={rec.primary_photo}
-                            alt={rec.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-                      <p className="text-xs font-bold text-charcoal-900 group-hover:text-gold-600 line-clamp-1">
-                        {rec.name}
-                      </p>
-                      <span className="text-[10px] text-sand-600">{rec.category}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+            {place.address && (
+              <p className="flex items-start gap-2 text-sm text-navy-100">
+                <MapPin className="w-4 h-4 text-turquoise-300 mt-0.5 shrink-0" aria-hidden="true" />
+                <span className="break-words">{place.address}</span>
+              </p>
             )}
           </div>
 
-          {/* Dedicated Spatial Route Map Column (5 cols) */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="bg-white p-5 rounded-3xl border border-sand-200/90 shadow-sm space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <RouteIcon className="w-4 h-4 text-sky-600" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-charcoal-900">
-                    Live Route Trajectory
-                  </h3>
-                </div>
-                <span className="text-xs font-mono text-sand-600">
-                  {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
+          {/* Add-to-trip action */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => addPlaceToPlan(place)}
+              aria-pressed={inPlan}
+              className={
+                inPlan
+                  ? 'btn bg-emerald-500 text-white shadow-card hover:bg-emerald-600 focus-visible:ring-emerald-500'
+                  : 'btn-conversion'
+              }
+            >
+              {inPlan ? (
+                <>
+                  <Check className="w-4 h-4" aria-hidden="true" />
+                  Included in your trip plan
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" aria-hidden="true" />
+                  Add to trip plan
+                </>
+              )}
+            </button>
+            <span className="text-xs text-navy-100">
+              {stopNumber
+                ? `Stop ${stopNumber} on the Eastern Corridor route`
+                : 'Build a route around this destination'}
+            </span>
+          </div>
+        </div>
+      </section>
+
+    
+
+        {/* Two-column context: narrative left, location right */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start pt-2 sm:pt-4">
+          {/* Narrative column */}
+          <div className="lg:col-span-7 min-w-0 space-y-8">
+            {/* Overview */}
+            <section className="card p-6 sm:p-8 space-y-5">
+              <div className="space-y-1">
+                <span className="eyebrow">
+                  <Compass className="w-3.5 h-3.5" aria-hidden="true" />
+                  Destination overview
                 </span>
+                <h2 className="text-h3">About this destination</h2>
+              </div>
+              <p className="text-sm sm:text-base text-navy-600 leading-relaxed max-w-prose">
+                {place.description || 'No description has been published for this destination yet.'}
+              </p>
+            </section>
+
+            {/* Location & verified information */}
+            <section className="card p-6 sm:p-8 space-y-5">
+              <div className="space-y-1">
+                <span className="eyebrow">
+                  <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                  Location & verified information
+                </span>
+                <h2 className="text-h3">Where and when to visit</h2>
               </div>
 
-              {/* Embedded Leaflet Route Map */}
-              <div className="h-[420px] rounded-2xl overflow-hidden border border-sand-300 shadow-inner">
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                <div className="min-w-0">
+                  <dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-500">
+                    <MapPin className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+                    Address
+                  </dt>
+                  <dd className="mt-1.5 text-sm text-navy-900 break-words">
+                    {place.address || 'Address not listed'}
+                  </dd>
+                </div>
+
+                <div className="min-w-0">
+                  <dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-500">
+                    <LocateFixed className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+                    Coordinates
+                  </dt>
+                  <dd className="mt-1.5 text-sm text-navy-900 font-mono break-words">
+                    {coordinatesLabel}
+                  </dd>
+                </div>
+
+                <div className="min-w-0">
+                  <dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-500">
+                    <Clock className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+                    Opening hours
+                  </dt>
+                  <dd className="mt-1.5 text-sm text-navy-900 break-words">
+                    {place.opening_hours || 'Hours not listed'}
+                  </dd>
+                </div>
+
+                <div className="min-w-0">
+                  <dt className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-500">
+                    <Phone className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+                    Contact
+                  </dt>
+                  <dd className="mt-1.5 text-sm text-navy-900 break-words">
+                    {place.contact_info || 'Contact not listed'}
+                  </dd>
+                </div>
+              </dl>
+
+              <p className="flex items-start gap-2 rounded-btn bg-ocean-50 border border-ocean-100 p-3.5 text-xs text-navy-600 leading-relaxed">
+                <Info className="w-4 h-4 text-ocean-500 mt-0.5 shrink-0" aria-hidden="true" />
+                <span>
+                  Details shown here are taken directly from the verified destination record. Where
+                  a field is empty we show it as not listed rather than guess.
+                </span>
+              </p>
+            </section>
+
+            {/* Highlights */}
+            <section className="card p-6 sm:p-8 space-y-5">
+              <div className="space-y-1">
+                <span className="eyebrow">
+                  <ListChecks className="w-3.5 h-3.5" aria-hidden="true" />
+                  Highlights
+                </span>
+                <h2 className="text-h3">At a glance</h2>
+              </div>
+
+              <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <li className="rounded-card bg-navy-50 border border-navy-200 p-4 space-y-1">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-navy-500">
+                    <Compass className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+                    Category
+                  </p>
+                  <p className="text-sm font-semibold text-navy-900">
+                    {place.category?.name || 'Not listed'}
+                  </p>
+                </li>
+
+                <li className="rounded-card bg-navy-50 border border-navy-200 p-4 space-y-1">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-navy-500">
+                    <RouteIcon className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+                    Corridor stop
+                  </p>
+                  <p className="text-sm font-semibold text-navy-900">
+                    {stopNumber ? `#${stopNumber}` : 'Not on the route'}
+                  </p>
+                </li>
+
+                <li className="rounded-card bg-navy-50 border border-navy-200 p-4 space-y-1">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-navy-500">
+                    <Images className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+                    Photographs
+                  </p>
+                  <p className="text-sm font-semibold text-navy-900">
+                    {mediaCount ? `${mediaCount} in gallery` : 'Not listed'}
+                  </p>
+                </li>
+
+                <li className="rounded-card bg-turquoise-50 border border-turquoise-200 p-4 space-y-1">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-turquoise-700">
+                    <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                    Status
+                  </p>
+                  <p className="text-sm font-semibold text-navy-900">Verified record</p>
+                </li>
+              </ul>
+
+              {/* Nearby attractions & related destinations */}
+              <div className="pt-2 space-y-4 border-t border-navy-100">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-h4">Nearby attractions</h3>
+                    <p className="text-xs text-navy-500">
+                      Related destinations from the same collection.
+                    </p>
+                  </div>
+                  <Link
+                    to="/explore"
+                    className="inline-flex items-center gap-1 min-h-[44px] text-xs font-bold text-ocean-600 hover:text-ocean-700 transition-colors"
+                  >
+                    View all destinations
+                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+
+                {place.nearby_suggestions && place.nearby_suggestions.length > 0 ? (
+                  <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {place.nearby_suggestions.map((rec) => (
+                      <li key={rec.id}>
+                        <Link
+                          to={`/places/${rec.slug || rec.id}`}
+                          className="card card-hover group block h-full p-3"
+                        >
+                          <div className="aspect-[4/3] rounded-btn overflow-hidden mb-3 bg-navy-100">
+                            {rec.primary_photo ? (
+                              <img
+                                src={rec.primary_photo}
+                                alt={rec.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="w-full h-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
+                              />
+                            ) : (
+                              <span className="grid place-items-center w-full h-full text-navy-500">
+                                <Images className="w-6 h-6" aria-hidden="true" />
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm font-bold text-navy-900 group-hover:text-ocean-600 line-clamp-1 transition-colors">
+                            {rec.name}
+                          </p>
+                          <p className="text-xs text-navy-500">{rec.category || 'Destination'}</p>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="rounded-card bg-navy-50 border border-dashed border-navy-200 p-6 text-center space-y-1">
+                    <p className="text-sm font-semibold text-navy-800">
+                      No nearby attractions listed yet
+                    </p>
+                    <p className="text-xs text-navy-500">
+                      Browse the full catalogue to keep planning your corridor route.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+          {/* Spatial column: interactive map + travel information */}
+          <div className="lg:col-span-5 min-w-0 space-y-8">
+            {/* Interactive map */}
+            <section className="card p-5 space-y-4" aria-label="Interactive map">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                <span className="eyebrow">
+                  <RouteIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                  Interactive map
+                </span>
+                <span className="text-xs font-mono text-navy-500">{coordinatesLabel}</span>
+              </div>
+
+              <div className="h-[380px] sm:h-[440px] lg:h-[480px] rounded-card overflow-hidden border border-navy-200 bg-navy-100">
                 <MapCanvas
                   places={[place]}
                   selectedPlace={place}
@@ -394,18 +495,95 @@ export const PlaceDetailPage: React.FC = () => {
                 />
               </div>
 
-              <div className="p-3.5 bg-sky-50 rounded-xl border border-sky-200 text-xs text-sky-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-medium">
+              <p className="flex items-start gap-2 text-xs text-navy-500 px-1">
+                <Info className="w-4 h-4 text-ocean-500 mt-0.5 shrink-0" aria-hidden="true" />
                 <span>
-                  <strong>Origin:</strong> Maruthamunai Basecamp (7.4394, 81.8172)
+                  Route line drawn from the Maruthamunai basecamp. Map data © OpenStreetMap
+                  contributors.
                 </span>
-                <span className="font-bold text-sky-800">
-                  {formatDistance(distanceKm)} trajectory
+              </p>
+            </section>
+
+            {/* Travel information */}
+            <section className="card p-6 sm:p-7 space-y-5">
+              <div className="space-y-1">
+                <span className="eyebrow">
+                  <Navigation className="w-3.5 h-3.5" aria-hidden="true" />
+                  Travel information
                 </span>
+                <h2 className="text-h3">Getting there</h2>
               </div>
-            </div>
+
+              {distanceKm !== null ? (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div className="rounded-card bg-navy-50 border border-navy-200 p-4 space-y-1">
+                    <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-navy-500">
+                      <Navigation className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+                      Distance
+                    </dt>
+                    <dd className="text-sm font-semibold text-navy-900">
+                      {formatDistance(distanceKm)}
+                    </dd>
+                  </div>
+
+                  <div className="rounded-card bg-navy-50 border border-navy-200 p-4 space-y-1">
+                    <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-navy-500">
+                      <Clock className="w-3.5 h-3.5 text-ocean-500" aria-hidden="true" />
+                      Driving time
+                    </dt>
+                    <dd className="text-sm font-semibold text-navy-900">
+                      {travelTimeMins ? `~${travelTimeMins} min` : 'Not available'}
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className="rounded-card bg-navy-50 border border-navy-200 p-4 text-sm text-navy-600">
+                  Travel information unavailable — coordinates are not listed for this
+                  destination.
+                </p>
+              )}
+
+              <div className="flex items-start gap-3 rounded-card bg-navy-50 border border-navy-200 p-4">
+                <span className="grid place-items-center w-10 h-10 rounded-btn bg-ocean-500 text-white shrink-0">
+                  <LocateFixed className="w-5 h-5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-navy-500">
+                    Journey origin
+                  </p>
+                  <p className="text-sm font-semibold text-navy-900 break-words">{originLabel}</p>
+                </div>
+              </div>
+
+              <p className="flex items-start gap-2 text-xs text-navy-500 leading-relaxed">
+                <Info className="w-4 h-4 text-ocean-500 mt-0.5 shrink-0" aria-hidden="true" />
+                <span>
+                  Distances are measured point-to-point from the origin above; driving times are
+                  estimates based on coastal-road travel and should be treated as approximate.
+                </span>
+              </p>
+            </section>
+
+            {/* Related destinations call to action */}
+            <section className="card p-6 sm:p-7 bg-navy-900 text-white space-y-3">
+              <span className="eyebrow text-turquoise-300">
+                <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                Keep exploring
+              </span>
+              <h2 className="text-h4 text-white">Related destinations</h2>
+              <p className="text-sm text-navy-100 leading-relaxed">
+                Discover the rest of the Eastern Corridor and beyond, all mapped from the same
+                origin.
+              </p>
+              <div className="pt-1">
+                <Link to="/explore" className="btn-conversion">
+                  Explore all destinations
+                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                </Link>
+              </div>
+            </section>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
   );
 };

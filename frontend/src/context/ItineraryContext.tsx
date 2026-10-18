@@ -126,7 +126,7 @@ export const ItineraryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsSyncing(true);
     try {
       await api.syncGuestItinerary({
-        title: title || 'Curated One-Day Expedition',
+        title: title || 'Curated One-Day Route',
         start_date: startDate || new Date().toISOString().split('T')[0],
         notes: notes || 'Draft day trip saved from planner',
         items: stops.map((s, idx) => ({
