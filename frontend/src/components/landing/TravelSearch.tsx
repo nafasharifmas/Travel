@@ -1,15 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Search,
-  Calendar,
-  Users,
-  MapPin,
-  ArrowRight,
-  Sparkles,
-  AlertCircle,
-  Check,
-} from 'lucide-react';
+import { Search, Calendar, Users, MapPin, AlertCircle } from 'lucide-react';
 
 interface TravelSearchProps {
   onSearchSubmit?: (query: {
@@ -19,21 +10,19 @@ interface TravelSearchProps {
   }) => void;
 }
 
+/** Real Eastern Corridor stops (category tags only — no invented distances). */
 const CURATED_SUGGESTIONS = [
-  { name: 'Maruthamunai Beach', region: 'Eastern Shore, Sri Lanka', tag: 'Near You (0.5 km)' },
-  { name: 'Kalmunai Beach & Mosque', region: 'Eastern Shore, Sri Lanka', tag: 'Near You (3.8 km)' },
-  { name: 'Koddaikallar Lagoon', region: 'Eastern Shore, Sri Lanka', tag: 'Near You (5.5 km)' },
-  { name: 'Dolomites', region: 'South Tyrol, Italy', tag: 'Alpine Sanctuary' },
-  { name: 'Kyoto', region: 'Kansai, Japan', tag: 'Cultural Immersion' },
-  { name: 'Sigiriya Rock Citadel', region: 'Cultural Triangle, Sri Lanka', tag: 'Ancient Wonder' },
-  { name: 'Patagonia', region: 'Magallanes, Chile', tag: 'Wild Frontier' },
-  { name: 'Bali (Ubud & Sidemen)', region: 'Indonesia', tag: 'Slow Living' },
+  { name: 'Maruthamunai Beach', region: 'Kalmunai · Eastern Shore', tag: 'Coastal' },
+  { name: 'Kalmunai Beach & Beach Mosque', region: 'Kalmunai · Eastern Shore', tag: 'Coastal' },
+  { name: 'Kallady Beach', region: 'Batticaloa · Eastern Shore', tag: 'Coastal' },
+  { name: 'Nintavur Beach & Coastal Park', region: 'Ampara · Eastern Shore', tag: 'Coastal' },
+  { name: 'Deegawapi Raja Maha Vihara', region: 'Ampara · Eastern Province', tag: 'Heritage' },
+  { name: 'Kattankudy Heritage Museum', region: 'Batticaloa · Eastern Province', tag: 'Heritage' },
 ];
 
 export const TravelSearch: React.FC<TravelSearchProps> = ({ onSearchSubmit }) => {
   const navigate = useNavigate();
 
-  // Search state
   const [destination, setDestination] = useState('');
   const [isSuggestOpen, setIsSuggestOpen] = useState(false);
   const [startDate, setStartDate] = useState(
@@ -43,20 +32,19 @@ export const TravelSearch: React.FC<TravelSearchProps> = ({ onSearchSubmit }) =>
     new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0]
   );
   const [travelers, setTravelers] = useState(2);
-  const [isTravelerPopoverOpen, setIsTravelerPopoverOpen] = useState(false);
+  const [isTravelerOpen, setIsTravelerOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const suggestRef = useRef<HTMLDivElement>(null);
   const travelerRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) {
         setIsSuggestOpen(false);
       }
       if (travelerRef.current && !travelerRef.current.contains(e.target as Node)) {
-        setIsTravelerPopoverOpen(false);
+        setIsTravelerOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -72,14 +60,12 @@ export const TravelSearch: React.FC<TravelSearchProps> = ({ onSearchSubmit }) =>
   const handleStartDateChange = (val: string) => {
     setStartDate(val);
     setValidationError(null);
-    if (endDate && val > endDate) {
-      setEndDate(val);
-    }
+    if (endDate && val > endDate) setEndDate(val);
   };
 
   const handleEndDateChange = (val: string) => {
     if (val < startDate) {
-      setValidationError('Return date must be after departure date.');
+      setValidationError('Return date must be after the departure date.');
       return;
     }
     setValidationError(null);
@@ -89,25 +75,17 @@ export const TravelSearch: React.FC<TravelSearchProps> = ({ onSearchSubmit }) =>
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!destination.trim()) {
-      setValidationError('Please select or enter a destination to explore.');
+      setValidationError('Choose or type a destination to start exploring.');
       return;
     }
     if (endDate < startDate) {
-      setValidationError('Please provide valid journey travel dates.');
+      setValidationError('Please provide valid travel dates.');
       return;
     }
 
     setValidationError(null);
+    onSearchSubmit?.({ destination, dates: { start: startDate, end: endDate }, travelers });
 
-    if (onSearchSubmit) {
-      onSearchSubmit({
-        destination,
-        dates: { start: startDate, end: endDate },
-        travelers,
-      });
-    }
-
-    // Scroll smoothly to destinations section or navigate to explore
     const destEl = document.getElementById('destinations');
     if (destEl) {
       destEl.scrollIntoView({ behavior: 'smooth' });
@@ -117,29 +95,29 @@ export const TravelSearch: React.FC<TravelSearchProps> = ({ onSearchSubmit }) =>
   };
 
   return (
-    <div
-      id="travel-search"
-      className="relative z-30 max-w-5xl mx-auto -mt-10 sm:-mt-12 px-4 sm:px-6 lg:px-8"
-    >
-      <div className="bg-white/95 backdrop-blur-xl rounded-3xl p-4 sm:p-6 shadow-2xl border border-sand-300 text-charcoal-950 transition-all hover:shadow-gold-500/5">
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div id="travel-search" className="relative z-30 container-page -mt-10 sm:-mt-12">
+      <div className="bg-white rounded-media p-4 sm:p-5 shadow-card-hover border border-navy-200">
+        <form onSubmit={handleSubmit} className="space-y-3" noValidate>
           {validationError && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
+            <div
+              role="alert"
+              className="flex items-center gap-2 p-3 rounded-btn bg-red-50 border border-red-200 text-red-700 text-xs"
+            >
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{validationError}</span>
             </div>
           )}
 
-          {/* 4-Field Responsive Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-            {/* Field 1: Destination Autocomplete (5 cols) */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            {/* Destination */}
             <div ref={suggestRef} className="md:col-span-5 relative">
-              <label className="block text-[10px] font-bold text-sand-500 uppercase tracking-widest mb-1">
+              <label htmlFor="search-destination" className="field-label">
                 Where to
               </label>
               <div className="relative">
-                <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-gold-600" />
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ocean-500 pointer-events-none" />
                 <input
+                  id="search-destination"
                   type="text"
                   value={destination}
                   onChange={(e) => {
@@ -148,123 +126,123 @@ export const TravelSearch: React.FC<TravelSearchProps> = ({ onSearchSubmit }) =>
                     setValidationError(null);
                   }}
                   onFocus={() => setIsSuggestOpen(true)}
-                  placeholder="e.g. Dolomites, Kyoto, Maruthamunai..."
-                  aria-label="Destination"
-                  className="w-full pl-10 pr-4 py-3 bg-sand-50/70 border border-sand-200 rounded-2xl text-xs sm:text-sm font-semibold text-charcoal-950 placeholder-stone-400 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500 transition-all"
+                  autoComplete="off"
+                  placeholder="e.g. Maruthamunai, Kallady, Deegawapi…"
+                  className="field pl-10 font-medium"
                 />
               </div>
 
-              {/* Suggestions Dropdown */}
               {isSuggestOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-sand-200 py-2 z-50 max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2">
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-sand-500 uppercase tracking-wider border-b border-sand-100">
-                    Curated Destinations
-                  </div>
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-card shadow-card-hover border border-navy-200 py-1.5 z-50 max-h-64 overflow-y-auto thin-scroll">
+                  <p className="px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-navy-500 border-b border-navy-100">
+                    Eastern Corridor destinations
+                  </p>
                   {filteredSuggestions.length > 0 ? (
-                    filteredSuggestions.map((item, idx) => (
+                    filteredSuggestions.map((item) => (
                       <button
-                        key={idx}
+                        key={item.name}
                         type="button"
                         onClick={() => {
                           setDestination(item.name);
                           setIsSuggestOpen(false);
                           setValidationError(null);
                         }}
-                        className="w-full px-3.5 py-2.5 text-left hover:bg-sand-50 flex items-center justify-between text-xs transition-colors group"
+                        className="w-full px-3.5 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-ocean-50 transition-colors group"
                       >
-                        <div>
-                          <p className="font-bold text-charcoal-950 group-hover:text-gold-600">
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-navy-900 truncate group-hover:text-ocean-600">
                             {item.name}
-                          </p>
-                          <p className="text-[10px] text-stone-500">{item.region}</p>
-                        </div>
-                        <span className="text-[10px] font-bold text-gold-700 bg-gold-50 px-2 py-0.5 rounded-full">
+                          </span>
+                          <span className="block text-[11px] text-navy-500 truncate">{item.region}</span>
+                        </span>
+                        <span className="shrink-0 text-[10px] font-bold text-ocean-600 bg-ocean-50 px-2 py-0.5 rounded-pill">
                           {item.tag}
                         </span>
                       </button>
                     ))
                   ) : (
-                    <div className="p-4 text-center text-xs text-stone-500">
-                      No matching destinations found in catalogue.
-                    </div>
+                    <p className="p-4 text-center text-xs text-navy-500">
+                      No matching destinations in the catalogue.
+                    </p>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Field 2: Dates (4 cols) */}
-            <div className="md:col-span-4 grid grid-cols-2 gap-2">
+            {/* Dates */}
+            <div className="md:col-span-4 grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[10px] font-bold text-sand-500 uppercase tracking-widest mb-1 flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-gold-600" />
+                <label htmlFor="search-start" className="field-label flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-ocean-500" />
                   Departure
                 </label>
                 <input
+                  id="search-start"
                   type="date"
                   value={startDate}
                   onChange={(e) => handleStartDateChange(e.target.value)}
-                  className="w-full px-2.5 py-3 bg-sand-50/70 border border-sand-200 rounded-2xl text-xs font-semibold text-charcoal-950 focus:bg-white focus:border-gold-500 focus:ring-1 focus:ring-gold-500"
+                  className="field text-xs font-medium"
                 />
               </div>
-
               <div>
-                <label className="block text-[10px] font-bold text-sand-500 uppercase tracking-widest mb-1 flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-gold-600" />
+                <label htmlFor="search-end" className="field-label flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-ocean-500" />
                   Return
                 </label>
                 <input
+                  id="search-end"
                   type="date"
                   min={startDate}
                   value={endDate}
                   onChange={(e) => handleEndDateChange(e.target.value)}
-                  className="w-full px-2.5 py-3 bg-sand-50/70 border border-sand-200 rounded-2xl text-xs font-semibold text-charcoal-950 focus:bg-white focus:border-gold-500 focus:ring-1 focus:ring-gold-500"
+                  className="field text-xs font-medium"
                 />
               </div>
             </div>
 
-            {/* Field 3: Travelers Counter & Search Action (3 cols) */}
-            <div className="md:col-span-3 flex items-center gap-2 pt-1 md:pt-0">
-              {/* Travelers Popover Trigger */}
+            {/* Travelers + submit */}
+            <div className="md:col-span-3 flex items-end gap-2.5">
               <div ref={travelerRef} className="relative flex-1">
-                <label className="block text-[10px] font-bold text-sand-500 uppercase tracking-widest mb-1">
-                  Travelers
-                </label>
+                <span className="field-label">Travelers</span>
                 <button
                   type="button"
-                  onClick={() => setIsTravelerPopoverOpen(!isTravelerPopoverOpen)}
-                  className="w-full px-3 py-3 bg-sand-50/70 border border-sand-200 rounded-2xl text-xs font-bold text-charcoal-950 flex items-center justify-between hover:bg-white transition-colors"
+                  onClick={() => setIsTravelerOpen((v) => !v)}
+                  aria-haspopup="dialog"
+                  aria-expanded={isTravelerOpen}
+                  className="field flex items-center justify-between gap-2 text-left"
                 >
-                  <span className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-gold-600" />
-                    {travelers} {travelers === 1 ? 'Traveler' : 'Travelers'}
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Users className="w-4 h-4 text-ocean-500" />
+                    {travelers} {travelers === 1 ? 'traveler' : 'travelers'}
                   </span>
+                  <span className="text-navy-500 text-xs">{isTravelerOpen ? '▲' : '▼'}</span>
                 </button>
 
-                {isTravelerPopoverOpen && (
-                  <div className="absolute top-full left-0 w-56 mt-2 bg-white rounded-2xl shadow-xl border border-sand-200 p-4 z-50 animate-in fade-in">
-                    <p className="text-xs font-bold text-charcoal-950 mb-1">
-                      Adult Explorers
-                    </p>
-                    <p className="text-[11px] text-stone-500 mb-3">
-                      Ages 12 and above
-                    </p>
+                {isTravelerOpen && (
+                  <div
+                    role="dialog"
+                    aria-label="Traveler count"
+                    className="absolute bottom-full mb-2 left-0 w-60 bg-white rounded-card shadow-card-hover border border-navy-200 p-4 z-50"
+                  >
+                    <p className="text-sm font-semibold text-navy-900">Travelers</p>
+                    <p className="text-[11px] text-navy-500 mb-3">Ages 12 and above</p>
                     <div className="flex items-center justify-between">
                       <button
                         type="button"
+                        aria-label="Remove a traveler"
                         disabled={travelers <= 1}
-                        onClick={() => setTravelers((prev) => Math.max(1, prev - 1))}
-                        className="w-8 h-8 rounded-full border border-sand-300 flex items-center justify-center font-bold text-stone-700 hover:bg-sand-100 disabled:opacity-30"
+                        onClick={() => setTravelers((p) => Math.max(1, p - 1))}
+                        className="grid place-items-center w-10 h-10 rounded-full border border-navy-200 text-navy-700 font-bold hover:bg-navy-50 disabled:opacity-40"
                       >
-                        -
+                        −
                       </button>
-                      <span className="font-bold text-sm text-charcoal-950">
-                        {travelers}
-                      </span>
+                      <span className="text-lg font-bold text-navy-900">{travelers}</span>
                       <button
                         type="button"
+                        aria-label="Add a traveler"
                         disabled={travelers >= 12}
-                        onClick={() => setTravelers((prev) => Math.min(12, prev + 1))}
-                        className="w-8 h-8 rounded-full border border-sand-300 flex items-center justify-center font-bold text-stone-700 hover:bg-sand-100 disabled:opacity-30"
+                        onClick={() => setTravelers((p) => Math.min(12, p + 1))}
+                        className="grid place-items-center w-10 h-10 rounded-full border border-navy-200 text-navy-700 font-bold hover:bg-navy-50 disabled:opacity-40"
                       >
                         +
                       </button>
@@ -273,16 +251,9 @@ export const TravelSearch: React.FC<TravelSearchProps> = ({ onSearchSubmit }) =>
                 )}
               </div>
 
-              {/* Submit Button */}
-              <div className="pt-4 md:pt-4">
-                <button
-                  type="submit"
-                  aria-label="Search curated journeys"
-                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-gold-500 hover:bg-gold-400 text-charcoal-950 flex items-center justify-center shadow-lg shadow-gold-500/25 transition-all hover:scale-105 active:scale-95 shrink-0"
-                >
-                  <Search className="w-5 h-5 font-bold" />
-                </button>
-              </div>
+              <button type="submit" aria-label="Search journeys" className="btn-primary px-5 shrink-0 h-11 min-h-[44px]">
+                <Search className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </form>
@@ -290,4 +261,3 @@ export const TravelSearch: React.FC<TravelSearchProps> = ({ onSearchSubmit }) =>
     </div>
   );
 };
-

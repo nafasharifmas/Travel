@@ -2,123 +2,110 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ASSETS } from '../../data/assetsManifest';
 import { RevealOnScroll } from '../common/RevealOnScroll';
-import { ArrowUpRight, MapPin, Sparkles, Clock } from 'lucide-react';
+import { ArrowUpRight, MapPin, Clock } from 'lucide-react';
+
+type Filter = 'all' | 'coastal' | 'heritage';
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'all', label: 'All Destinations' },
+  { id: 'coastal', label: 'Coastal Sanctuaries' },
+  { id: 'heritage', label: 'Sacred & Heritage' },
+];
 
 export const DestinationSection: React.FC = () => {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'coastal' | 'heritage'>('all');
+  const [activeFilter, setActiveFilter] = useState<Filter>('all');
 
   const destinationList = Object.values(ASSETS.destinations);
+  const filtered = destinationList.filter(
+    (d) => activeFilter === 'all' || (d.categories || []).includes(activeFilter)
+  );
 
-  const filtered = destinationList.filter((d) => {
-    if (activeFilter === 'all') return true;
-    return (d.categories || []).includes(activeFilter);
-  });
+  const [lead, ...rest] = filtered;
+  const stacked = rest.slice(0, 2);
+  const row = rest.slice(2, 5);
 
   return (
-    <section id="destinations" className="py-24 px-4 sm:px-6 lg:px-8 bg-ivory-100 text-charcoal-950">
-      <div className="max-w-7xl mx-auto space-y-12">
-        {/* Section Header */}
+    <section id="destinations" className="section-shell bg-white">
+      <div className="container-page space-y-10">
+        {/* Header */}
         <RevealOnScroll direction="up">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-sand-300 pb-8">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-navy-200 pb-8">
             <div className="space-y-3 max-w-2xl">
-              <span className="text-[11px] font-serif uppercase tracking-[0.25em] text-gold-600 font-bold flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
+              <span className="eyebrow">
+                <MapPin className="w-3.5 h-3.5" />
                 The Eastern Corridor
               </span>
-              <h2 className="text-3xl sm:text-5xl font-serif font-bold text-charcoal-950 tracking-tight leading-tight">
-                Ten stops. One shoreline.
-              </h2>
-              <p className="text-sm sm:text-base text-stone-600 font-sans font-light leading-relaxed">
-                Sunrise beaches, lagoon villages, and centuries-old sanctuaries — all within 25 km of your origin at Maruthamunai (7.4394, 81.8172). Real places, measured distances, no crowds.
+              <h2 className="text-h2">Ten stops. One shoreline.</h2>
+              <p className="text-sm sm:text-base text-navy-500 leading-relaxed">
+                Sunrise beaches, lagoon villages and centuries-old sanctuaries — real places with
+                verified coordinates, mapped from your origin at Maruthamunai (7.4394, 81.8172).
               </p>
             </div>
 
-            {/* Category Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveFilter('all')}
-                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wider transition-all ${
-                  activeFilter === 'all'
-                    ? 'bg-charcoal-950 text-white shadow-md'
-                    : 'bg-sand-200/60 text-stone-700 hover:bg-sand-200'
-                }`}
-              >
-                All Destinations
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveFilter('coastal')}
-                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wider transition-all ${
-                  activeFilter === 'coastal'
-                    ? 'bg-charcoal-950 text-white shadow-md'
-                    : 'bg-sand-200/60 text-stone-700 hover:bg-sand-200'
-                }`}
-              >
-                Coastal Sanctuaries
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveFilter('heritage')}
-                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wider transition-all ${
-                  activeFilter === 'heritage'
-                    ? 'bg-charcoal-950 text-white shadow-md'
-                    : 'bg-sand-200/60 text-stone-700 hover:bg-sand-200'
-                }`}
-              >
-                Sacred & Heritage
-              </button>
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter destinations">
+              {FILTERS.map((f) => {
+                const isActive = activeFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setActiveFilter(f.id)}
+                    aria-pressed={isActive}
+                    className={`inline-flex items-center gap-1.5 min-h-[38px] px-4 rounded-pill border text-xs font-semibold tracking-wide transition-all duration-200 ${
+                      isActive
+                        ? 'bg-ocean-500 text-white border-ocean-500 shadow-card hover:bg-ocean-600 hover:text-white'
+                        : 'bg-white text-navy-700 border-navy-200 hover:border-ocean-400 hover:text-ocean-600'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </RevealOnScroll>
 
-        {/* Asymmetrical Editorial Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch">
-          {/* Lead Card (7 Cols on Desktop) */}
-          {filtered[0] && (
-            <div className="md:col-span-7 flex flex-col">
+        {/* Bento grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+          {lead && (
+            <div className="md:col-span-7">
               <RevealOnScroll direction="up" delayMs={50} className="h-full">
                 <Link
-                  to={`/places/${filtered[0].slug}`}
-                  className="group relative h-full min-h-[460px] sm:min-h-[520px] rounded-3xl overflow-hidden block shadow-xl transition-all duration-300 hover:shadow-2xl"
+                  to={`/places/${lead.slug}`}
+                  className="group relative block h-full min-h-[420px] sm:min-h-[500px] rounded-media overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 ease-premium"
                 >
                   <img
-                    src={filtered[0].image}
-                    alt={filtered[0].title}
+                    src={lead.image}
+                    alt={lead.title}
                     loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950 via-charcoal-950/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/70 to-navy-950/20" />
 
-                  {/* Top Badges */}
-                  <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-                    <span className="px-3.5 py-1.5 rounded-full bg-charcoal-950/70 text-gold-300 backdrop-blur-md text-[11px] font-serif font-bold uppercase tracking-wider border border-gold-500/30">
-                      Featured Destination · {filtered[0].tag}
+                  <div className="absolute top-5 left-5 right-5 flex items-center justify-between">
+                    <span className="px-3.5 py-1.5 rounded-pill bg-navy-950/75 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider border border-white/20">
+                      Featured · {lead.tag}
                     </span>
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center group-hover:bg-gold-500 group-hover:text-charcoal-950 transition-colors">
-                      <ArrowUpRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                    </div>
+                    <span className="grid place-items-center w-10 h-10 rounded-full bg-navy-950/70 backdrop-blur-md text-white border border-white/20 group-hover:bg-turquoise-500 group-hover:text-navy-950 group-hover:border-transparent transition-colors">
+                      <ArrowUpRight className="w-5 h-5" />
+                    </span>
                   </div>
 
-                  {/* Bottom Editorial Content */}
-                  <div className="absolute bottom-8 left-6 right-6 text-white space-y-2">
-                    <p className="text-xs text-sand-300 font-sans tracking-widest uppercase flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-gold-400" />
-                      {filtered[0].region}
+                  <div className="absolute bottom-6 left-5 right-5 text-white space-y-2">
+                    <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] text-navy-100">
+                      <MapPin className="w-3.5 h-3.5 text-turquoise-300" />
+                      {lead.region}
                     </p>
-                    <h3 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-ivory-50 group-hover:text-gold-300 transition-colors">
-                      {filtered[0].title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-sand-200 line-clamp-2 max-w-xl font-light leading-relaxed">
-                      {filtered[0].description}
+                    <h3 className="text-h3 font-bold text-white">{lead.title}</h3>
+                    <p className="text-sm text-navy-100 line-clamp-2 max-w-xl leading-relaxed">
+                      {lead.description}
                     </p>
-
-                    <div className="pt-3 flex items-center gap-4 text-xs text-sand-300 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-gold-400" />
-                        {filtered[0].duration}
+                    <div className="pt-1 flex items-center gap-4 text-xs text-navy-100">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-turquoise-300" />
+                        {lead.duration}
                       </span>
-                      <span>Season: {filtered[0].season}</span>
+                      <span>Season · {lead.season}</span>
                     </div>
                   </div>
                 </Link>
@@ -126,107 +113,82 @@ export const DestinationSection: React.FC = () => {
             </div>
           )}
 
-          {/* Right Side Stacked Cards (5 Cols on Desktop) */}
-          <div className="md:col-span-5 flex flex-col gap-8 justify-between">
-            {filtered.slice(1, 3).map((dest, idx) => (
+          <div className="md:col-span-5 flex flex-col gap-6">
+            {stacked.map((dest, idx) => (
               <RevealOnScroll key={dest.id} direction="up" delayMs={100 * (idx + 1)} className="flex-1">
                 <Link
                   to={`/places/${dest.slug}`}
-                  className="group relative h-full min-h-[240px] rounded-3xl overflow-hidden block shadow-lg transition-all duration-300 hover:shadow-xl"
+                  className="group relative block h-full min-h-[220px] rounded-media overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 ease-premium"
                 >
                   <img
                     src={dest.image}
                     alt={dest.title}
                     loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950 via-charcoal-950/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/70 to-navy-950/20" />
 
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full bg-charcoal-950/70 text-gold-300 backdrop-blur-md text-[10px] font-serif font-bold uppercase tracking-wider border border-gold-500/20">
+                    <span className="px-3 py-1 rounded-pill bg-navy-950/75 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider border border-white/20">
                       {dest.tag}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center group-hover:bg-gold-500 group-hover:text-charcoal-950 transition-colors">
+                    <span className="grid place-items-center w-8 h-8 rounded-full bg-navy-950/70 backdrop-blur-md text-white border border-white/20 group-hover:bg-turquoise-500 group-hover:text-navy-950 group-hover:border-transparent transition-colors">
                       <ArrowUpRight className="w-4 h-4" />
-                    </div>
+                    </span>
                   </div>
 
-                  <div className="absolute bottom-5 left-5 right-5 text-white space-y-1">
-                    <p className="text-[11px] text-sand-300 tracking-wider uppercase">
-                      {dest.region}
-                    </p>
-                    <h3 className="text-xl sm:text-2xl font-serif font-bold text-ivory-50 group-hover:text-gold-300 transition-colors">
-                      {dest.title}
-                    </h3>
-                    <p className="text-xs text-sand-200 line-clamp-1 font-light">
-                      {dest.description}
-                    </p>
+                  <div className="absolute bottom-4 left-4 right-4 text-white space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-navy-100">{dest.region}</p>
+                    <h3 className="text-xl font-bold font-serif text-white">{dest.title}</h3>
+                    <p className="text-xs text-navy-100 line-clamp-1">{dest.description}</p>
                   </div>
                 </Link>
               </RevealOnScroll>
             ))}
           </div>
 
-          {/* Bottom Row Additional Cards (Full 12 cols in 3-card grid) */}
-          {filtered.slice(3, 6).map((dest, idx) => (
+          {row.map((dest, idx) => (
             <div key={dest.id} className="md:col-span-4">
-              <RevealOnScroll direction="up" delayMs={150 * (idx + 1)}>
+              <RevealOnScroll direction="up" delayMs={120 * (idx + 1)}>
                 <Link
                   to={`/places/${dest.slug}`}
-                  className="group relative h-[320px] rounded-3xl overflow-hidden block shadow-md transition-all duration-300 hover:shadow-xl"
+                  className="group relative block h-[300px] rounded-media overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 ease-premium"
                 >
                   <img
                     src={dest.image}
                     alt={dest.title}
                     loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950 via-charcoal-950/30 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/70 to-navy-950/20" />
 
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-                    <span className="px-2.5 py-1 rounded-full bg-charcoal-950/70 text-gold-300 backdrop-blur-md text-[10px] font-serif font-bold uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded-pill bg-navy-950/75 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider border border-white/20">
                       {dest.tag}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center group-hover:bg-gold-500 group-hover:text-charcoal-950 transition-colors">
+                    <span className="grid place-items-center w-8 h-8 rounded-full bg-navy-950/70 backdrop-blur-md text-white border border-white/20 group-hover:bg-turquoise-500 group-hover:text-navy-950 group-hover:border-transparent transition-colors">
                       <ArrowUpRight className="w-4 h-4" />
-                    </div>
+                    </span>
                   </div>
 
-                  <div className="absolute bottom-5 left-5 right-5 text-white space-y-1">
-                    <p className="text-[11px] text-sand-300 tracking-wider uppercase">
-                      {dest.region}
-                    </p>
-                    <h3 className="text-xl font-serif font-bold text-ivory-50 group-hover:text-gold-300 transition-colors">
-                      {dest.title}
-                    </h3>
-                    <p className="text-xs text-sand-200 line-clamp-2 font-light">
-                      {dest.description}
-                    </p>
+                  <div className="absolute bottom-4 left-4 right-4 text-white space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-navy-100">{dest.region}</p>
+                    <h3 className="text-lg font-bold font-serif text-white">{dest.title}</h3>
+                    <p className="text-xs text-navy-100 line-clamp-2">{dest.description}</p>
                   </div>
                 </Link>
               </RevealOnScroll>
             </div>
           ))}
+        </div>
 
-          {/* Photography attribution (Wikimedia Commons licensing) */}
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 pt-4 border-t border-sand-200 text-[10px] text-sand-500">
-            {filtered.map((dest) =>
-              dest.creditUrl ? (
-                <a
-                  key={dest.id}
-                  href={dest.creditUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-gold-600 transition-colors underline decoration-sand-300 underline-offset-2"
-                >
-                  {dest.title} · Wikimedia Commons
-                </a>
-              ) : null
-            )}
-          </div>
+        <div className="flex justify-center pt-2">
+          <Link to="/explore" className="btn-secondary">
+            View all mapped destinations
+            <ArrowUpRight className="w-4 h-4" />
+          </Link>
         </div>
       </div>
     </section>
   );
 };
-

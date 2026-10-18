@@ -23,6 +23,14 @@ export const RevealOnScroll: React.FC<RevealOnScrollProps> = ({
       return;
     }
 
+    // Browsers can jump to an anchored section before the page finishes
+    // mounting. In that case, don't leave the section hidden behind the
+    // entrance animation while the user is already looking directly at it.
+    if (window.location.hash) {
+      setIsVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -37,7 +45,24 @@ export const RevealOnScroll: React.FC<RevealOnScrollProps> = ({
     );
 
     if (elementRef.current) {
-      observer.observe(elementRef.current);
+      const element = elementRef.current;
+      observer.observe(element);
+
+      // Hash navigation can position the page before the observer receives
+      // its first callback. Reveal elements already in the viewport so direct
+      // links such as /#experiences never leave the section visually empty.
+      const revealIfInViewport = () => {
+        const rect = element.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const inViewport = rect.top < viewportHeight * 0.92 && rect.bottom > 0;
+
+        if (inViewport) {
+          setIsVisible(true);
+          observer.unobserve(element);
+        }
+      };
+
+      requestAnimationFrame(revealIfInViewport);
     }
 
     return () => observer.disconnect();
@@ -51,9 +76,9 @@ export const RevealOnScroll: React.FC<RevealOnScrollProps> = ({
       case 'down':
         return 'translate3d(0, -32px, 0)';
       case 'left':
-        return 'translate3d(32px, 0, 0)';
+        return 'translate3d(16px, 0, 0)';
       case 'right':
-        return 'translate3d(-32px, 0, 0)';
+        return 'translate3d(-16px, 0, 0)';
       case 'none':
       default:
         return 'none';

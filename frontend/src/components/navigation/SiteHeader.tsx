@@ -1,49 +1,103 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useItinerary } from '../../context/ItineraryContext';
 import { AuthModal } from '../auth/AuthModal';
+import { ThemeToggleButton } from '../common/ThemeToggleButton';
 import {
-  Compass,
-  MapPin,
   Calendar,
   ShieldAlert,
   LogOut,
   Menu,
   X,
   ChevronDown,
-  Navigation,
-  Sparkles,
+  Route,
+  Search,
+  MapPin,
   User as UserIcon,
-  Compass as CompassIcon,
 } from 'lucide-react';
+
+interface NavItem {
+  label: string;
+  /** Hash target when already on the landing page. */
+  hash: string;
+  /** Absolute path fallback for every other route. */
+  to: string;
+  /** Route prefix that should mark this item active. */
+  match?: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { label: 'Home', hash: '', to: '/', match: '/' },
+  { label: 'Destinations', hash: '#destinations', to: '/explore', match: '/explore' },
+  { label: 'Experiences', hash: '#experiences', to: '/#experiences' },
+  { label: 'How It Works', hash: '#how-it-works', to: '/#how-it-works' },
+  { label: 'Journal', hash: '#journal', to: '/#journal' },
+];
 
 export const SiteHeader: React.FC = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { stops, setIsDrawerOpen } = useItinerary();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Scroll listener for translucent -> solid transition
+  const isHome = location.pathname === '/';
+
+  // Scroll detection: seamless transparent on hero, frosted glass when scrolled
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 30) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close user menu when clicking outside
+  // Scrollspy for active landing page section
+  useEffect(() => {
+    if (!isHome) {
+      setActiveSection('');
+      return;
+    }
+    const sectionIds = ['journal', 'how-it-works', 'experiences', 'destinations'];
+    const handleSectionScroll = () => {
+      const scrollPosition = window.scrollY + 160;
+      let matched = '';
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el && el.offsetTop <= scrollPosition) {
+          matched = id;
+          break;
+        }
+      }
+      setActiveSection(matched);
+    };
+
+    handleSectionScroll();
+    window.addEventListener('scroll', handleSectionScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleSectionScroll);
+  }, [isHome]);
+
+  // Support direct hash scrolling across route changes
+  useEffect(() => {
+    if (location.hash) {
+      const targetId = location.hash.replace('#', '');
+      const el = document.getElementById(targetId);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }, 120);
+      }
+    }
+  }, [location.hash, location.pathname]);
+
+  // Close user dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -54,17 +108,30 @@ export const SiteHeader: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Lock body scroll when mobile menu open
+  // Escape key closes menus
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setIsMobileMenuOpen(false);
+      setIsUserMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
+
+  // Lock body scroll while mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
   }, [isMobileMenuOpen]);
+
+  // Reset drawer on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsUserMenuOpen(false);
+  }, [location.pathname]);
 
   const openAuth = (mode: 'login' | 'register') => {
     setAuthMode(mode);
@@ -72,202 +139,204 @@ export const SiteHeader: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const isHome = location.pathname === '/';
-  const isExplore = location.pathname === '/explore';
-  const isItineraries = location.pathname === '/itineraries';
-  const isAdminPage = location.pathname === '/admin';
+  const handleNavClick = (item: NavItem) => {
+    setIsMobileMenuOpen(false);
+    if (item.hash && isHome) {
+      const el = document.getElementById(item.hash.slice(1));
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+    navigate(item.to);
+  };
+
+  const handleSearchAction = () => {
+    setIsMobileMenuOpen(false);
+    if (isHome) {
+      const el = document.getElementById('travel-search');
+      el?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    navigate('/explore');
+  };
+
+  const isNavActive = (item: NavItem) => {
+    if (isHome) {
+      if (item.hash) {
+        return activeSection === item.hash.slice(1);
+      }
+      return !activeSection && item.match === '/';
+    }
+    return Boolean(item.match && location.pathname.startsWith(item.match));
+  };
 
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled || !isHome
-            ? 'bg-charcoal-950/92 backdrop-blur-md border-b border-sand-400/15 py-3.5 shadow-2xl'
-            : 'bg-gradient-to-b from-charcoal-950/85 via-charcoal-950/50 to-transparent py-4 sm:py-5 border-b border-white/5'
+        className={`fixed top-0 left-0 right-0 z-50 liquid-glass-header transition-all duration-300 ease-premium ${
+          isScrolled ? 'is-scrolled py-2' : 'py-3 lg:py-4'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-6">
-            {/* Brand Wordmark */}
-            <Link
-              to="/"
-              className="flex items-center gap-3 group focus:outline-none rounded-lg shrink-0"
-            >
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-charcoal-950 font-black shadow-md shadow-gold-500/20 group-hover:scale-105 transition-transform duration-300">
-                <Compass className="w-5 h-5 text-charcoal-950" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-base sm:text-lg font-serif font-bold tracking-[0.25em] text-ivory-50 uppercase group-hover:text-gold-400 transition-colors">
-                  Aether
-                </span>
-                <span className="text-[9px] tracking-[0.35em] text-sand-400 uppercase font-sans font-medium -mt-1 group-hover:text-sand-300 transition-colors">
-                  Expeditions
-                </span>
-              </div>
-            </Link>
+        <div className="container-page">
+          <div className="flex h-14 sm:h-16 items-center justify-between gap-4">
+            
+            {/* Zone 1: Left Brand Block */}
+            <div className="flex items-center shrink-0">
+              <Link
+                to="/"
+                onClick={() => window.scrollTo({ top: 0, behavior: isHome ? 'smooth' : 'auto' })}
+                className="flex items-center gap-2.5 sm:gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-turquoise-400 rounded-xl py-1"
+                aria-label="Visitflow home"
+              >
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-turquoise-500/20 to-ocean-500/20 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <img
+                    src="/visitflow-emblem.png"
+                    alt="Visitflow emblem"
+                    className="relative h-8 sm:h-9 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center tracking-tight">
+                    <span className="text-lg sm:text-xl font-serif font-black tracking-tight text-white drop-shadow-sm">
+                      Visit
+                    </span>
+                    <span className="text-lg sm:text-xl font-serif font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-turquoise-300 via-turquoise-400 to-ocean-300 drop-shadow-sm">
+                      flow
+                    </span>
+                  </div>
+                  <span className="text-[8.5px] font-sans font-bold tracking-[0.25em] uppercase text-white/50 -mt-0.5">
+                    Sri Lanka
+                  </span>
+                </div>
+              </Link>
+            </div>
 
-            {/* Desktop Center Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-7 text-[12px] font-medium tracking-[0.14em] uppercase text-sand-300">
-              {isHome ? (
-                <>
-                  <a
-                    href="#destinations"
-                    className="hover:text-gold-400 transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-gold-400 hover:after:w-full after:transition-all"
-                  >
-                    Destinations
-                  </a>
-                  <a
-                    href="#experiences"
-                    className="hover:text-gold-400 transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-gold-400 hover:after:w-full after:transition-all"
-                  >
-                    Experiences
-                  </a>
-                  <a
-                    href="#how-it-works"
-                    className="hover:text-gold-400 transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-gold-400 hover:after:w-full after:transition-all"
-                  >
-                    How It Works
-                  </a>
-                  <a
-                    href="#journal"
-                    className="hover:text-gold-400 transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-gold-400 hover:after:w-full after:transition-all"
-                  >
-                    Journal
-                  </a>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/"
-                    className="hover:text-gold-400 transition-colors py-1"
-                  >
-                    Home
-                  </Link>
-                  <Link
-                    to="/explore"
-                    className={`hover:text-gold-400 transition-colors py-1 ${
-                      isExplore ? 'text-gold-400 font-bold' : ''
+            {/* Zone 2: Redesigned Hero Nav (Clean, Refined Editorial Typography) */}
+            <nav className="hidden lg:flex items-center gap-7 xl:gap-8" aria-label="Primary">
+              {NAV_ITEMS.map((item) => {
+                const active = isNavActive(item);
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => handleNavClick(item)}
+                    aria-current={active ? 'page' : undefined}
+                    className={`relative py-1.5 text-[13px] font-medium tracking-wide transition-colors duration-200 group ${
+                      active ? 'text-white font-semibold' : 'text-white/70 hover:text-white'
                     }`}
                   >
-                    Destinations
-                  </Link>
-                </>
-              )}
-
-              {/* Spatial Route Map Link */}
-              <Link
-                to="/explore"
-                className={`flex items-center gap-1.5 transition-colors py-1 ${
-                  isExplore
-                    ? 'text-gold-400 font-bold'
-                    : 'hover:text-gold-400'
-                }`}
-                title="Interactive spatial route map from 7.4394, 81.8172"
-              >
-                <Navigation className="w-3.5 h-3.5 text-sky-400" />
-                <span>Route Map</span>
-              </Link>
+                    <span>{item.label}</span>
+                    {/* Delicate active glow indicator */}
+                    <span
+                      className={`absolute -bottom-1 left-1/2 -translate-x-1/2 h-[2px] rounded-full bg-gradient-to-r from-turquoise-400 to-ocean-400 transition-all duration-300 ${
+                        active
+                          ? 'w-5 shadow-[0_0_8px_rgba(0,191,196,0.8)] opacity-100'
+                          : 'w-0 opacity-0 group-hover:w-3 group-hover:opacity-60'
+                      }`}
+                    />
+                  </button>
+                );
+              })}
             </nav>
 
-            {/* Desktop Right Action Cluster */}
-            <div className="hidden md:flex items-center gap-3 shrink-0">
-              {/* Day Plan Trigger Button */}
+            {/* Zone 3: Right Controls & Actions (Plan Your Trip Removed) */}
+            <div className="hidden md:flex items-center gap-2.5 shrink-0">
+              {/* Quick Search */}
+              <button
+                type="button"
+                onClick={handleSearchAction}
+                aria-label="Search destinations"
+                title="Search destinations"
+                className="liquid-glass-btn-round grid place-items-center w-10 h-10 rounded-full"
+              >
+                <Search className="w-4 h-4 text-white" />
+              </button>
+
+              {/* Theme Toggle */}
+              <ThemeToggleButton className="shrink-0" />
+
+              {/* My Trip Drawer Trigger */}
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-gold-500/40 text-ivory-100 text-xs font-medium transition-all shadow-sm focus:outline-none focus:ring-1 focus:ring-gold-500"
-                title="Open Day Plan drawer"
+                className="liquid-glass-pill relative inline-flex items-center gap-2 h-10 px-4 rounded-full text-white text-xs font-semibold"
+                title="Open your trip plan"
               >
-                <MapPin className="w-3.5 h-3.5 text-gold-400" />
-                <span>Day Plan</span>
+                <MapPin className="w-4 h-4 text-turquoise-300" />
+                <span>My Trip</span>
                 {stops.length > 0 && (
-                  <span className="w-4 h-4 text-[10px] font-black bg-gold-500 text-charcoal-950 rounded-full flex items-center justify-center shadow-sm">
+                  <span className="grid place-items-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold bg-ocean-500 text-white rounded-full shadow-sm">
                     {stops.length}
                   </span>
                 )}
               </button>
 
-              {/* Primary "Plan Your Trip" Action */}
-              <button
-                type="button"
-                onClick={() => {
-                  const searchEl = document.getElementById('travel-search');
-                  if (searchEl && isHome) {
-                    searchEl.scrollIntoView({ behavior: 'smooth' });
-                  } else {
-                    setIsDrawerOpen(true);
-                  }
-                }}
-                className="px-5 py-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 text-charcoal-950 text-xs font-bold tracking-wider uppercase transition-all shadow-md hover:shadow-gold-500/20 hover:scale-102 focus:outline-none active:scale-98"
-              >
-                Plan Your Trip
-              </button>
-
-              {/* User Profile / Auth Dropdown */}
+              {/* User Account / Sign In */}
               {isAuthenticated && user ? (
                 <div className="relative" ref={userMenuRef}>
                   <button
                     type="button"
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-sand-400/40 text-xs text-ivory-100 transition-colors focus:outline-none"
-                    aria-label="Open user profile menu"
+                    onClick={() => setIsUserMenuOpen((v) => !v)}
+                    aria-haspopup="menu"
+                    aria-expanded={isUserMenuOpen}
+                    className="liquid-glass-pill flex items-center gap-2 pl-1.5 pr-3 h-10 rounded-full"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gold-400 to-amber-600 text-charcoal-950 font-bold text-xs flex items-center justify-center shadow-inner">
+                    <span className="grid place-items-center w-7 h-7 rounded-full bg-gradient-to-r from-ocean-500 to-turquoise-500 text-white text-xs font-bold shadow-inner">
                       {user.name.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-xs font-medium text-sand-200 hidden xl:inline max-w-[90px] truncate">
+                    </span>
+                    <span className="hidden xl:inline max-w-[80px] truncate text-xs font-bold text-white">
                       {user.name.split(' ')[0]}
                     </span>
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-sand-400 transition-transform duration-200 ${
+                      className={`w-3.5 h-3.5 text-white/80 transition-transform ${
                         isUserMenuOpen ? 'rotate-180' : ''
                       }`}
                     />
                   </button>
 
-                  {/* Dropdown Menu */}
                   {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2.5 w-60 bg-charcoal-900 border border-sand-400/20 rounded-2xl shadow-2xl py-1.5 text-sand-200 z-50 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150">
-                      <div className="px-4 py-3 border-b border-sand-400/10">
-                        <p className="text-[10px] font-bold tracking-wider uppercase text-sand-400">
-                          Signed In
+                    <div
+                      role="menu"
+                      className="absolute right-0 mt-2.5 w-64 bg-navy-950/95 dark:bg-navy-900 border border-white/10 rounded-2xl shadow-xl overflow-hidden z-50 backdrop-blur-xl animate-fade-in text-white"
+                    >
+                      <div className="px-4 py-3 border-b border-white/10 bg-white/5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-white/50">
+                          Signed in
                         </p>
-                        <p className="text-xs font-bold text-ivory-50 truncate mt-0.5">
+                        <p className="text-sm font-semibold text-white truncate mt-0.5">
                           {user.name}
                         </p>
-                        <p className="text-[11px] text-sand-400 truncate font-mono">
-                          {user.email}
-                        </p>
+                        <p className="text-xs text-white/60 truncate">{user.email}</p>
                       </div>
 
-                      <div className="py-1">
+                      <div className="py-1.5">
                         <Link
                           to="/itineraries"
+                          role="menuitem"
                           onClick={() => setIsUserMenuOpen(false)}
-                          className={`flex items-center justify-between px-4 py-2.5 text-xs font-medium hover:bg-white/5 hover:text-gold-400 transition-colors ${
-                            isItineraries ? 'text-gold-400 bg-white/5' : ''
-                          }`}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-turquoise-300 transition-colors"
                         >
-                          <span className="flex items-center gap-2.5">
-                            <Calendar className="w-4 h-4 text-gold-400" />
-                            My Saved Itineraries
-                          </span>
+                          <Calendar className="w-4 h-4 text-turquoise-400" />
+                          My Saved Itineraries
                         </Link>
 
                         <button
                           type="button"
+                          role="menuitem"
                           onClick={() => {
                             setIsUserMenuOpen(false);
                             setIsDrawerOpen(true);
                           }}
-                          className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium hover:bg-white/5 hover:text-gold-400 text-left transition-colors"
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-turquoise-300 transition-colors"
                         >
                           <span className="flex items-center gap-2.5">
-                            <MapPin className="w-4 h-4 text-gold-400" />
-                            Current Day Plan
+                            <MapPin className="w-4 h-4 text-turquoise-400" />
+                            Current Trip Plan
                           </span>
                           {stops.length > 0 && (
-                            <span className="text-[10px] font-bold bg-gold-500/20 text-gold-400 px-2 py-0.5 rounded-full border border-gold-500/30">
+                            <span className="text-[10px] font-bold text-turquoise-300 bg-white/10 px-2 py-0.5 rounded-full">
                               {stops.length}
                             </span>
                           )}
@@ -276,25 +345,25 @@ export const SiteHeader: React.FC = () => {
                         {isAdmin && (
                           <Link
                             to="/admin"
+                            role="menuitem"
                             onClick={() => setIsUserMenuOpen(false)}
-                            className={`flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gold-300 hover:text-gold-200 hover:bg-gold-500/10 transition-colors ${
-                              isAdminPage ? 'bg-gold-500/15' : ''
-                            }`}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-turquoise-300 hover:bg-white/10 transition-colors"
                           >
-                            <ShieldAlert className="w-4 h-4 text-gold-400" />
+                            <ShieldAlert className="w-4 h-4" />
                             Admin Console
                           </Link>
                         )}
                       </div>
 
-                      <div className="pt-1 border-t border-sand-400/10">
+                      <div className="border-t border-white/10 py-1.5">
                         <button
                           type="button"
+                          role="menuitem"
                           onClick={async () => {
                             setIsUserMenuOpen(false);
                             await logout();
                           }}
-                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 text-left transition-colors font-medium"
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-950/30 transition-colors"
                         >
                           <LogOut className="w-4 h-4" />
                           Sign Out
@@ -304,36 +373,29 @@ export const SiteHeader: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openAuth('login')}
-                    className="text-xs font-bold text-sand-300 hover:text-ivory-50 transition-colors px-3 py-1.5"
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openAuth('register')}
-                    className="text-xs font-bold text-charcoal-950 bg-gold-400 hover:bg-gold-300 rounded-full px-3.5 py-1.5 shadow-sm transition-colors"
-                  >
-                    Join
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => openAuth('login')}
+                  className="liquid-glass-pill flex items-center h-10 px-4 rounded-full text-xs font-semibold text-white hover:text-white"
+                >
+                  Sign In
+                </button>
               )}
             </div>
 
-            {/* Mobile Hamburger & Day Plan Indicator */}
-            <div className="flex md:hidden items-center gap-2">
+            {/* Mobile Action Controls */}
+            <div className="flex md:hidden items-center gap-1.5">
+              <ThemeToggleButton className="shrink-0" />
+
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="relative p-2 text-sand-200 hover:text-white"
-                aria-label="View day plan"
+                className="liquid-glass-btn-round relative grid place-items-center w-10 h-10 rounded-full"
+                aria-label="Open trip plan"
               >
-                <MapPin className="w-5 h-5 text-gold-400" />
+                <MapPin className="w-4 h-4 text-turquoise-300" />
                 {stops.length > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 text-[10px] font-bold bg-gold-500 text-charcoal-950 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 grid place-items-center min-w-[18px] h-4.5 px-1 text-[10px] font-bold bg-ocean-500 text-white rounded-full shadow-sm">
                     {stops.length}
                   </span>
                 )}
@@ -341,139 +403,108 @@ export const SiteHeader: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 text-sand-200 hover:text-white focus:outline-none rounded-lg"
-                aria-label="Toggle navigation menu"
+                onClick={() => setIsMobileMenuOpen((v) => !v)}
+                className="liquid-glass-btn-round grid place-items-center w-10 h-10 rounded-full"
+                aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-nav"
               >
-                {isMobileMenuOpen ? (
-                  <X className="w-6 h-6 text-gold-400" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
+                {isMobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Slide-down Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 top-[60px] bg-charcoal-950/98 backdrop-blur-2xl z-50 p-6 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-top-4 duration-200">
-            <nav className="space-y-4 pt-2 text-base font-serif tracking-widest uppercase">
-              {isHome ? (
-                <>
-                  <a
-                    href="#destinations"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block text-ivory-100 hover:text-gold-400 py-2.5 border-b border-sand-400/10"
-                  >
-                    Destinations
-                  </a>
-                  <a
-                    href="#experiences"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block text-ivory-100 hover:text-gold-400 py-2.5 border-b border-sand-400/10"
-                  >
-                    Experiences
-                  </a>
-                  <a
-                    href="#how-it-works"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block text-ivory-100 hover:text-gold-400 py-2.5 border-b border-sand-400/10"
-                  >
-                    How It Works
-                  </a>
-                  <a
-                    href="#journal"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block text-ivory-100 hover:text-gold-400 py-2.5 border-b border-sand-400/10"
-                  >
-                    Travel Journal
-                  </a>
-                </>
-              ) : (
-                <Link
-                  to="/"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block text-ivory-100 hover:text-gold-400 py-2.5 border-b border-sand-400/10"
-                >
-                  Home
-                </Link>
-              )}
-
-              <Link
-                to="/explore"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-sky-400 font-sans py-2.5 border-b border-sand-400/10 flex items-center gap-2"
-              >
-                <Navigation className="w-4 h-4" />
-                Spatial Route Map & Explorer
-              </Link>
-
-              {isAuthenticated && (
-                <Link
-                  to="/itineraries"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block text-ivory-100 hover:text-gold-400 py-2.5 border-b border-sand-400/10"
-                >
-                  My Saved Itineraries
-                </Link>
-              )}
-
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block text-gold-400 py-2.5 border-b border-sand-400/10"
-                >
-                  Admin Console
-                </Link>
-              )}
-            </nav>
-
-            <div className="pt-6 border-t border-sand-400/20 space-y-3 font-sans">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setIsDrawerOpen(true);
-                }}
-                className="w-full py-3.5 bg-gradient-to-r from-gold-400 to-gold-500 text-charcoal-950 font-bold rounded-xl text-center text-xs uppercase tracking-wider shadow-lg"
-              >
-                Plan Your Trip
-              </button>
-
-              {isAuthenticated ? (
+        {/* Mobile Navigation Drawer */}
+        <div
+          id="mobile-nav"
+          inert={!isMobileMenuOpen}
+          aria-hidden={!isMobileMenuOpen}
+          className={`md:hidden overflow-hidden bg-navy-950/98 backdrop-blur-2xl border-t border-white/10 text-white transition-[max-height] duration-300 ease-premium ${
+            isMobileMenuOpen ? 'max-h-[90vh]' : 'max-h-0'
+          }`}
+        >
+          <div className="container-page py-5 flex flex-col gap-2">
+            {NAV_ITEMS.map((item) => {
+              const active = isNavActive(item);
+              return (
                 <button
+                  key={item.label}
                   type="button"
-                  onClick={async () => {
-                    setIsMobileMenuOpen(false);
-                    await logout();
-                  }}
-                  className="w-full py-2.5 text-center text-xs text-red-400 font-semibold"
+                  onClick={() => handleNavClick(item)}
+                  className={`flex items-center justify-between py-3 px-3 rounded-xl border border-white/5 text-base font-medium transition-all ${
+                    active
+                      ? 'bg-white/10 text-white font-bold border-turquoise-400/30'
+                      : 'text-white/80 hover:text-white hover:bg-white/5'
+                  }`}
                 >
-                  Sign Out ({user?.name})
+                  <span>{item.label}</span>
+                  {active && <span className="w-2 h-2 rounded-full bg-turquoise-400 shadow-[0_0_8px_#38bdf8]" />}
                 </button>
-              ) : (
-                <div className="flex gap-2">
+              );
+            })}
+
+            <Link
+              to="/explore"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 py-3 px-3 rounded-xl border border-white/5 text-base font-medium text-white/80 hover:text-white hover:bg-white/5"
+            >
+              <Route className="w-4 h-4 text-turquoise-400" />
+              <span>Route Discovery Map</span>
+            </Link>
+
+            {isAuthenticated && (
+              <Link
+                to="/itineraries"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-2.5 py-3 px-3 rounded-xl border border-white/5 text-base font-medium text-white/80 hover:text-white hover:bg-white/5"
+              >
+                <Calendar className="w-4 h-4 text-turquoise-400" />
+                <span>My Saved Itineraries</span>
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-2.5 py-3 px-3 rounded-xl border border-turquoise-500/30 bg-turquoise-500/10 text-base font-semibold text-turquoise-300"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                <span>Admin Console</span>
+              </Link>
+            )}
+
+            <div className="pt-3 border-t border-white/10 flex flex-col gap-2.5">
+              {isAuthenticated ? (
+                <div className="flex items-center justify-between px-3 py-2 bg-white/5 rounded-xl">
+                  <span className="flex items-center gap-2 text-sm text-white/80">
+                    <UserIcon className="w-4 h-4 text-turquoise-400" />
+                    {user?.name}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => openAuth('login')}
-                    className="flex-1 py-3 text-center text-xs font-bold text-ivory-100 bg-white/10 rounded-xl"
+                    onClick={async () => {
+                      setIsMobileMenuOpen(false);
+                      await logout();
+                    }}
+                    className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors"
                   >
-                    Sign In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openAuth('register')}
-                    className="flex-1 py-3 text-center text-xs font-bold text-charcoal-950 bg-gold-400 rounded-xl"
-                  >
-                    Register
+                    Sign Out
                   </button>
                 </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => openAuth('login')}
+                  className="w-full h-11 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-sm font-bold text-white transition-colors"
+                >
+                  Sign In
+                </button>
               )}
             </div>
           </div>
-        )}
+        </div>
       </header>
 
       <AuthModal
@@ -484,3 +515,5 @@ export const SiteHeader: React.FC = () => {
     </>
   );
 };
+
+export default SiteHeader;
