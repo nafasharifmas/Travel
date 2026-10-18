@@ -95,6 +95,12 @@ class AdminController extends Controller
                 ] : null,
                 'primary_photo' => ($place->media->firstWhere('is_primary', true) ?? $place->media->first())?->url,
                 'media_count' => $place->media->count(),
+                'media' => $place->media->map(fn ($media) => [
+                    'id' => $media->id,
+                    'url' => $media->url,
+                    'original_name' => $media->original_name,
+                    'is_primary' => (bool) $media->is_primary,
+                ])->values(),
                 'created_at' => $place->created_at->toIso8601String(),
             ];
         });
