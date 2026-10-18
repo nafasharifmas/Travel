@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Compass,
   LayoutDashboard,
   MapPin,
   FolderTree,
@@ -77,16 +76,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <div className="px-5 pt-6 pb-5 border-b border-sand-400/10">
         <Link
           to="/"
-          className="flex items-center gap-3 group rounded-lg focus-visible:ring-2 focus-visible:ring-gold-500"
+          className="flex items-center gap-3 group rounded-lg focus-visible:ring-2 focus-visible:ring-ocean-500"
         >
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-md shadow-gold-500/20 group-hover:scale-105 transition-transform">
-            <Compass className="w-5 h-5 text-charcoal-950" />
-          </div>
-          <div className="flex flex-col leading-none">
-            <span className="text-sm font-serif font-bold tracking-[0.2em] text-ivory-50 uppercase group-hover:text-gold-400 transition-colors">
-              Aether
+          <div className="flex flex-col leading-none gap-1.5">
+            <span className="inline-flex w-fit rounded-lg bg-white px-2 py-1 shadow-card">
+              <img src="/visitflow-logo.png" alt="Visitflow" className="h-5 w-auto object-contain" />
             </span>
-            <span className="text-[9px] tracking-[0.25em] text-sand-400 uppercase mt-1">
+            <span className="text-[9px] tracking-[0.25em] text-navy-300 uppercase">
               Admin Console
             </span>
           </div>
