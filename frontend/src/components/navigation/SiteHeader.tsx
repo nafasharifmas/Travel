@@ -12,7 +12,6 @@ import {
   X,
   ChevronDown,
   Route,
-  Search,
   MapPin,
   User as UserIcon,
 } from 'lucide-react';
@@ -151,16 +150,6 @@ export const SiteHeader: React.FC = () => {
     navigate(item.to);
   };
 
-  const handleSearchAction = () => {
-    setIsMobileMenuOpen(false);
-    if (isHome) {
-      const el = document.getElementById('travel-search');
-      el?.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
-    navigate('/explore');
-  };
-
   const isNavActive = (item: NavItem) => {
     if (isHome) {
       if (item.hash) {
@@ -224,7 +213,7 @@ export const SiteHeader: React.FC = () => {
                     onClick={() => handleNavClick(item)}
                     aria-current={active ? 'page' : undefined}
                     className={`relative py-1.5 text-[13px] font-medium tracking-wide transition-colors duration-200 group ${
-                      active ? 'text-white font-semibold' : 'text-white/70 hover:text-white'
+                      active ? 'text-ocean-600 font-semibold' : 'text-navy-900 hover:text-ocean-600'
                     }`}
                   >
                     <span>{item.label}</span>
@@ -243,17 +232,6 @@ export const SiteHeader: React.FC = () => {
 
             {/* Zone 3: Right Controls & Actions (Plan Your Trip Removed) */}
             <div className="hidden md:flex items-center gap-2.5 shrink-0">
-              {/* Quick Search */}
-              <button
-                type="button"
-                onClick={handleSearchAction}
-                aria-label="Search destinations"
-                title="Search destinations"
-                className="liquid-glass-btn-round grid place-items-center w-10 h-10 rounded-full"
-              >
-                <Search className="w-4 h-4 text-white" />
-              </button>
-
               {/* Theme Toggle */}
               <ThemeToggleButton className="shrink-0" />
 
@@ -261,7 +239,7 @@ export const SiteHeader: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="liquid-glass-pill relative inline-flex items-center gap-2 h-10 px-4 rounded-full text-white text-xs font-semibold"
+                className="liquid-glass-pill relative inline-flex items-center gap-2 h-10 px-4 rounded-full text-navy-900 text-xs font-semibold"
                 title="Open your trip plan"
               >
                 <MapPin className="w-4 h-4 text-turquoise-300" />
@@ -286,7 +264,7 @@ export const SiteHeader: React.FC = () => {
                     <span className="grid place-items-center w-7 h-7 rounded-full bg-gradient-to-r from-ocean-500 to-turquoise-500 text-white text-xs font-bold shadow-inner">
                       {user.name.charAt(0).toUpperCase()}
                     </span>
-                    <span className="hidden xl:inline max-w-[80px] truncate text-xs font-bold text-white">
+                    <span className="hidden xl:inline max-w-[80px] truncate text-xs font-bold text-navy-900">
                       {user.name.split(' ')[0]}
                     </span>
                     <ChevronDown
