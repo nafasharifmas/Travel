@@ -13,6 +13,8 @@ use Tests\TestCase;
 
 class VisitflowApiTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected User $adminUser;
     protected User $regularUser;
     protected Category $category;
