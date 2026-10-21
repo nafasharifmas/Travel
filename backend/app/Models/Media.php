@@ -15,6 +15,7 @@ class Media extends Model
     protected $fillable = [
         'place_id',
         'file_path',
+        'cloudinary_public_id',
         'original_name',
         'mime_type',
         'size',

@@ -951,10 +951,12 @@ export const AdminDashboardPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleArchivePlace(place)}
-                                className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50"
-                                title="Archive place (soft delete)"
+                                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-bold text-red-600 hover:bg-red-50"
+                                title="Delete place (archive)"
+                                aria-label={`Delete ${place.name}`}
                               >
-                                <Archive className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span className="hidden xl:inline">Delete</span>
                               </button>
                             )}
                           </div>
