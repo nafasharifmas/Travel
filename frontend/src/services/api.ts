@@ -39,17 +39,31 @@ class ApiService {
       headers,
     });
 
+    const responseText = await response.text();
+    let responseData: any = null;
+    try {
+      responseData = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      responseData = null;
+    }
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = responseData || {};
       const message =
         errorData.message ||
         (errorData.errors
           ? Object.values(errorData.errors).flat().join(' ')
-          : `HTTP error ${response.status}`);
+          : responseText.trim().startsWith('<')
+            ? `The server returned an HTML error page (HTTP ${response.status}). Check the Laravel log for the underlying exception.`
+            : `HTTP error ${response.status}`);
       throw new Error(message);
     }
 
-    return response.json();
+    if (!responseData) {
+      throw new Error('The server returned an empty response.');
+    }
+
+    return responseData as T;
   }
 
   // --- Auth ---
