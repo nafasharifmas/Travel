@@ -165,13 +165,13 @@ export const SiteHeader: React.FC = () => {
       <header
         className={`fixed top-0 left-0 right-0 z-50 liquid-glass-header transition-all duration-300 ease-premium ${
           isScrolled ? 'is-scrolled py-2' : 'py-3 lg:py-4'
-        }`}
+        } ${!isHome ? 'bg-white/95 backdrop-blur-md border-b border-navy-100 shadow-sm' : ''}`}
       >
         <div className="container-page">
-          <div className="flex h-14 sm:h-16 items-center justify-between gap-4">
+          <div className="flex min-h-14 sm:min-h-16 items-center justify-between gap-4">
             
             {/* Zone 1: Left Brand Block */}
-            <div className="flex items-center shrink-0">
+            <div className="flex min-w-0 shrink-0 items-center lg:min-w-[220px]">
               <Link
                 to="/"
                 onClick={() => window.scrollTo({ top: 0, behavior: isHome ? 'smooth' : 'auto' })}
@@ -186,24 +186,16 @@ export const SiteHeader: React.FC = () => {
                     className="relative h-8 sm:h-9 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center tracking-tight">
-                    <span className="text-lg sm:text-xl font-serif font-black tracking-tight text-white drop-shadow-sm">
-                      Visit
-                    </span>
-                    <span className="text-lg sm:text-xl font-serif font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-turquoise-300 via-turquoise-400 to-ocean-300 drop-shadow-sm">
-                      flow
-                    </span>
-                  </div>
-                  <span className="text-[8.5px] font-sans font-bold tracking-[0.25em] uppercase text-white/50 -mt-0.5">
-                    Sri Lanka
+                <div className="min-w-0 flex flex-col">
+                  <span className="whitespace-nowrap text-[10px] sm:text-[11px] font-sans font-extrabold tracking-[0.22em] uppercase text-ocean-700">
+                    Visitflow
                   </span>
                 </div>
               </Link>
             </div>
 
             {/* Zone 2: Redesigned Hero Nav (Clean, Refined Editorial Typography) */}
-            <nav className="hidden lg:flex items-center gap-7 xl:gap-8" aria-label="Primary">
+            <nav className="hidden flex-1 justify-center lg:flex items-center gap-6 xl:gap-8" aria-label="Primary">
               {NAV_ITEMS.map((item) => {
                 const active = isNavActive(item);
                 return (
@@ -231,7 +223,7 @@ export const SiteHeader: React.FC = () => {
             </nav>
 
             {/* Zone 3: Right Controls & Actions (Plan Your Trip Removed) */}
-            <div className="hidden md:flex items-center gap-2.5 shrink-0">
+            <div className="hidden min-w-[220px] justify-end md:flex items-center gap-2.5 shrink-0">
               {/* Theme Toggle */}
               <ThemeToggleButton className="shrink-0" />
 
@@ -354,7 +346,7 @@ export const SiteHeader: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => openAuth('login')}
-                  className="liquid-glass-pill flex items-center h-10 px-4 rounded-full text-xs font-semibold text-white hover:text-white"
+                  className="liquid-glass-pill flex items-center h-10 px-4 rounded-full text-xs font-semibold text-navy-900 hover:text-navy-950"
                 >
                   Sign In
                 </button>

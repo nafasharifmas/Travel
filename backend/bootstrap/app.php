@@ -11,11 +11,27 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([
+        __DIR__.'/../app/Console/Commands',
+    ])
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // API consumers must always receive JSON, even when an unexpected
+        // exception occurs. This prevents the frontend from trying to parse
+        // Laravel's HTML exception page as JSON.
+        $exceptions->render(function (\Throwable $exception, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => config('app.debug')
+                        ? $exception->getMessage()
+                        : 'The server could not complete the request.',
+                ], 500);
+            }
+
+            return null;
+        });
     })->create();

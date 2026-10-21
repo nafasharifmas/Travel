@@ -9,7 +9,7 @@ import {
   formatDistance,
   EASTERN_PROVINCE_ORDER,
 } from '../../utils/geo';
-import { MapPin, Plus, Check, Clock, Navigation, Compass, ArrowRight } from 'lucide-react';
+import { MapPin, Clock, Navigation, Compass, ArrowRight } from 'lucide-react';
 
 interface PlaceCardProps {
   place: Place;
@@ -44,9 +44,6 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({
   onHover,
   userLocation = DEFAULT_USER_LOCATION,
 }) => {
-  const { addPlaceToPlan, isPlaceInPlan } = useItinerary();
-  const inPlan = isPlaceInPlan(place.id);
-
   const hasCoordinates = Boolean(place.lat && place.lng);
 
   // Distance measured from the active origin (verified anchor unless geolocation is granted).
@@ -181,28 +178,6 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({
             <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/link:translate-x-1" />
           </Link>
 
-          <button
-            type="button"
-            onClick={() => addPlaceToPlan(place)}
-            aria-pressed={inPlan}
-            className={`inline-flex items-center gap-1.5 min-h-[44px] px-4 rounded-btn text-xs font-bold transition-all duration-200 ease-premium active:scale-95 ${
-              inPlan
-                ? 'bg-turquoise-50 text-turquoise-700 border border-turquoise-300'
-                : 'bg-sunset-400 text-navy-950 hover:bg-sunset-500 shadow-card'
-            }`}
-          >
-            {inPlan ? (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                In Trip
-              </>
-            ) : (
-              <>
-                <Plus className="w-3.5 h-3.5" />
-                Add to Trip
-              </>
-            )}
-          </button>
         </div>
       </div>
     </article>

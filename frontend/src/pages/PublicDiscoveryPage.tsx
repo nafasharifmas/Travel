@@ -350,7 +350,7 @@ export const PublicDiscoveryPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-ivory-100 pt-16 lg:pt-[76px]">
+    <div className="min-h-screen bg-ivory-100 pt-24 lg:pt-[112px]">
       {/* ---------- Compact discovery hero ---------- */}
       <section className="hidden">
         <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-turquoise-500/20 blur-3xl pointer-events-none" />
