@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\CloudinaryService;
 
 class AdminController extends Controller
 {
@@ -377,6 +378,12 @@ class AdminController extends Controller
             'role' => 'required|string|in:admin,user',
         ]);
 
+        if ($user->id === $admin->id && $validated['role'] !== 'admin') {
+            return response()->json([
+                'message' => 'You cannot remove administrator privileges from your own account.',
+            ], 422);
+        }
+
         $role = Role::where('name', $validated['role'])->firstOrFail();
         $oldRole = $user->role ? $user->role->name : 'none';
 
@@ -437,9 +444,9 @@ class AdminController extends Controller
      * Media upload & management (FR-11).
      * Uploaded through validated, type- and size-checked uploads and stored outside public code tree.
      */
-    public function uploadMedia(Request $request, int $placeId): JsonResponse
+    public function uploadMedia(Request $request, int $id, CloudinaryService $cloudinary): JsonResponse
     {
-        $place = Place::withTrashed()->findOrFail($placeId);
+        $place = Place::withTrashed()->findOrFail($id);
 
         $request->validate([
             'photo' => 'required|file|image|mimes:jpeg,png,webp,jpg|max:5120', // max 5MB
@@ -447,7 +454,19 @@ class AdminController extends Controller
         ]);
 
         $file = $request->file('photo');
-        $storedPath = $file->store('places_media', 'local'); // stored in storage/app/places_media outside public code tree!
+        $cloudinaryUpload = null;
+        if ($cloudinary->isConfigured()) {
+            try {
+                $cloudinaryUpload = $cloudinary->upload($file, Str::uuid()->toString());
+                $storedPath = $cloudinaryUpload['secure_url'];
+            } catch (\Throwable $exception) {
+                report($exception);
+                // Fall back gracefully to local disk storage if Cloudinary upload fails
+                $storedPath = $file->store('places_media', 'local');
+            }
+        } else {
+            $storedPath = $file->store('places_media', 'local');
+        }
 
         $isPrimary = $request->boolean('is_primary') || $place->media()->count() === 0;
 
@@ -458,6 +477,7 @@ class AdminController extends Controller
         $media = Media::create([
             'place_id' => $place->id,
             'file_path' => $storedPath,
+            'cloudinary_public_id' => $cloudinaryUpload['public_id'] ?? null,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getClientMimeType(),
             'size' => $file->getSize(),
@@ -482,20 +502,26 @@ class AdminController extends Controller
         ], 201);
     }
 
-    public function deleteMedia(Request $request, int $mediaId): JsonResponse
+    public function deleteMedia(Request $request, int $id, CloudinaryService $cloudinary): JsonResponse
     {
-        $media = Media::findOrFail($mediaId);
+        $media = Media::findOrFail($id);
         $place = $media->place;
 
-        // If local file on disk, remove it
-        if (!str_starts_with($media->file_path, 'http')) {
+        // If local file on disk or Cloudinary public ID, remove it
+        if ($media->cloudinary_public_id && $cloudinary->isConfigured()) {
+            try {
+                $cloudinary->destroy($media->cloudinary_public_id);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        } elseif (!str_starts_with($media->file_path, 'http')) {
             Storage::disk('local')->delete($media->file_path);
         }
 
         $media->delete();
 
         AuditLog::record('media.delete', $place, [
-            'media_id' => $mediaId,
+            'media_id' => $id,
         ], $request->user());
 
         return response()->json([
