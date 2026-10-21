@@ -16,8 +16,6 @@ import {
   MapPin,
   Clock,
   Phone,
-  Plus,
-  Check,
   ArrowLeft,
   Share2,
   Sparkles,
@@ -33,6 +31,8 @@ import {
   ArrowRight,
   ListChecks,
   ChevronRight,
+  Plus,
+  Check,
 } from 'lucide-react';
 
 export const PlaceDetailPage: React.FC = () => {
@@ -42,8 +42,7 @@ export const PlaceDetailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [copied, setCopied] = useState(false);
-
-  const { addPlaceToPlan, isPlaceInPlan } = useItinerary();
+  const { addPlaceToPlan, isPlaceInPlan, setIsDrawerOpen } = useItinerary();
 
   useEffect(() => {
     if (!idOrSlug) return;
@@ -113,7 +112,6 @@ export const PlaceDetailPage: React.FC = () => {
     );
   }
 
-  const inPlan = isPlaceInPlan(place.id);
   const placeholderPhoto =
     'data:image/svg+xml;utf8,' +
     encodeURIComponent(
@@ -146,6 +144,7 @@ export const PlaceDetailPage: React.FC = () => {
     : 'Coordinates not listed';
 
   const mediaCount = place.media && place.media.length > 0 ? place.media.length : null;
+  const isInTrip = isPlaceInPlan(place.id);
 
   const originLabel = `Maruthamunai Basecamp (${DEFAULT_USER_LOCATION[0].toFixed(
     4
@@ -193,6 +192,24 @@ export const PlaceDetailPage: React.FC = () => {
             </nav>
 
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (isInTrip) {
+                    setIsDrawerOpen(true);
+                  } else {
+                    addPlaceToPlan(place);
+                  }
+                }}
+                className={isInTrip ? 'btn-on-dark btn-sm min-h-[44px]' : 'btn-primary btn-sm min-h-[44px]'}
+              >
+                {isInTrip ? (
+                  <Check className="w-4 h-4" aria-hidden="true" />
+                ) : (
+                  <Plus className="w-4 h-4" aria-hidden="true" />
+                )}
+                {isInTrip ? 'In Trip' : 'Add to Trip'}
+              </button>
               <Link to="/explore" className="btn-on-dark btn-sm min-h-[44px]">
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                 Back
@@ -244,48 +261,20 @@ export const PlaceDetailPage: React.FC = () => {
             )}
           </div>
 
-          {/* Add-to-trip action */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => addPlaceToPlan(place)}
-              aria-pressed={inPlan}
-              className={
-                inPlan
-                  ? 'btn bg-emerald-500 text-white shadow-card hover:bg-emerald-600 focus-visible:ring-emerald-500'
-                  : 'btn-conversion'
-              }
-            >
-              {inPlan ? (
-                <>
-                  <Check className="w-4 h-4" aria-hidden="true" />
-                  Included in your trip plan
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" aria-hidden="true" />
-                  Add to trip plan
-                </>
-              )}
-            </button>
-            <span className="text-xs text-navy-100">
-              {stopNumber
-                ? `Stop ${stopNumber} on the Eastern Corridor route`
-                : 'Build a route around this destination'}
-            </span>
-          </div>
         </div>
       </section>
 
       {/* ---------------- Photograph gallery ---------------- */}
-      <section className="container-page pt-8">
-        <PhotoGallery
-          photos={photos}
-          activeIndex={activePhotoIdx}
-          onSelect={setActivePhotoIdx}
-          placeName={place.name}
-        />
-      </section>
+      {photos.length > 1 && (
+        <section className="container-page pt-8">
+          <PhotoGallery
+            photos={photos}
+            activeIndex={activePhotoIdx}
+            onSelect={setActivePhotoIdx}
+            placeName={place.name}
+          />
+        </section>
+      )}
 
         {/* Two-column context: narrative left, location right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start pt-2 sm:pt-4">
@@ -357,13 +346,6 @@ export const PlaceDetailPage: React.FC = () => {
                 </div>
               </dl>
 
-              <p className="flex items-start gap-2 rounded-btn bg-ocean-50 border border-ocean-100 p-3.5 text-xs text-navy-600 leading-relaxed">
-                <Info className="w-4 h-4 text-ocean-500 mt-0.5 shrink-0" aria-hidden="true" />
-                <span>
-                  Details shown here are taken directly from the verified destination record. Where
-                  a field is empty we show it as not listed rather than guess.
-                </span>
-              </p>
             </section>
 
             {/* Highlights */}
