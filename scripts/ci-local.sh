@@ -6,10 +6,12 @@ echo " Visitflow: Running Local CI Validation"
 echo "=========================================="
 
 echo -e "\n[1/3] Running Frontend Linter (oxlint)..."
-npm --prefix frontend run lint
-
-echo -e "\n[2/3] Running Frontend TypeScript Build..."
-npm --prefix frontend run build
+(
+  cd frontend
+  npm run lint
+  echo -e "\n[2/3] Running Frontend TypeScript Build..."
+  npm run build
+)
 
 echo -e "\n[3/3] Running Backend Tests (PHPUnit)..."
 (
@@ -22,4 +24,3 @@ echo -e "\n[3/3] Running Backend Tests (PHPUnit)..."
 echo -e "\n=========================================="
 echo " ALL CI CHECKS PASSED SUCCESSFULLY!"
 echo "=========================================="
-

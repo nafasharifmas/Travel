@@ -9,10 +9,13 @@ import {
   LogOut,
   ExternalLink,
   X,
-  ShieldCheck,
+  CalendarDays,
+  Activity,
+  FileCheck,
+  Settings,
 } from 'lucide-react';
 
-export type AdminTab = 'overview' | 'places' | 'categories' | 'users' | 'audit';
+export type AdminTab = 'overview' | 'places' | 'categories' | 'users' | 'itineraries' | 'data-quality' | 'audit' | 'system-health' | 'settings';
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -33,18 +36,37 @@ interface NavItem {
 
 const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
   {
-    label: 'Workspace',
+    label: 'Overview',
     items: [
-      { key: 'overview', label: 'Overview', icon: LayoutDashboard },
-      { key: 'audit', label: 'Audit Trail', icon: History },
+      { key: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+      { key: 'audit', label: 'Audit trail', icon: History },
     ],
   },
   {
-    label: 'Records',
+    label: 'Catalogue',
     items: [
       { key: 'places', label: 'Places', icon: MapPin },
       { key: 'categories', label: 'Categories', icon: FolderTree },
+    ],
+  },
+  {
+    label: 'People',
+    items: [
       { key: 'users', label: 'Users', icon: Users },
+      { key: 'itineraries', label: 'Itineraries', icon: CalendarDays },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { key: 'data-quality', label: 'Data quality', icon: FileCheck },
+      { key: 'system-health', label: 'System health', icon: Activity },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { key: 'settings', label: 'Settings', icon: Settings },
     ],
   },
 ];
@@ -72,31 +94,30 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   const body = (
     <>
-      {/* Brand */}
-      <div className="px-5 pt-6 pb-5 border-b border-sand-400/10">
+      <div className="px-5 py-4 border-b border-sand-200 shrink-0">
         <Link
           to="/"
-          className="flex items-center gap-3 group rounded-lg focus-visible:ring-2 focus-visible:ring-ocean-500"
+          className="flex items-center gap-2.5 group rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean-500/40"
+          title="Visitflow Home"
         >
-          <div className="flex flex-col leading-none gap-1.5">
-            <span className="inline-flex w-fit rounded-lg bg-white px-2 py-1 shadow-card">
+          <div className="flex flex-col leading-none gap-0.5">
+            <span className="inline-flex w-fit rounded-md bg-white">
               <img src="/visitflow-logo.png" alt="Visitflow" className="h-5 w-auto object-contain" />
             </span>
-            <span className="text-[9px] tracking-[0.25em] text-navy-300 uppercase">
-              Admin Console
+            <span className="text-[9px] font-semibold tracking-[0.24em] text-stone-500 uppercase">
+              Admin
             </span>
           </div>
         </Link>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
+      <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-5 thin-scroll overscroll-contain">
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
-            <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-sand-500">
+            <p className="px-2 mb-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-stone-400">
               {section.label}
             </p>
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.key;
@@ -107,27 +128,22 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       type="button"
                       onClick={() => handleSelect(item.key)}
                       aria-current={isActive ? 'page' : undefined}
-                      className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left ${
+                      className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm transition-colors text-left ${
                         isActive
-                          ? 'bg-gold-500/10 text-gold-300 ring-1 ring-gold-500/25'
-                          : 'text-sand-300 hover:bg-white/[0.05] hover:text-ivory-100'
+                          ? 'bg-sand-100 text-charcoal-950 font-medium'
+                          : 'text-stone-600 hover:bg-sand-50 hover:text-charcoal-950'
                       }`}
                     >
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-gold-500" />
-                      )}
                       <Icon
                         className={`w-4 h-4 shrink-0 ${
-                          isActive ? 'text-gold-400' : 'text-sand-500'
+                          isActive ? 'text-ocean-600' : 'text-stone-400'
                         }`}
                       />
-                      <span className="flex-1">{item.label}</span>
+                      <span className="flex-1 truncate">{item.label}</span>
                       {count !== undefined && (
                         <span
-                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                            isActive
-                              ? 'bg-gold-500 text-charcoal-950'
-                              : 'bg-white/[0.07] text-sand-400'
+                          className={`text-[11px] tabular-nums ${
+                            isActive ? 'text-stone-600' : 'text-stone-400'
                           }`}
                         >
                           {count}
@@ -142,40 +158,32 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         ))}
       </nav>
 
-      {/* Session / account footer */}
-      <div className="px-4 py-4 border-t border-sand-400/10 space-y-3">
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/20">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span className="text-[10px] font-semibold text-emerald-300 uppercase tracking-wide">
-            Policy-scoped session
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3 px-1">
-          <div className="w-8 h-8 rounded-full bg-gold-500 text-charcoal-950 font-bold text-xs flex items-center justify-center shrink-0">
+      <div className="px-3 py-3 border-t border-sand-200 shrink-0 space-y-2">
+        <div className="flex items-center gap-2.5 px-1">
+          <div className="w-7 h-7 rounded-full bg-sand-100 text-charcoal-950 text-xs font-medium flex items-center justify-center shrink-0">
             {(user?.name || 'A').charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-ivory-100 truncate">{user?.name || 'Administrator'}</p>
-            <p className="text-[10px] text-sand-500 truncate">{user?.email}</p>
+            <p className="text-sm font-medium text-charcoal-950 truncate">{user?.name || 'Administrator'}</p>
+            <p className="text-xs text-stone-500 truncate">{user?.email}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Link
             to="/"
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-[11px] font-semibold text-sand-300 bg-white/[0.05] hover:bg-white/[0.1] hover:text-ivory-100 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-stone-600 hover:bg-sand-50 hover:text-charcoal-950 transition-colors"
           >
-            <ExternalLink className="w-3 h-3" />
-            View Site
+            <ExternalLink className="w-3.5 h-3.5" />
+            View site
           </Link>
           <button
             type="button"
             onClick={onLogout}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-[11px] font-semibold text-red-300 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-stone-600 hover:bg-sand-50 hover:text-charcoal-950 transition-colors"
           >
-            <LogOut className="w-3 h-3" />
-            Sign Out
+            <LogOut className="w-3.5 h-3.5" />
+            Sign out
           </button>
         </div>
       </div>
@@ -184,25 +192,23 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   return (
     <>
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 z-40 w-64 flex-col bg-charcoal-950 border-r border-sand-400/10">
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 z-40 w-60 flex-col bg-white border-r border-sand-200">
         {body}
       </aside>
 
-      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div
-            className="absolute inset-0 bg-charcoal-950/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-charcoal-950/40"
             onClick={onCloseMobile}
             aria-hidden="true"
           />
-          <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] flex flex-col bg-charcoal-950 border-r border-sand-400/15 shadow-2xl">
+          <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] flex flex-col bg-white border-r border-sand-200 shadow-lg">
             <button
               type="button"
               onClick={onCloseMobile}
               aria-label="Close navigation"
-              className="absolute top-4 right-4 z-10 p-1.5 rounded-lg text-sand-400 hover:text-ivory-100 hover:bg-white/10"
+              className="absolute top-3 right-3 z-10 p-1.5 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

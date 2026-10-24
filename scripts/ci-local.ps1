@@ -7,12 +7,17 @@ Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. Frontend Checks
 Write-Host "`n[1/3] Running Frontend Linter (oxlint)..." -ForegroundColor Yellow
-npm --prefix frontend run lint
-if ($LASTEXITCODE -ne 0) { Write-Error "Frontend linting failed!"; exit 1 }
+Push-Location frontend
+try {
+    npm run lint
+    if ($LASTEXITCODE -ne 0) { Write-Error "Frontend linting failed!"; exit 1 }
 
-Write-Host "`n[2/3] Running Frontend TypeScript Build..." -ForegroundColor Yellow
-npm --prefix frontend run build
-if ($LASTEXITCODE -ne 0) { Write-Error "Frontend build failed!"; exit 1 }
+    Write-Host "`n[2/3] Running Frontend TypeScript Build..." -ForegroundColor Yellow
+    npm run build
+    if ($LASTEXITCODE -ne 0) { Write-Error "Frontend build failed!"; exit 1 }
+} finally {
+    Pop-Location
+}
 
 # 3. Backend Checks
 Write-Host "`n[3/3] Running Backend Tests (PHPUnit)..." -ForegroundColor Yellow
@@ -29,4 +34,3 @@ try {
 Write-Host "`n==========================================" -ForegroundColor Green
 Write-Host " ALL CI CHECKS PASSED SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "==========================================" -ForegroundColor Green
-
