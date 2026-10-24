@@ -21,10 +21,10 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Package Production Release Archive
+  # Package Production Release Archive & Deploy
   # ---------------------------------------------------------------------------
-  package-release:
-    name: Package Release Archive
+  package-and-deploy:
+    name: Package Release & Deploy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -71,20 +71,11 @@ jobs:
           path: visitflow-release-${{ github.sha }}.tar.gz
           retention-days: 14
 
-  # ---------------------------------------------------------------------------
-  # Vercel Frontend Deployment (Optional if secrets are configured)
-  # ---------------------------------------------------------------------------
-  deploy-frontend:
-    name: Deploy Frontend (Vercel)
-    needs: package-release
-    runs-on: ubuntu-latest
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Deploy to Vercel
+      - name: Deploy Frontend to Vercel
+        if: env.VERCEL_TOKEN != ''
         uses: amondnet/vercel-action@v25
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
