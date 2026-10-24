@@ -6,11 +6,13 @@ import { ThemeProvider } from './context/ThemeContext';
 import { SiteHeader } from './components/navigation/SiteHeader';
 import { SiteFooter } from './components/landing/SiteFooter';
 import { ItineraryDrawer } from './components/itinerary/ItineraryDrawer';
+
 const LandingPage = lazy(() => import('./pages/LandingPage').then(({ LandingPage }) => ({ default: LandingPage })));
 const PublicDiscoveryPage = lazy(() => import('./pages/PublicDiscoveryPage').then(({ PublicDiscoveryPage }) => ({ default: PublicDiscoveryPage })));
 const PlaceDetailPage = lazy(() => import('./pages/PlaceDetailPage').then(({ PlaceDetailPage }) => ({ default: PlaceDetailPage })));
 const UserItinerariesPage = lazy(() => import('./pages/UserItinerariesPage').then(({ UserItinerariesPage }) => ({ default: UserItinerariesPage })));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then(({ AdminDashboardPage }) => ({ default: AdminDashboardPage })));
+const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'));
 
 /**
  * The admin console renders as a full-screen CRM shell (own sidebar + topbar),
@@ -30,6 +32,8 @@ const AppShell: React.FC = () => {
             <Route path="/explore" element={<PublicDiscoveryPage />} />
             <Route path="/places/:idOrSlug" element={<PlaceDetailPage />} />
             <Route path="/itineraries" element={<UserItinerariesPage />} />
+            <Route path="/admin/settings" element={<AdminSettingsPage />} />
+            <Route path="/admin/*" element={<AdminDashboardPage />} />
             <Route path="/admin" element={<AdminDashboardPage />} />
           </Routes>
         </Suspense>
