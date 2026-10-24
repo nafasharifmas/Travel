@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { SiteHeader } from './components/navigation/SiteHeader';
 import { SiteFooter } from './components/landing/SiteFooter';
 import { ItineraryDrawer } from './components/itinerary/ItineraryDrawer';
+
 const LandingPage = lazy(() => import('./pages/LandingPage').then(({ LandingPage }) => ({ default: LandingPage })));
 const PublicDiscoveryPage = lazy(() => import('./pages/PublicDiscoveryPage').then(({ PublicDiscoveryPage }) => ({ default: PublicDiscoveryPage })));
 const PlaceDetailPage = lazy(() => import('./pages/PlaceDetailPage').then(({ PlaceDetailPage }) => ({ default: PlaceDetailPage })));
@@ -30,6 +31,8 @@ const AppShell: React.FC = () => {
             <Route path="/explore" element={<PublicDiscoveryPage />} />
             <Route path="/places/:idOrSlug" element={<PlaceDetailPage />} />
             <Route path="/itineraries" element={<UserItinerariesPage />} />
+            <Route path="/admin/settings" element={<AdminDashboardPage defaultTab="settings" />} />
+            <Route path="/admin/*" element={<AdminDashboardPage />} />
             <Route path="/admin" element={<AdminDashboardPage />} />
           </Routes>
         </Suspense>

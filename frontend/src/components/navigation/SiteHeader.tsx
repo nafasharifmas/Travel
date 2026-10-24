@@ -28,7 +28,8 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', hash: '', to: '/', match: '/' },
-  { label: 'Destinations', hash: '#destinations', to: '/explore', match: '/explore' },
+  { label: 'Explore', hash: '', to: '/explore', match: '/explore' },
+  { label: 'Destinations', hash: '#destinations', to: '/#destinations' },
   { label: 'Experiences', hash: '#experiences', to: '/#experiences' },
   { label: 'How It Works', hash: '#how-it-works', to: '/#how-it-works' },
   { label: 'Journal', hash: '#journal', to: '/#journal' },
@@ -195,7 +196,7 @@ export const SiteHeader: React.FC = () => {
             </div>
 
             {/* Zone 2: Redesigned Hero Nav (Clean, Refined Editorial Typography) */}
-            <nav className="hidden flex-1 justify-center lg:flex items-center gap-6 xl:gap-8" aria-label="Primary">
+            <nav className="hidden flex-1 justify-center lg:flex items-center gap-4 xl:gap-7" aria-label="Primary">
               {NAV_ITEMS.map((item) => {
                 const active = isNavActive(item);
                 return (
