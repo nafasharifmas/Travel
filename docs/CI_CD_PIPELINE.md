@@ -92,3 +92,4 @@ powershell -File scripts/ci-local.ps1
 | `VERCEL_ORG_ID` | Vercel Organization ID | Automated frontend deployment |
 | `VERCEL_PROJECT_ID` | Vercel Project ID | Automated frontend deployment |
 | `VITE_API_URL` | Production API Endpoint | Build-time frontend configuration |
+

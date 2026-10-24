@@ -29,3 +29,4 @@ try {
 Write-Host "`n==========================================" -ForegroundColor Green
 Write-Host " ALL CI CHECKS PASSED SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "==========================================" -ForegroundColor Green
+
