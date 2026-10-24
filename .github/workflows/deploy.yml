@@ -73,7 +73,7 @@ jobs:
 
       - name: Deploy Frontend to Vercel
         if: env.VERCEL_TOKEN != ''
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@v42
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         with:
