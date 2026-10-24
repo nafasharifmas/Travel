@@ -14,21 +14,21 @@ export const SettingsToggle: React.FC<SettingsToggleProps> = ({
   onChange,
 }) => {
   return (
-    <div className="flex items-center justify-between py-4 border-b border-gray-100 last:border-0">
+    <div className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
       <div className="flex-1 pr-4">
-        <p className="text-sm font-medium text-gray-900">{label}</p>
-        {description && <p className="text-xs text-gray-600 mt-1">{description}</p>}
+        <p className="text-sm text-charcoal-950">{label}</p>
+        {description && <p className="text-xs text-stone-500 mt-0.5">{description}</p>}
       </div>
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#0FAF8F] focus:ring-offset-2 ${
-          checked ? 'bg-[#0FAF8F]' : 'bg-gray-200'
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+          checked ? 'bg-charcoal-950' : 'bg-sand-200'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            checked ? 'translate-x-6' : 'translate-x-1'
+          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+            checked ? 'translate-x-4.5' : 'translate-x-0.5'
           }`}
         />
       </button>

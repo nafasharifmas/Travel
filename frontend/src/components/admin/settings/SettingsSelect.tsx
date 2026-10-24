@@ -21,16 +21,16 @@ export const SettingsSelect: React.FC<SettingsSelectProps> = ({
   options,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start gap-4 py-4 border-b border-gray-100 last:border-0">
+    <div className="flex flex-col sm:flex-row sm:items-start gap-4 py-3 first:pt-0 last:pb-0">
       <div className="sm:w-1/3">
-        <label className="text-sm font-medium text-gray-900">{label}</label>
-        {description && <p className="text-xs text-gray-600 mt-1">{description}</p>}
+        <label className="text-sm text-charcoal-950">{label}</label>
+        {description && <p className="text-xs text-stone-500 mt-0.5">{description}</p>}
       </div>
       <div className="sm:w-2/3">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0FAF8F] focus:border-transparent"
+          className="w-full px-2.5 py-1.5 text-sm border border-sand-200 rounded-md bg-white text-charcoal-950 focus:outline-none focus:ring-1 focus:ring-sand-300"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>

@@ -7,9 +7,10 @@ import { SettingsToggle } from '../components/admin/settings/SettingsToggle';
 import { SettingsSelect } from '../components/admin/settings/SettingsSelect';
 import { 
   FiSettings, FiMapPin, FiShield, FiFolder, FiImage, FiMail, 
-  FiMonitor, FiInfo, FiArrowLeft, FiCheckCircle, FiAlertCircle
+  FiMonitor, FiInfo, FiArrowLeft
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import { sileo } from 'sileo';
 
 const AdminSettingsPage: React.FC = () => {
   const { isAdmin } = useAuth();
@@ -18,7 +19,7 @@ const AdminSettingsPage: React.FC = () => {
   const [systemInfo, setSystemInfo] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Using sileo toasts
 
   const tabs = [
     { id: 'general', label: 'General', icon: FiSettings },
@@ -50,7 +51,7 @@ const AdminSettingsPage: React.FC = () => {
       setSystemInfo(res.system_info || {});
     } catch (err) {
       console.error(err);
-      showMessage('error', 'Failed to load settings');
+      sileo.error({ title: 'Error', description: 'Failed to load settings' });
     } finally {
       setLoading(false);
     }
@@ -66,18 +67,13 @@ const AdminSettingsPage: React.FC = () => {
         }
       });
       await api.updateAdminSettings({ settings: settingsToUpdate });
-      showMessage('success', 'Settings updated successfully');
+      sileo.success({ title: 'Success', description: 'Settings updated successfully' });
     } catch (err) {
       console.error(err);
-      showMessage('error', 'Failed to update settings');
+      sileo.error({ title: 'Error', description: 'Failed to update settings' });
     } finally {
       setSaving(false);
     }
-  };
-
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
   };
 
   const updateSetting = (key: string, value: any) => {
@@ -97,56 +93,42 @@ const AdminSettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-ivory-100">
+      <header className="bg-white border-b border-sand-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/admin" className="p-2 hover:bg-gray-100 rounded-lg">
-                <FiArrowLeft className="text-xl" />
+            <div className="flex items-center gap-3">
+              <Link to="/admin" className="p-1.5 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50">
+                <FiArrowLeft className="text-lg" />
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <FiSettings /> Admin Settings
+                <h1 className="text-lg font-medium text-charcoal-950 flex items-center gap-2">
+                  <FiSettings /> Settings
                 </h1>
-                <p className="text-sm text-gray-600">Configure system preferences</p>
+                <p className="text-xs text-stone-500">Platform configuration</p>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Message Toast */}
-      {message && (
-        <div className="fixed top-4 right-4 z-50">
-          <div className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg ${
-            message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-          }`}>
-            {message.type === 'success' ? <FiCheckCircle /> : <FiAlertCircle />}
-            {message.text}
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar Tabs */}
-          <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <nav className="p-2">
+          <div className="lg:w-56 flex-shrink-0">
+            <div className="bg-white rounded-lg border border-sand-200 overflow-hidden">
+              <nav className="p-1">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                    className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors text-sm ${
                       activeTab === tab.id
-                        ? 'bg-[#0FAF8F] text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-sand-100 text-charcoal-950 font-medium'
+                        : 'text-stone-600 hover:bg-sand-50 hover:text-charcoal-950'
                     }`}
                   >
-                    <tab.icon className="text-lg" />
-                    <span className="text-sm font-medium">{tab.label}</span>
+                    <tab.icon className="text-base" />
+                    <span>{tab.label}</span>
                   </button>
                 ))}
               </nav>
@@ -156,9 +138,9 @@ const AdminSettingsPage: React.FC = () => {
           {/* Content */}
           <div className="flex-1">
             {loading ? (
-              <div className="bg-white rounded-2xl p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0FAF8F] mx-auto"></div>
-                <p className="mt-2 text-gray-600">Loading settings...</p>
+              <div className="bg-white rounded-lg border border-sand-200 p-6 text-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-charcoal-950 mx-auto"></div>
+                <p className="mt-2 text-sm text-stone-500">Loading…</p>
               </div>
             ) : (
               <>
@@ -281,27 +263,27 @@ const AdminSettingsPage: React.FC = () => {
 
                 {/* System Info */}
                 {activeTab === 'system' && (
-                  <SettingsCard title="System Information" description="Read-only system diagnostics" showSave={false}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-600 uppercase tracking-wide">Laravel Version</p>
-                        <p className="text-sm font-mono text-gray-900 mt-1">{systemInfo.laravel_version}</p>
+                  <SettingsCard title="System information" description="Read-only diagnostics" showSave={false}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="p-3 border border-sand-200 rounded-md">
+                        <p className="text-xs text-stone-500">Laravel version</p>
+                        <p className="text-sm font-mono text-charcoal-950 mt-0.5">{systemInfo.laravel_version}</p>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-600 uppercase tracking-wide">PHP Version</p>
-                        <p className="text-sm font-mono text-gray-900 mt-1">{systemInfo.php_version}</p>
+                      <div className="p-3 border border-sand-200 rounded-md">
+                        <p className="text-xs text-stone-500">PHP version</p>
+                        <p className="text-sm font-mono text-charcoal-950 mt-0.5">{systemInfo.php_version}</p>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-600 uppercase tracking-wide">Environment</p>
-                        <p className="text-sm font-mono text-gray-900 mt-1">{systemInfo.environment}</p>
+                      <div className="p-3 border border-sand-200 rounded-md">
+                        <p className="text-xs text-stone-500">Environment</p>
+                        <p className="text-sm font-mono text-charcoal-950 mt-0.5">{systemInfo.environment}</p>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-600 uppercase tracking-wide">Database</p>
-                        <p className="text-sm font-mono text-gray-900 mt-1">{systemInfo.db_connection}</p>
+                      <div className="p-3 border border-sand-200 rounded-md">
+                        <p className="text-xs text-stone-500">Database</p>
+                        <p className="text-sm font-mono text-charcoal-950 mt-0.5">{systemInfo.db_connection}</p>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-lg md:col-span-2">
-                        <p className="text-xs text-gray-600 uppercase tracking-wide">App URL</p>
-                        <p className="text-sm font-mono text-gray-900 mt-1">{systemInfo.app_url}</p>
+                      <div className="p-3 border border-sand-200 rounded-md md:col-span-2">
+                        <p className="text-xs text-stone-500">App URL</p>
+                        <p className="text-sm font-mono text-charcoal-950 mt-0.5">{systemInfo.app_url}</p>
                       </div>
                     </div>
                   </SettingsCard>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import {
@@ -34,7 +35,17 @@ import {
   Search,
   ArrowRight,
   CalendarDays,
+  Settings,
+  Globe,
+  HardDrive,
+  Mail,
+  Palette,
+  Info,
 } from 'lucide-react';
+import { SettingsCard } from '../components/admin/settings/SettingsCard';
+import { SettingsInput } from '../components/admin/settings/SettingsInput';
+import { SettingsToggle } from '../components/admin/settings/SettingsToggle';
+import { SettingsSelect } from '../components/admin/settings/SettingsSelect';
 
 type Tone = 'gold' | 'emerald' | 'amber' | 'stone';
 
@@ -54,32 +65,26 @@ interface KpiCardProps {
 }
 
 const KpiCard: React.FC<KpiCardProps> = ({ icon: Icon, label, value, note, tone }) => (
-  <div className="bg-white p-4 rounded-2xl border border-sand-200 shadow-sm hover:shadow-md transition-shadow">
+  <div className="bg-white p-4 rounded-lg border border-sand-200">
     <div className="flex items-start justify-between gap-2">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
-        {label}
-      </span>
-      <span
-        className={`w-8 h-8 rounded-xl flex items-center justify-center ring-1 shrink-0 ${TONE_CLASSES[tone]}`}
-      >
-        <Icon className="w-4 h-4" />
+      <span className="text-xs text-stone-500">{label}</span>
+      <span className={`w-7 h-7 rounded-md flex items-center justify-center ring-1 shrink-0 ${TONE_CLASSES[tone]}`}>
+        <Icon className="w-3.5 h-3.5" />
       </span>
     </div>
-    <p className="mt-3 text-3xl font-black text-charcoal-950 tabular-nums leading-none">
-      {value}
-    </p>
-    <p className="mt-1.5 text-[11px] text-stone-500">{note}</p>
+    <p className="mt-2 text-2xl font-semibold text-charcoal-950 tabular-nums leading-none">{value}</p>
+    <p className="mt-1 text-xs text-stone-500">{note}</p>
   </div>
 );
 
 const KpiSkeleton: React.FC = () => (
-  <div className="bg-white p-4 rounded-2xl border border-sand-200 animate-pulse">
+  <div className="bg-white p-4 rounded-lg border border-sand-200 animate-pulse">
     <div className="flex items-start justify-between">
-      <div className="h-3 w-16 bg-sand-200 rounded" />
-      <div className="w-8 h-8 rounded-xl bg-sand-100" />
+      <div className="h-3 w-16 bg-sand-100 rounded" />
+      <div className="w-7 h-7 rounded-md bg-sand-100" />
     </div>
-    <div className="h-8 w-14 bg-sand-100 rounded mt-4" />
-    <div className="h-2.5 w-24 bg-sand-100 rounded mt-3" />
+    <div className="h-6 w-12 bg-sand-100 rounded mt-3" />
+    <div className="h-2.5 w-20 bg-sand-100 rounded mt-2" />
   </div>
 );
 
@@ -88,11 +93,11 @@ const EmptyState: React.FC<{
   title: string;
   hint: string;
 }> = ({ icon: Icon, title, hint }) => (
-  <div className="py-14 flex flex-col items-center text-center">
-    <div className="w-12 h-12 rounded-2xl bg-sand-100 ring-1 ring-sand-200 flex items-center justify-center">
-      <Icon className="w-5 h-5 text-stone-500" />
+  <div className="py-10 flex flex-col items-center text-center">
+    <div className="w-9 h-9 rounded-md bg-sand-50 border border-sand-200 flex items-center justify-center">
+      <Icon className="w-4 h-4 text-stone-400" />
     </div>
-    <p className="mt-3 text-sm font-bold text-charcoal-950">{title}</p>
+    <p className="mt-2 text-sm font-medium text-charcoal-950">{title}</p>
     <p className="mt-1 text-xs text-stone-500 max-w-xs">{hint}</p>
   </div>
 );
@@ -116,10 +121,31 @@ const formatTime = (iso: string) =>
 
 const SRS_BASELINE = 10;
 
-export const AdminDashboardPage: React.FC = () => {
+interface AdminDashboardPageProps {
+  defaultTab?: AdminTab;
+}
+
+export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultTab }) => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const tabParam = searchParams.get('tab') as AdminTab | null;
+  const initialTab: AdminTab =
+    defaultTab ||
+    (location.pathname.includes('/settings')
+      ? 'settings'
+      : tabParam || 'overview');
+
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Settings Data
+  const [settings, setSettings] = useState<Record<string, any>>({});
+  const [systemInfo, setSystemInfo] = useState<Record<string, any>>({});
+  const [settingsSection, setSettingsSection] = useState('general');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [loadingSettings, setLoadingSettings] = useState(false);
+  const [settingsFeedback, setSettingsFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Overview Data
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
@@ -262,6 +288,59 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  const loadSettings = async () => {
+    try {
+      setLoadingSettings(true);
+      const res = await api.getAdminSettings();
+      const settingsMap: Record<string, any> = {};
+      Object.values(res.settings || {}).forEach((group: any) => {
+        if (Array.isArray(group)) {
+          group.forEach((item: any) => {
+            settingsMap[item.key] = item.value;
+          });
+        }
+      });
+      setSettings(settingsMap);
+      setSystemInfo(res.system_info || {});
+    } catch (err: any) {
+      setError(err.message || 'Failed to load platform settings.');
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
+
+  const handleSaveSettings = async (keys: string[]) => {
+    setSavingSettings(true);
+    try {
+      const payload: Record<string, any> = {};
+      keys.forEach((key) => {
+        if (settings[key] !== undefined) {
+          payload[key] = settings[key];
+        }
+      });
+      await api.updateAdminSettings({ settings: payload });
+      setSettingsFeedback({ type: 'success', text: 'Settings updated successfully.' });
+      setTimeout(() => setSettingsFeedback(null), 3500);
+    } catch (err: any) {
+      setSettingsFeedback({ type: 'error', text: err.message || 'Failed to update settings.' });
+      setTimeout(() => setSettingsFeedback(null), 3500);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const updateSetting = (key: string, value: any) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    } else if (location.pathname.includes('/settings')) {
+      setActiveTab('settings');
+    }
+  }, [defaultTab, location.pathname]);
+
   useEffect(() => {
     if (!isAdmin) return;
     setLoading(true);
@@ -274,6 +353,7 @@ export const AdminDashboardPage: React.FC = () => {
       loadAdminItineraries(),
       loadDataQuality(),
       loadSystemHealth(),
+      loadSettings(),
     ]).finally(() => setLoading(false));
   }, [isAdmin]);
 
@@ -529,7 +609,6 @@ export const AdminDashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-ivory-100 text-charcoal-950">
-      {/* CRM Sidebar Navigation */}
       <AdminSidebar
         activeTab={activeTab}
         onSelect={setActiveTab}
@@ -544,8 +623,7 @@ export const AdminDashboardPage: React.FC = () => {
         onLogout={handleLogout}
       />
 
-      {/* Main console surface */}
-      <div className="lg:pl-64 flex flex-col min-h-screen">
+      <div className="lg:pl-60 flex flex-col min-h-screen">
         <AdminTopbar
           activeTab={activeTab}
           user={user}
@@ -553,7 +631,7 @@ export const AdminDashboardPage: React.FC = () => {
           onAddPlace={handleOpenPlaceCreate}
         />
 
-      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           {/* Feedback banners */}
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex items-center justify-between shadow-sm">
@@ -592,8 +670,7 @@ export const AdminDashboardPage: React.FC = () => {
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              {/* KPI Counters */}
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
                 {loading || !metrics ? (
                   Array.from({ length: 6 }).map((_, i) => <KpiSkeleton key={i} />)
                 ) : (
@@ -644,17 +721,11 @@ export const AdminDashboardPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Health + Quick Actions */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Catalogue health & distribution */}
-                <section className="lg:col-span-7 bg-white p-6 rounded-3xl border border-sand-200 shadow-sm space-y-5">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <section className="lg:col-span-7 bg-white p-5 rounded-lg border border-sand-200 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">
-                      Catalogue Health
-                    </h3>
-                    <span className="text-[11px] font-semibold text-stone-500">
-                      {activeShare}% live
-                    </span>
+                    <h3 className="text-sm font-medium text-charcoal-950">Catalogue health</h3>
+                    <span className="text-xs text-stone-500">{activeShare}% live</span>
                   </div>
 
                   {metrics ? (
@@ -683,9 +754,7 @@ export const AdminDashboardPage: React.FC = () => {
                       </div>
 
                       <div className="pt-4 border-t border-sand-200 space-y-3">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                          Places per category
-                        </p>
+                        <p className="text-xs text-stone-500">Places by category</p>
                         {topCategories.length === 0 ? (
                           <p className="text-xs text-stone-500">No categories created yet.</p>
                         ) : (
@@ -720,77 +789,66 @@ export const AdminDashboardPage: React.FC = () => {
                   )}
                 </section>
 
-                {/* Quick actions + compliance */}
-                <section className="lg:col-span-5 bg-white p-6 rounded-3xl border border-sand-200 shadow-sm space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">
-                    Quick Actions
-                  </h3>
-                  <div className="space-y-2">
+                <section className="lg:col-span-5 bg-white p-5 rounded-lg border border-sand-200 space-y-4">
+                  <h3 className="text-sm font-medium text-charcoal-950">Quick actions</h3>
+                  <div className="space-y-1.5">
                     <button
                       type="button"
                       onClick={handleOpenPlaceCreate}
-                      className="w-full py-2.5 px-4 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                      className="w-full py-2 px-3 bg-charcoal-950 hover:bg-charcoal-900 text-white text-sm rounded-md flex items-center justify-center gap-1.5 transition-colors"
                     >
-                      <Plus className="w-4 h-4 text-gold-400" />
-                      Add Verified Place (FR-08)
+                      <Plus className="w-4 h-4" />
+                      New place
                     </button>
                     <button
                       type="button"
                       onClick={handleOpenCategoryCreate}
-                      className="w-full py-2.5 px-4 bg-sand-100 hover:bg-sand-200 text-stone-800 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all"
+                      className="w-full py-2 px-3 bg-white hover:bg-sand-50 text-charcoal-950 border border-sand-200 text-sm rounded-md flex items-center justify-center gap-1.5 transition-colors"
                     >
-                      <Plus className="w-4 h-4 text-stone-600" />
-                      Create Taxonomy Category (FR-09)
+                      <Plus className="w-4 h-4" />
+                      New category
                     </button>
                   </div>
 
-                  <div className="p-4 bg-gold-500/[0.07] rounded-2xl border border-gold-500/25 space-y-2.5">
-                    <p className="font-bold flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-gold-700">
-                      <ShieldCheck className="w-4 h-4 text-gold-600" />
-                      SRS Launch Baseline
+                  <div className="p-3 rounded-md border border-sand-200 space-y-2">
+                    <p className="text-xs font-medium text-charcoal-950 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-stone-500" />
+                      Launch baseline
                     </p>
                     {metrics ? (
                       <>
-                        <p className="text-[11px] text-stone-600 leading-relaxed">
-                          <strong className="text-charcoal-950">{metrics.active_places}</strong> of{' '}
-                          {SRS_BASELINE} required verified places are live.
+                        <p className="text-xs text-stone-600">
+                          <span className="font-medium text-charcoal-950">{metrics.active_places}</span> / {SRS_BASELINE} active
                         </p>
-                        <div className="h-2 rounded-full bg-sand-200 overflow-hidden">
+                        <div className="h-1.5 rounded-full bg-sand-100 overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-gold-500 transition-all duration-500"
+                            className="h-full bg-charcoal-950 transition-all duration-500"
                             style={{ width: `${compliancePct}%` }}
                           />
                         </div>
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                          {compliancePct >= 100
-                            ? 'Baseline satisfied'
-                            : `${SRS_BASELINE - metrics.active_places} more needed`}
+                        <p className="text-xs text-stone-500">
+                          {compliancePct >= 100 ? 'Satisfied' : `${SRS_BASELINE - metrics.active_places} remaining`}
                         </p>
                       </>
                     ) : (
-                      <p className="text-[11px] text-stone-500">Loading compliance data…</p>
+                      <p className="text-xs text-stone-500">Loading…</p>
                     )}
                   </div>
                 </section>
               </div>
 
-              {/* Recent activity timeline */}
-              <section className="bg-white p-6 rounded-3xl border border-sand-200 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
+              <section className="bg-white p-5 rounded-lg border border-sand-200">
+                <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">
-                      Recent Administrative Activity
-                    </h3>
-                    <p className="text-[11px] text-stone-500 mt-0.5">
-                      Every mutation is recorded in the append-only audit trail.
-                    </p>
+                    <h3 className="text-sm font-medium text-charcoal-950">Recent activity</h3>
+                    <p className="text-xs text-stone-500">Latest administrative actions</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setActiveTab('audit')}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-charcoal-950 hover:text-gold-700 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs text-stone-600 hover:text-charcoal-950"
                   >
-                    Full audit trail
+                    View all
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -798,32 +856,25 @@ export const AdminDashboardPage: React.FC = () => {
                 {recentAudits.length === 0 ? (
                   <EmptyState
                     icon={History}
-                    title="No activity recorded yet"
-                    hint="Actions such as creating places or changing roles will appear here."
+                    title="No activity yet"
+                    hint="Actions will appear here."
                   />
                 ) : (
-                  <ul className="space-y-1">
+                  <ul className="divide-y divide-sand-100">
                     {recentAudits.slice(0, 8).map((a) => {
                       const Icon = actionIcon(a.action);
                       return (
-                        <li
-                          key={a.id}
-                          className="flex items-start gap-3 p-3 rounded-xl hover:bg-sand-50 transition-colors"
-                        >
-                          <span className="mt-0.5 w-7 h-7 rounded-lg bg-sand-100 ring-1 ring-sand-200 flex items-center justify-center shrink-0">
-                            <Icon className="w-3.5 h-3.5 text-stone-600" />
+                        <li key={a.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
+                          <span className="mt-0.5 w-7 h-7 rounded-md bg-sand-50 border border-sand-200 flex items-center justify-center shrink-0">
+                            <Icon className="w-3.5 h-3.5 text-stone-500" />
                           </span>
                           <div className="min-w-0 flex-1">
-                            <span className="font-mono text-[11px] font-bold text-charcoal-950 bg-sand-100 px-1.5 py-0.5 rounded">
-                              {a.action}
-                            </span>
-                            <p className="text-[11px] text-stone-500 mt-1 truncate">
-                              By {a.actor ? a.actor.name : 'System'} · {a.ip_address || '127.0.0.1'}
+                            <p className="text-sm text-charcoal-950 truncate">{a.action}</p>
+                            <p className="text-xs text-stone-500 truncate">
+                              {a.actor ? a.actor.name : 'System'} · {a.ip_address || '127.0.0.1'}
                             </p>
                           </div>
-                          <span className="text-[10px] text-stone-400 whitespace-nowrap">
-                            {formatTime(a.created_at)}
-                          </span>
+                          <span className="text-xs text-stone-400 whitespace-nowrap">{formatTime(a.created_at)}</span>
                         </li>
                       );
                     })}
@@ -835,69 +886,51 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* TAB 2: PLACES CRUD & ARCHIVE (FR-08) */}
           {activeTab === 'places' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
+            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-black text-charcoal-950">
-                    Places Catalogue Management
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Create, edit, archive (soft delete), and upload validated media for destinations.
-                  </p>
+                  <h3 className="text-base font-medium text-charcoal-950">Places</h3>
+                  <p className="text-xs text-stone-500">Catalogue management</p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  {/* Search */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5">
                   <label className="relative block">
                     <span className="sr-only">Search places</span>
-                    <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="search"
                       value={placeSearch}
                       onChange={(e) => setPlaceSearch(e.target.value)}
-                      placeholder="Search places…"
-                      className="w-full sm:w-52 pl-8 pr-3 py-2 text-xs bg-white border border-sand-300 rounded-xl font-medium text-stone-800 placeholder:text-stone-400"
+                      placeholder="Search"
+                      className="w-full sm:w-48 pl-7 pr-2.5 py-1.5 text-sm bg-white border border-sand-200 rounded-md text-charcoal-950 placeholder:text-stone-400"
                     />
                   </label>
 
-                  {/* Status Filter */}
                   <select
                     value={placeStatusFilter || ''}
                     onChange={(e) =>
-                      setPlaceStatusFilter(
-                        (e.target.value as 'active' | 'archived') || undefined
-                      )
+                      setPlaceStatusFilter((e.target.value as 'active' | 'archived') || undefined)
                     }
                     aria-label="Filter Places by status"
-                    className="px-3 py-2 text-xs bg-white border border-sand-300 rounded-xl font-semibold text-stone-700"
+                    className="px-2.5 py-1.5 text-sm bg-white border border-sand-200 rounded-md text-charcoal-950"
                   >
-                    <option value="">All Statuses</option>
-                    <option value="active">Active Only</option>
-                    <option value="archived">Archived (Soft-Deleted)</option>
+                    <option value="">All</option>
+                    <option value="active">Active</option>
+                    <option value="archived">Archived</option>
                   </select>
-
-                  <button
-                    type="button"
-                    onClick={handleOpenPlaceCreate}
-                    className="px-4 py-2 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                  >
-                    <Plus className="w-4 h-4 text-gold-400" />
-                    Add Place
-                  </button>
                 </div>
               </div>
 
-              {/* Places Table */}
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-xs border-collapse">
+                <table className="w-full min-w-[720px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-sand-200 text-stone-500 font-bold uppercase text-[10px] tracking-wider bg-ivory-100">
-                      <th className="p-3 rounded-l-xl">Destination</th>
-                      <th className="p-3">Category</th>
-                      <th className="p-3">Coordinates</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3">Media</th>
-                      <th className="p-3 text-right rounded-r-xl">Actions</th>
+                    <tr className="border-b border-sand-200">
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Place</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Category</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Coordinates</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Status</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Media</th>
+                      <th className="py-2 text-right text-xs font-medium text-stone-500">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-sand-100">
@@ -913,74 +946,65 @@ export const AdminDashboardPage: React.FC = () => {
                       </tr>
                     )}
                     {places.map((place) => (
-                      <tr key={place.id} className="hover:bg-sand-50/70 transition-colors">
-                        <td className="p-3">
-                          <div className="flex items-center gap-3">
+                      <tr key={place.id} className="border-b border-sand-100 last:border-0">
+                        <td className="py-2.5 pr-3">
+                          <div className="flex items-center gap-2.5">
                             {place.primary_photo ? (
                               <img
                                 src={place.primary_photo}
                                 alt={place.name}
-                                className="w-10 h-10 object-cover rounded-lg border border-sand-200"
+                                className="w-8 h-8 object-cover rounded-md border border-sand-200"
                               />
                             ) : (
-                              <span className="w-10 h-10 rounded-lg bg-sand-100 border border-sand-200 flex items-center justify-center">
-                                <MapPin className="w-4 h-4 text-stone-400" />
+                              <span className="w-8 h-8 rounded-md bg-sand-50 border border-sand-200 flex items-center justify-center">
+                                <MapPin className="w-3.5 h-3.5 text-stone-400" />
                               </span>
                             )}
-                            <div>
-                              <p className="font-bold text-charcoal-950">{place.name}</p>
-                              <p className="text-[11px] text-stone-500 truncate max-w-xs">
-                                {place.address || 'No address recorded'}
+                            <div className="min-w-0">
+                              <p className="text-sm text-charcoal-950 truncate">{place.name}</p>
+                              <p className="text-xs text-stone-500 truncate max-w-xs">
+                                {place.address || '—'}
                               </p>
                             </div>
                           </div>
                         </td>
 
-                        <td className="p-3">
-                          <span className="font-semibold text-stone-700">
-                            {place.category ? place.category.name : '—'}
-                          </span>
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">
+                          {place.category ? place.category.name : '—'}
                         </td>
 
-                        <td className="p-3 font-mono text-[11px] text-stone-500">
+                        <td className="py-2.5 pr-3 text-xs font-mono text-stone-500">
                           {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
                         </td>
 
-                        <td className="p-3">
+                        <td className="py-2.5 pr-3">
                           {place.is_archived ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                              <Archive className="w-3 h-3" />
-                              Archived
-                            </span>
+                            <span className="text-xs text-stone-500">Archived</span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Active
-                            </span>
+                            <span className="text-xs text-emerald-700">Active</span>
                           )}
                         </td>
 
-                        <td className="p-3">
+                        <td className="py-2.5 pr-3">
                           <button
                             type="button"
                             onClick={() => {
                               setUploadPlaceId(place.id);
                               setIsUploadModalOpen(true);
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg transition-colors"
+                            className="text-xs text-stone-600 hover:text-charcoal-950"
                           >
-                            <Upload className="w-3 h-3" />
-                            Photo ({place.media_count || place.photos_count || 1})
+                            {place.media_count || place.photos_count || 0} photos
                           </button>
                         </td>
 
-                        <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="py-2.5 text-right">
+                          <div className="flex items-center justify-end gap-1">
                             <button
                               type="button"
                               onClick={() => handleOpenPlaceEdit(place)}
-                              className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-sand-100"
-                              title="Edit place"
+                              className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                              title="Edit"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
@@ -989,8 +1013,8 @@ export const AdminDashboardPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleRestorePlace(place)}
-                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50"
-                                title="Restore archived place"
+                                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                                title="Restore"
                               >
                                 <RotateCcw className="w-3.5 h-3.5" />
                               </button>
@@ -998,12 +1022,10 @@ export const AdminDashboardPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleArchivePlace(place)}
-                                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-bold text-red-600 hover:bg-red-50"
-                                title="Delete place (archive)"
-                                aria-label={`Delete ${place.name}`}
+                                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                                title="Archive"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                <span className="hidden xl:inline">Delete</span>
+                                <Archive className="w-3.5 h-3.5" />
                               </button>
                             )}
                           </div>
@@ -1018,24 +1040,20 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* TAB 3: CATEGORIES CRUD (FR-09) */}
           {activeTab === 'categories' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
+            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-black text-charcoal-950">
-                    Category Taxonomy Management
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Discovery taxonomy for places. Deletion is blocked if places reference the category.
-                  </p>
+                  <h3 className="text-base font-medium text-charcoal-950">Categories</h3>
+                  <p className="text-xs text-stone-500">Taxonomy</p>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleOpenCategoryCreate}
-                  className="px-4 py-2 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                  className="px-3 py-1.5 bg-charcoal-950 hover:bg-charcoal-900 text-white text-xs rounded-md flex items-center gap-1.5 transition-colors"
                 >
-                  <Plus className="w-4 h-4 text-gold-400" />
-                  Add Category
+                  <Plus className="w-3.5 h-3.5" />
+                  New category
                 </button>
               </div>
 
@@ -1046,21 +1064,19 @@ export const AdminDashboardPage: React.FC = () => {
                   hint="Create taxonomy terms so travellers can filter destinations by interest."
                 />
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {categories.map((cat) => (
                     <div
                       key={cat.id}
-                      className="p-4 rounded-2xl border border-sand-200 bg-sand-50/50 hover:border-sand-300 hover:shadow-sm transition-all space-y-3"
+                      className="p-4 rounded-lg border border-sand-200 space-y-2"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
                           <span
-                            className="w-3.5 h-3.5 rounded-full shrink-0 ring-2 ring-white"
-                            style={{ backgroundColor: cat.color || '#f59e0b' }}
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: cat.color || '#94a3b8' }}
                           />
-                          <h4 className="font-bold text-sm text-charcoal-950 truncate">
-                            {cat.name}
-                          </h4>
+                          <h4 className="text-sm font-medium text-charcoal-950 truncate">{cat.name}</h4>
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
@@ -1076,31 +1092,29 @@ export const AdminDashboardPage: React.FC = () => {
                               });
                               setIsCategoryModalOpen(true);
                             }}
-                            className="p-1 text-stone-500 hover:text-stone-800"
-                            title="Edit category"
+                            className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                            title="Edit"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteCategory(cat)}
-                            className="p-1 text-red-500 hover:text-red-700"
-                            title="Delete category"
+                            className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                            title="Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
 
-                      <p className="text-xs text-stone-600 line-clamp-2">
-                        {cat.description || 'No description provided.'}
+                      <p className="text-xs text-stone-500 line-clamp-2">
+                        {cat.description || '—'}
                       </p>
 
-                      <div className="flex items-center justify-between text-[11px] text-stone-500 pt-2 border-t border-sand-200">
-                        <span className="font-mono truncate">slug: {cat.slug}</span>
-                        <span className="font-bold text-stone-700 whitespace-nowrap ml-2">
-                          {cat.places_count || 0} Places
-                        </span>
+                      <div className="flex items-center justify-between text-xs text-stone-500 pt-2 border-t border-sand-100">
+                        <span className="truncate">{cat.slug}</span>
+                        <span>{cat.places_count || 0} places</span>
                       </div>
                     </div>
                   ))}
@@ -1111,43 +1125,31 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* TAB 4: USERS MANAGEMENT (FR-10) */}
           {activeTab === 'users' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
-              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-black text-charcoal-950">
-                    User Accounts & Role Permissions
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Inspect profiles, change roles, and deactivate accounts. All actions write to the audit trail.
-                  </p>
+                  <h3 className="text-base font-medium text-charcoal-950">Users</h3>
+                  <p className="text-xs text-stone-500">Accounts and permissions</p>
                 </div>
-
-                <div className="flex flex-wrap gap-2 text-[11px] font-bold">
-                  <span className="px-3 py-1.5 rounded-full bg-sand-100 text-stone-700">
-                    {usersList.length} Total
-                  </span>
-                  <span className="px-3 py-1.5 rounded-full bg-gold-500/15 text-gold-700">
-                    {adminCount} Admins
-                  </span>
-                  <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800">
-                    {activeUserCount} Active
-                  </span>
-                  <span className="px-3 py-1.5 rounded-full bg-red-100 text-red-700">
-                    {usersList.length - activeUserCount} Deactivated
-                  </span>
+                <div className="flex flex-wrap gap-2 text-xs text-stone-500">
+                  <span>{usersList.length} total</span>
+                  <span>·</span>
+                  <span>{adminCount} admins</span>
+                  <span>·</span>
+                  <span>{activeUserCount} active</span>
                 </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-xs border-collapse">
+                <table className="w-full min-w-[720px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-sand-200 text-stone-500 font-bold uppercase text-[10px] tracking-wider bg-ivory-100">
-                      <th className="p-3 rounded-l-xl">User Profile</th>
-                      <th className="p-3">Email Address</th>
-                      <th className="p-3">Assigned Role</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3">Itineraries</th>
-                      <th className="p-3 text-right rounded-r-xl">Administrative Action</th>
+                    <tr className="border-b border-sand-200">
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">User</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Email</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Role</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Status</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Itineraries</th>
+                      <th className="py-2 text-right text-xs font-medium text-stone-500">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-sand-100">
@@ -1163,70 +1165,43 @@ export const AdminDashboardPage: React.FC = () => {
                       </tr>
                     )}
                     {usersList.map((u) => (
-                      <tr key={u.id} className="hover:bg-sand-50/70 transition-colors">
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sand-200 to-sand-300 flex items-center justify-center font-bold text-stone-700 shrink-0">
+                      <tr key={u.id} className="border-b border-sand-100 last:border-0">
+                        <td className="py-2.5 pr-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-sand-100 text-charcoal-950 text-xs flex items-center justify-center shrink-0">
                               {u.name.charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-bold text-charcoal-950">{u.name}</span>
+                            <span className="text-sm text-charcoal-950">{u.name}</span>
                           </div>
                         </td>
 
-                        <td className="p-3 font-mono text-[11px] text-stone-600">
-                          {u.email}
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">{u.email}</td>
+
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">{u.role}</td>
+
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">
+                          {u.is_active ? 'Active' : 'Deactivated'}
                         </td>
 
-                        <td className="p-3">
-                          <span
-                            className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase ${
-                              u.role === 'admin'
-                                ? 'bg-gold-500/15 text-gold-700'
-                                : 'bg-stone-100 text-stone-700'
-                            }`}
-                          >
-                            {u.role}
-                          </span>
-                        </td>
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">{u.itineraries_count || 0}</td>
 
-                        <td className="p-3">
-                          {u.is_active ? (
-                            <span className="text-emerald-700 font-bold flex items-center gap-1 text-[11px]">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="text-red-600 font-bold flex items-center gap-1 text-[11px]">
-                              <AlertTriangle className="w-3 h-3" />
-                              Deactivated
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="p-3 font-semibold text-stone-700">
-                          {u.itineraries_count || 0} trips
-                        </td>
-
-                        <td className="p-3 text-right space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleUserRole(u)}
-                            className="px-2 py-1 bg-sand-100 hover:bg-sand-200 text-stone-800 rounded-lg font-bold text-[11px] transition-colors"
-                          >
-                            Switch to {u.role === 'admin' ? 'User' : 'Admin'}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleToggleUserStatus(u)}
-                            className={`px-2 py-1 rounded-lg font-bold text-[11px] transition-colors ${
-                              u.is_active
-                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                            }`}
-                          >
-                            {u.is_active ? 'Deactivate' : 'Activate'}
-                          </button>
+                        <td className="py-2.5 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleUserRole(u)}
+                              className="px-2 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
+                            >
+                              {u.role === 'admin' ? 'Make user' : 'Make admin'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleUserStatus(u)}
+                              className="px-2 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
+                            >
+                              {u.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1238,54 +1213,52 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* TAB 5: ITINERARIES ADMINISTRATION */}
           {activeTab === 'itineraries' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-black text-charcoal-950">Itinerary Administration</h3>
-                  <p className="text-xs text-stone-500">Monitor saved itineraries across registered users.</p>
+                  <h3 className="text-base font-medium text-charcoal-950">Itineraries</h3>
+                  <p className="text-xs text-stone-500">Saved trips</p>
                 </div>
-                <span className="self-start sm:self-auto px-3 py-1.5 rounded-full bg-sand-100 text-stone-700 text-[11px] font-bold">
-                  {adminItineraries.length} Entries
-                </span>
+                <span className="text-xs text-stone-500">{adminItineraries.length} total</span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-xs border-collapse">
+                <table className="w-full min-w-[680px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-sand-200 text-stone-500 font-bold uppercase text-[10px] tracking-wider bg-ivory-100">
-                      <th className="p-3 rounded-l-xl">Itinerary</th>
-                      <th className="p-3">Owner</th>
-                      <th className="p-3">Items</th>
-                      <th className="p-3">Start Date</th>
-                      <th className="p-3 rounded-r-xl">Created</th>
+                    <tr className="border-b border-sand-200">
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Itinerary</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Owner</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Items</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Start date</th>
+                      <th className="py-2 text-right text-xs font-medium text-stone-500">Created</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-sand-100">
+                  <tbody>
                     {adminItineraries.length === 0 && (
                       <tr>
                         <td colSpan={5}>
-                          <EmptyState icon={CalendarDays} title="No itineraries found" hint="Registered users' saved itineraries will appear here." />
+                          <EmptyState icon={CalendarDays} title="No itineraries" hint="None yet." />
                         </td>
                       </tr>
                     )}
                     {adminItineraries.map((it: any) => (
-                      <tr key={it.id} className="hover:bg-sand-50/70">
-                        <td className="p-3">
-                          <p className="font-bold text-charcoal-950">{it.title}</p>
-                          {it.notes && <p className="text-[11px] text-stone-500 truncate max-w-xs">{it.notes}</p>}
+                      <tr key={it.id} className="border-b border-sand-100 last:border-0">
+                        <td className="py-2.5 pr-3">
+                          <p className="text-sm text-charcoal-950">{it.title}</p>
+                          {it.notes && <p className="text-xs text-stone-500 truncate max-w-xs">{it.notes}</p>}
                         </td>
-                        <td className="p-3">
+                        <td className="py-2.5 pr-3">
                           {it.user ? (
                             <div>
-                              <p className="font-semibold text-stone-700">{it.user.name}</p>
-                              <p className="text-[11px] text-stone-500 font-mono">{it.user.email}</p>
+                              <p className="text-sm text-charcoal-950">{it.user.name}</p>
+                              <p className="text-xs text-stone-500">{it.user.email}</p>
                             </div>
                           ) : (
-                            <span className="text-stone-400">—</span>
+                            <span className="text-xs text-stone-400">—</span>
                           )}
                         </td>
-                        <td className="p-3 font-semibold text-stone-700">{it.items_count}</td>
-                        <td className="p-3 text-stone-600">{it.start_date || '—'}</td>
-                        <td className="p-3 text-stone-500">{it.created_at ? new Date(it.created_at).toLocaleString() : '—'}</td>
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">{it.items_count}</td>
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">{it.start_date || '—'}</td>
+                        <td className="py-2.5 text-right text-sm text-stone-500">{it.created_at ? new Date(it.created_at).toLocaleDateString() : '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1296,28 +1269,28 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* TAB 6: DATA QUALITY */}
           {activeTab === 'data-quality' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-black text-charcoal-950">Data Quality Center</h3>
-                  <p className="text-xs text-stone-500">Real validation checks on catalogue data.</p>
+                  <h3 className="text-base font-medium text-charcoal-950">Data quality</h3>
+                  <p className="text-xs text-stone-500">Validation checks</p>
                 </div>
-                <button type="button" onClick={loadDataQuality} className="px-3 py-1.5 rounded-lg bg-sand-100 hover:bg-sand-200 text-stone-700 text-xs font-bold">Recheck</button>
+                <button type="button" onClick={loadDataQuality} className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md">Recheck</button>
               </div>
               {dataQuality?.issues?.length === 0 ? (
-                <EmptyState icon={CheckCircle2} title="No issues detected" hint="Catalogue data passes current validation checks." />
+                <EmptyState icon={CheckCircle2} title="No issues" hint="All checks passed." />
               ) : (
-                <ul className="space-y-2">
+                <ul className="divide-y divide-sand-100">
                   {(dataQuality?.issues || []).map((issue: any, idx: number) => (
-                    <li key={idx} className="flex items-center justify-between p-3 rounded-xl border border-sand-200">
-                      <div className="flex items-center gap-3">
-                        <AlertTriangle className={`w-4 h-4 ${issue.severity === 'high' ? 'text-red-600' : issue.severity === 'medium' ? 'text-amber-600' : 'text-stone-500'}`} />
+                    <li key={idx} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-2.5">
+                        <AlertTriangle className="w-4 h-4 text-stone-400" />
                         <div>
-                          <p className="text-sm font-bold text-charcoal-950">{issue.message}</p>
-                          <p className="text-[11px] text-stone-500">Severity: {issue.severity}</p>
+                          <p className="text-sm text-charcoal-950">{issue.message}</p>
+                          <p className="text-xs text-stone-500">Severity: {issue.severity}</p>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full bg-sand-100 text-stone-700 text-[11px] font-bold">{issue.count}</span>
+                      <span className="text-xs text-stone-500">{issue.count}</span>
                     </li>
                   ))}
                 </ul>
@@ -1327,92 +1300,73 @@ export const AdminDashboardPage: React.FC = () => {
 
           {/* TAB 7: SYSTEM HEALTH */}
           {activeTab === 'system-health' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-black text-charcoal-950">System Health</h3>
-                  <p className="text-xs text-stone-500">Lightweight operational checks.</p>
+                  <h3 className="text-base font-medium text-charcoal-950">System health</h3>
+                  <p className="text-xs text-stone-500">Operational checks</p>
                 </div>
-                <button type="button" onClick={loadSystemHealth} className="px-3 py-1.5 rounded-lg bg-sand-100 hover:bg-sand-200 text-stone-700 text-xs font-bold">Refresh</button>
+                <button type="button" onClick={loadSystemHealth} className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md">Refresh</button>
               </div>
               {systemHealth && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {Object.entries(systemHealth.checks || {}).map(([key, val]: [string, any]) => (
-                    <div key={key} className="p-4 rounded-2xl border border-sand-200 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-bold text-charcoal-950 capitalize">{key}</p>
-                        <p className="text-[11px] text-stone-500">Status</p>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${val.status === 'ok' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{val.status}</span>
+                    <div key={key} className="p-3 rounded-md border border-sand-200 flex items-center justify-between">
+                      <p className="text-sm text-charcoal-950 capitalize">{key}</p>
+                      <span className="text-xs text-stone-600">{val.status}</span>
                     </div>
                   ))}
                 </div>
               )}
-              {systemHealth?.timestamp && <p className="text-[11px] text-stone-500">Last checked: {new Date(systemHealth.timestamp).toLocaleString()}</p>}
+              {systemHealth?.timestamp && <p className="text-xs text-stone-500">Last checked: {new Date(systemHealth.timestamp).toLocaleString()}</p>}
             </div>
           )}
 
           {/* TAB 8: AUDIT LOG (Page 6 & 7) */}
           {activeTab === 'audit' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-black text-charcoal-950">
-                    Audit Trail (Traceable History)
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Append-only log of every administrative mutation on places, categories, roles, and media.
-                  </p>
+                  <h3 className="text-base font-medium text-charcoal-950">Audit trail</h3>
+                  <p className="text-xs text-stone-500">Activity log</p>
                 </div>
-                <span className="self-start sm:self-auto px-3 py-1.5 rounded-full bg-sand-100 text-stone-700 text-[11px] font-bold">
-                  {allAuditLogs.length} Entries
-                </span>
+                <span className="text-xs text-stone-500">{allAuditLogs.length} entries</span>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[860px] text-left text-xs border-collapse">
+                <table className="w-full min-w-[760px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-sand-200 text-stone-500 font-bold uppercase text-[10px] tracking-wider bg-ivory-100">
-                      <th className="p-3 rounded-l-xl">Timestamp</th>
-                      <th className="p-3">Acting Account</th>
-                      <th className="p-3">Action</th>
-                      <th className="p-3">Target Entity</th>
-                      <th className="p-3">IP Address</th>
-                      <th className="p-3 rounded-r-xl">Payload Details</th>
+                    <tr className="border-b border-sand-200">
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Time</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Actor</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Action</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Target</th>
+                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">IP</th>
+                      <th className="py-2 text-right text-xs font-medium text-stone-500">Details</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-sand-100 font-mono text-[11px]">
+                  <tbody>
                     {allAuditLogs.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="font-sans">
-                          <EmptyState
-                            icon={History}
-                            title="No audit entries yet"
-                            hint="Administrative changes will be recorded here automatically."
-                          />
+                        <td colSpan={6}>
+                          <EmptyState icon={History} title="No entries" hint="No activity recorded." />
                         </td>
                       </tr>
                     )}
                     {allAuditLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-sand-50/70">
-                        <td className="p-3 text-stone-600 whitespace-nowrap">
+                      <tr key={log.id} className="border-b border-sand-100 last:border-0">
+                        <td className="py-2.5 pr-3 text-xs text-stone-500 whitespace-nowrap">
                           {new Date(log.created_at).toLocaleString()}
                         </td>
-                        <td className="p-3 font-semibold text-stone-900 font-sans">
-                          {log.actor ? log.actor.name : 'System Baseline'}
+                        <td className="py-2.5 pr-3 text-sm text-charcoal-950">
+                          {log.actor ? log.actor.name : 'System'}
                         </td>
-                        <td className="p-3">
-                          <span className="font-bold text-gold-700 bg-gold-500/10 px-1.5 py-0.5 rounded">
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="p-3 text-stone-500">
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">{log.action}</td>
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">
                           {log.subject_type ? `${log.subject_type.split('\\').pop()} #${log.subject_id}` : '—'}
                         </td>
-                        <td className="p-3 text-stone-500">
-                          {log.ip_address || '127.0.0.1'}
-                        </td>
-                        <td className="p-3 text-stone-600 font-sans max-w-xs truncate">
+                        <td className="py-2.5 pr-3 text-xs text-stone-500">{log.ip_address || '—'}</td>
+                        <td className="py-2.5 text-right text-xs text-stone-500 max-w-xs truncate">
                           {log.payload ? JSON.stringify(log.payload) : '—'}
                         </td>
                       </tr>
@@ -1422,27 +1376,488 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* TAB 9: SETTINGS */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              {settingsFeedback && (
+                <div
+                  className={`p-4 rounded-2xl flex items-center justify-between text-xs font-bold border shadow-sm ${
+                    settingsFeedback.type === 'success'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : 'bg-red-50 border-red-200 text-red-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {settingsFeedback.type === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                    )}
+                    <span>{settingsFeedback.text}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSettingsFeedback(null)}
+                    className="text-stone-400 hover:text-stone-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Subcategory Navigation */}
+                <div className="lg:w-64 shrink-0">
+                  <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-3 space-y-1">
+                    <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                      Settings Group
+                    </p>
+                    {[
+                      { id: 'general', label: 'General', icon: Settings },
+                      { id: 'map', label: 'Map & Location', icon: Globe },
+                      { id: 'security', label: 'Security', icon: ShieldCheck },
+                      { id: 'catalogue', label: 'Catalogue', icon: FolderTree },
+                      { id: 'media', label: 'Media & Storage', icon: HardDrive },
+                      { id: 'email', label: 'Email (SMTP)', icon: Mail },
+                      { id: 'appearance', label: 'Appearance', icon: Palette },
+                      { id: 'system', label: 'System Info', icon: Info },
+                    ].map((item) => {
+                      const SubIcon = item.icon;
+                      const isSubActive = settingsSection === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSettingsSection(item.id)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
+                            isSubActive
+                              ? 'bg-turquoise-500 text-navy-950 shadow-sm ring-1 ring-turquoise-400/40'
+                              : 'text-stone-600 hover:bg-sand-100/70 hover:text-charcoal-950'
+                          }`}
+                        >
+                          <SubIcon className={`w-4 h-4 ${isSubActive ? 'text-navy-950' : 'text-stone-400'}`} />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Settings Forms */}
+                <div className="flex-1">
+                  {loadingSettings ? (
+                    <div className="bg-white rounded-3xl border border-sand-200 p-12 text-center shadow-sm">
+                      <Loader2 className="w-8 h-8 text-turquoise-500 animate-spin mx-auto" />
+                      <p className="mt-3 text-xs font-bold text-charcoal-950">Loading platform settings...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* General */}
+                      {settingsSection === 'general' && (
+                        <SettingsCard
+                          title="General Settings"
+                          description="Core platform identity, contact channels, and customer support information."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'app_name',
+                              'app_tagline',
+                              'contact_email',
+                              'support_number',
+                              'footer_text',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsInput
+                            label="Application Name"
+                            value={settings.app_name || ''}
+                            onChange={(v) => updateSetting('app_name', v)}
+                            placeholder="VisitFlow"
+                          />
+                          <SettingsInput
+                            label="Tagline"
+                            value={settings.app_tagline || ''}
+                            onChange={(v) => updateSetting('app_tagline', v)}
+                            placeholder="Curated Sri Lanka Travel Intelligence"
+                          />
+                          <SettingsInput
+                            label="Contact Email"
+                            type="email"
+                            value={settings.contact_email || ''}
+                            onChange={(v) => updateSetting('contact_email', v)}
+                            placeholder="support@visitflow.lk"
+                          />
+                          <SettingsInput
+                            label="Support Phone"
+                            value={settings.support_number || ''}
+                            onChange={(v) => updateSetting('support_number', v)}
+                            placeholder="+94 11 234 5678"
+                          />
+                          <SettingsInput
+                            label="Footer Disclaimer / Text"
+                            value={settings.footer_text || ''}
+                            onChange={(v) => updateSetting('footer_text', v)}
+                            placeholder="© 2026 VisitFlow Sri Lanka"
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Map & Location */}
+                      {settingsSection === 'map' && (
+                        <SettingsCard
+                          title="Map & Spatial Boundaries"
+                          description="Configure geographic reference center, discovery radius, and boundary clamps."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'map_ref_lat',
+                              'map_ref_lng',
+                              'map_radius_km',
+                              'map_default_zoom',
+                              'enable_map_bounds',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsInput
+                            label="Reference Latitude"
+                            type="number"
+                            value={settings.map_ref_lat ?? ''}
+                            onChange={(v) => updateSetting('map_ref_lat', v)}
+                            description="Default origin for Haversine distance calculations (e.g. 7.8731 for Sri Lanka center)"
+                          />
+                          <SettingsInput
+                            label="Reference Longitude"
+                            type="number"
+                            value={settings.map_ref_lng ?? ''}
+                            onChange={(v) => updateSetting('map_ref_lng', v)}
+                            description="Default longitude center point (e.g. 80.7718)"
+                          />
+                          <SettingsInput
+                            label="Discovery Radius (km)"
+                            type="number"
+                            value={settings.map_radius_km ?? ''}
+                            onChange={(v) => updateSetting('map_radius_km', v)}
+                            description="Maximum operational travel discovery radial envelope"
+                          />
+                          <SettingsInput
+                            label="Default Map Zoom"
+                            type="number"
+                            value={settings.map_default_zoom ?? ''}
+                            onChange={(v) => updateSetting('map_default_zoom', v)}
+                            description="Interactive map initial zoom scale"
+                          />
+                          <SettingsToggle
+                            label="Strict Territorial Bounds"
+                            description="Restrict place coordinates strictly within Sri Lankan sovereign territorial envelope"
+                            checked={!!settings.enable_map_bounds}
+                            onChange={(v) => updateSetting('enable_map_bounds', v)}
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Security */}
+                      {settingsSection === 'security' && (
+                        <SettingsCard
+                          title="Security & Access Governance"
+                          description="Manage session revocation rules, role modification policies, and audit visibility."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'force_logout_on_role_change',
+                              'allow_user_deactivation',
+                              'audit_logs_admin_only',
+                              'session_timeout_minutes',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsToggle
+                            label="Immediate Session Revocation on Role Mutation"
+                            description="Force token invalidation immediately when an administrator changes a user's role"
+                            checked={!!settings.force_logout_on_role_change}
+                            onChange={(v) => updateSetting('force_logout_on_role_change', v)}
+                          />
+                          <SettingsToggle
+                            label="Allow Administrative User Deactivation"
+                            description="Permit administrators to temporarily suspend access without deleting user accounts"
+                            checked={!!settings.allow_user_deactivation}
+                            onChange={(v) => updateSetting('allow_user_deactivation', v)}
+                          />
+                          <SettingsToggle
+                            label="Audit Logs Administrator-Only"
+                            description="Lock audit trails exclusively to administrator accounts (blocks non-privileged read)"
+                            checked={!!settings.audit_logs_admin_only}
+                            onChange={(v) => updateSetting('audit_logs_admin_only', v)}
+                          />
+                          <SettingsInput
+                            label="Session Idle Timeout (Minutes)"
+                            type="number"
+                            value={settings.session_timeout_minutes ?? ''}
+                            onChange={(v) => updateSetting('session_timeout_minutes', v)}
+                            description="Inactivity timeout before requiring re-authentication"
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Catalogue */}
+                      {settingsSection === 'catalogue' && (
+                        <SettingsCard
+                          title="Catalogue & Taxonomy Policies"
+                          description="Configure curation workflow rules, publishing requirements, and archive defaults."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'auto_approve_places',
+                              'require_images_publish',
+                              'show_archived_admin_default',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsToggle
+                            label="Auto-approve Contributed Destinations"
+                            description="Instantly mark newly registered places as verified without editorial review"
+                            checked={!!settings.auto_approve_places}
+                            onChange={(v) => updateSetting('auto_approve_places', v)}
+                          />
+                          <SettingsToggle
+                            label="Mandatory Validated Media on Publish"
+                            description="Require at least one verified high-resolution photograph before a destination goes live"
+                            checked={!!settings.require_images_publish}
+                            onChange={(v) => updateSetting('require_images_publish', v)}
+                          />
+                          <SettingsToggle
+                            label="Default Show Archived Places in Admin"
+                            description="Display soft-deleted records in the catalogue table by default"
+                            checked={!!settings.show_archived_admin_default}
+                            onChange={(v) => updateSetting('show_archived_admin_default', v)}
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Media & Storage */}
+                      {settingsSection === 'media' && (
+                        <SettingsCard
+                          title="Media & Storage Infrastructure"
+                          description="Configure cloud/local storage drivers, file payload thresholds, and optimization."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'storage_driver',
+                              'max_upload_size_mb',
+                              'auto_generate_thumbnails',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsSelect
+                            label="Active Storage Driver"
+                            value={settings.storage_driver || 'local'}
+                            onChange={(v) => updateSetting('storage_driver', v)}
+                            options={[
+                              { value: 'local', label: 'Local Disk Storage (public/storage)' },
+                              { value: 'cloudinary', label: 'Cloudinary CDN & Media Cloud' },
+                            ]}
+                            description="Target file system for destination photography and asset uploads"
+                          />
+                          <SettingsInput
+                            label="Maximum Upload Payload (MB)"
+                            type="number"
+                            value={settings.max_upload_size_mb ?? ''}
+                            onChange={(v) => updateSetting('max_upload_size_mb', v)}
+                            description="Upper ceiling per media asset upload"
+                          />
+                          <SettingsToggle
+                            label="Automatic WebP & Thumbnail Generation"
+                            description="Pre-render responsive web thumbnails upon successful media upload"
+                            checked={!!settings.auto_generate_thumbnails}
+                            onChange={(v) => updateSetting('auto_generate_thumbnails', v)}
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Email */}
+                      {settingsSection === 'email' && (
+                        <SettingsCard
+                          title="Email & Notification Engine (SMTP)"
+                          description="Configure transactional email transport, server credentials, and dispatch headers."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'mail_enabled',
+                              'mail_host',
+                              'mail_port',
+                              'mail_username',
+                              'mail_password',
+                              'mail_from_address',
+                              'mail_from_name',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsToggle
+                            label="Enable Outbound SMTP Dispatch"
+                            description="Enable transactional emails for verification, password resets, and notifications"
+                            checked={!!settings.mail_enabled}
+                            onChange={(v) => updateSetting('mail_enabled', v)}
+                          />
+                          <SettingsInput
+                            label="SMTP Server Host"
+                            value={settings.mail_host || ''}
+                            onChange={(v) => updateSetting('mail_host', v)}
+                            placeholder="smtp.mailtrap.io"
+                          />
+                          <SettingsInput
+                            label="SMTP Port"
+                            type="number"
+                            value={settings.mail_port ?? ''}
+                            onChange={(v) => updateSetting('mail_port', v)}
+                            placeholder="587"
+                          />
+                          <SettingsInput
+                            label="SMTP Username"
+                            value={settings.mail_username || ''}
+                            onChange={(v) => updateSetting('mail_username', v)}
+                          />
+                          <SettingsInput
+                            label="SMTP Password"
+                            type="password"
+                            value={settings.mail_password || ''}
+                            onChange={(v) => updateSetting('mail_password', v)}
+                            placeholder="••••••••"
+                          />
+                          <SettingsInput
+                            label="From Sender Address"
+                            type="email"
+                            value={settings.mail_from_address || ''}
+                            onChange={(v) => updateSetting('mail_from_address', v)}
+                            placeholder="noreply@visitflow.lk"
+                          />
+                          <SettingsInput
+                            label="From Sender Display Name"
+                            value={settings.mail_from_name || ''}
+                            onChange={(v) => updateSetting('mail_from_name', v)}
+                            placeholder="VisitFlow Sri Lanka"
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Appearance */}
+                      {settingsSection === 'appearance' && (
+                        <SettingsCard
+                          title="Visual Identity & Theming"
+                          description="Customize platform branding, logos, and accent highlights."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'logo_url',
+                              'favicon_url',
+                              'primary_color',
+                              'accent_color',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsInput
+                            label="Branded Logo URL"
+                            value={settings.logo_url || ''}
+                            onChange={(v) => updateSetting('logo_url', v)}
+                            placeholder="/logo.svg"
+                          />
+                          <SettingsInput
+                            label="Browser Favicon URL"
+                            value={settings.favicon_url || ''}
+                            onChange={(v) => updateSetting('favicon_url', v)}
+                            placeholder="/favicon.ico"
+                          />
+                          <SettingsInput
+                            label="Primary Brand Color (Hex)"
+                            value={settings.primary_color || ''}
+                            onChange={(v) => updateSetting('primary_color', v)}
+                            placeholder="#0FAF8F"
+                          />
+                          <SettingsInput
+                            label="Accent Color (Hex)"
+                            value={settings.accent_color || ''}
+                            onChange={(v) => updateSetting('accent_color', v)}
+                            placeholder="#E7B94C"
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* System Info */}
+                      {settingsSection === 'system' && (
+                        <SettingsCard
+                          title="System Diagnostic Telemetry"
+                          description="Read-only environmental runtime parameters and database status."
+                          showSave={false}
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                Laravel Framework
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1">
+                                {systemInfo.laravel_version || 'v11.x'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                PHP Engine
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1">
+                                {systemInfo.php_version || '8.2+'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                Runtime Environment
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1 capitalize">
+                                {systemInfo.environment || 'local'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                Database Connection
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1 uppercase">
+                                {systemInfo.db_connection || 'mysql / sqlite'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200 sm:col-span-2">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                Application URL
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1">
+                                {systemInfo.app_url || 'http://localhost'}
+                              </p>
+                            </div>
+                          </div>
+                        </SettingsCard>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Place Create/Edit Modal */}
       {isPlaceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-xl p-6 border border-sand-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-sand-200 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/40">
+          <div className="bg-white rounded-lg w-full max-w-xl border border-sand-200 shadow-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-sand-200">
               <div>
-                <h3 className="font-bold text-base text-charcoal-950">
-                  {editingPlace ? `Edit Place: ${editingPlace.name}` : 'Add Verified Place'}
+                <h3 className="text-sm font-medium text-charcoal-950">
+                  {editingPlace ? 'Edit place' : 'New place'}
                 </h3>
-                <p className="text-[11px] text-stone-500">FR-08 catalogue management</p>
+                <p className="text-xs text-stone-500">Place details</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPlaceModalOpen(false)}
-                className="text-stone-400 hover:text-stone-800 p-1"
-                aria-label="Close modal"
+                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
