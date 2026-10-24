@@ -71,6 +71,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/places/{id}/media', [AdminController::class, 'uploadMedia']);
     Route::delete('/media/{id}', [AdminController::class, 'deleteMedia']);
 
+    // Settings
+    Route::get('/settings', [\App\Http\Controllers\Api\Admin\SettingsController::class, 'index']);
+    Route::put('/settings', [\App\Http\Controllers\Api\Admin\SettingsController::class, 'update']);
+
     // Audit Trail
     Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
 });

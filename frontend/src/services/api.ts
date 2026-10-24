@@ -229,6 +229,17 @@ class ApiService {
     return this.request('/admin/itineraries');
   }
 
+  async getAdminSettings(): Promise<any> {
+    return this.request('/admin/settings');
+  }
+
+  async updateAdminSettings(data: any): Promise<{ message: string }> {
+    return this.request('/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getAdminPlaces(params?: {
     status?: 'active' | 'archived' | 'inactive';
     search?: string;
@@ -382,4 +393,3 @@ class ApiService {
 }
 
 export const api = new ApiService();
-
