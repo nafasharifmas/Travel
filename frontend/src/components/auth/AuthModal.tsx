@@ -163,9 +163,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="border-b border-navy-100 bg-[radial-gradient(circle_at_top_right,_rgba(46,196,182,0.18),_transparent_42%),linear-gradient(135deg,#fefdfb,#eef8f8)] px-6 pb-6 pt-7">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-white/80 bg-white p-1.5 shadow-card">
-              <img src="/visitflow-mark.png" alt="" className="h-full w-full object-contain" />
+              <img src="/visitflow-mark.png" alt="Visitflow" className="h-full w-full object-contain" />
             </span>
-            <img src="/visitflow-logo.png" alt="Visitflow" className="h-8 w-auto max-w-[150px] object-contain object-left" />
+            <span className="font-serif text-2xl font-bold text-navy-900 tracking-tight">Visitflow</span>
           </div>
 
           <span className="eyebrow mt-4">

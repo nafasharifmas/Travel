@@ -182,9 +182,9 @@ export const SiteHeader: React.FC = () => {
                 <div className="relative flex items-center justify-center">
                   <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-turquoise-500/20 to-ocean-500/20 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <img
-                    src="/visitflow-emblem.png"
+                    src="/visitflow-mark.png"
                     alt="Visitflow emblem"
-                    className="relative h-8 sm:h-9 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-300 group-hover:scale-105"
+                    className="relative h-8 sm:h-9 w-auto rounded-lg object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
                 <div className="min-w-0 flex flex-col">

@@ -157,23 +157,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('visitflow_admin_sidebar_collapsed') === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  const toggleSidebarCollapse = () => {
-    setIsSidebarCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('visitflow_admin_sidebar_collapsed', String(next));
-      } catch {}
-      return next;
-    });
-  };
 
   // Settings Data
   const [settings, setSettings] = useState<Record<string, any>>({});
@@ -663,22 +646,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
         mobileOpen={isMobileNavOpen}
         onCloseMobile={() => setIsMobileNavOpen(false)}
         onLogout={handleLogout}
-        collapsed={isSidebarCollapsed}
-        onToggleCollapse={toggleSidebarCollapse}
       />
 
-      <div
-        className={`${
-          isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
-        } flex flex-col min-h-screen transition-all duration-300 ease-in-out`}
-      >
+      <div className="lg:pl-64 flex flex-col min-h-screen">
         <AdminTopbar
           activeTab={activeTab}
           user={user}
           onOpenMobileMenu={() => setIsMobileNavOpen(true)}
           onAddPlace={handleOpenPlaceCreate}
-          isSidebarCollapsed={isSidebarCollapsed}
-          onToggleCollapse={toggleSidebarCollapse}
         />
 
         <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6 max-w-[1600px] w-full mx-auto">
