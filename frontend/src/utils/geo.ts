@@ -5,7 +5,8 @@ export function calculateDistanceKm(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
+  rounded = true
 ): number {
   const R = 6371; // Earth's radius in km
   const dLat = toRad(lat2 - lat1);
@@ -21,7 +22,7 @@ export function calculateDistanceKm(
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const d = R * c;
 
-  return Math.round(d * 10) / 10;
+  return rounded ? Math.round(d * 10) / 10 : d;
 }
 
 function toRad(degrees: number): number {

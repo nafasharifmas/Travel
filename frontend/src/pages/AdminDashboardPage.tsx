@@ -148,6 +148,7 @@ export const AdminDashboardPage: React.FC = () => {
     name: '',
     category_id: 1,
     description: '',
+    travel_tips: '',
     address: '',
     lat: 7.957,
     lng: 80.76,
@@ -261,6 +262,7 @@ export const AdminDashboardPage: React.FC = () => {
       name: '',
       category_id: categories.length > 0 ? categories[0].id : 1,
       description: '',
+      travel_tips: '',
       address: '',
       lat: 7.957,
       lng: 80.76,
@@ -277,6 +279,7 @@ export const AdminDashboardPage: React.FC = () => {
       name: place.name,
       category_id: place.category ? place.category.id : 1,
       description: place.description,
+      travel_tips: place.travel_tips || '',
       address: place.address || '',
       lat: place.lat,
       lng: place.lng,
@@ -295,6 +298,7 @@ export const AdminDashboardPage: React.FC = () => {
           name: placeForm.name,
           category_id: placeForm.category_id,
           description: placeForm.description,
+          travel_tips: placeForm.travel_tips,
           address: placeForm.address,
           lat: Number(placeForm.lat),
           lng: Number(placeForm.lng),
@@ -307,6 +311,7 @@ export const AdminDashboardPage: React.FC = () => {
           name: placeForm.name,
           category_id: placeForm.category_id,
           description: placeForm.description,
+          travel_tips: placeForm.travel_tips,
           address: placeForm.address,
           lat: Number(placeForm.lat),
           lng: Number(placeForm.lng),
@@ -1361,6 +1366,17 @@ export const AdminDashboardPage: React.FC = () => {
                   required
                   value={placeForm.description}
                   onChange={(e) => setPlaceForm({ ...placeForm, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Travel Tips</label>
+                <textarea
+                  rows={3}
+                  value={placeForm.travel_tips}
+                  onChange={(e) => setPlaceForm({ ...placeForm, travel_tips: e.target.value })}
+                  placeholder="Practical advice for visitors, access, clothing, or timing"
                   className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
                 />
               </div>
