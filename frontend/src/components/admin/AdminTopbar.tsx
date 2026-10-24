@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Plus, ShieldCheck } from 'lucide-react';
+import { Menu, Plus } from 'lucide-react';
 import type { AdminTab } from './AdminSidebar';
 
 interface AdminTopbarProps {
@@ -9,42 +9,43 @@ interface AdminTopbarProps {
   onAddPlace: () => void;
 }
 
-const VIEW_META: Record<
-  AdminTab,
-  { title: string; subtitle: string; cta?: string }
-> = {
+const VIEW_META: Record<AdminTab, { title: string; subtitle: string; cta?: string }> = {
   overview: {
-    title: 'Dashboard Overview',
-    subtitle: 'Catalogue health, compliance and recent administrative activity.',
+    title: 'Overview',
+    subtitle: 'Catalogue health and recent activity',
   },
   places: {
-    title: 'Places Catalogue',
-    subtitle: 'Create, edit, archive and attach validated media to destinations.',
-    cta: 'Add Place',
+    title: 'Places',
+    subtitle: 'Manage catalogue entries and media',
+    cta: 'New place',
   },
   categories: {
-    title: 'Category Taxonomy',
-    subtitle: 'Discovery taxonomy powering public place filters.',
+    title: 'Categories',
+    subtitle: 'Taxonomy for discovery filters',
   },
   users: {
-    title: 'User Accounts',
-    subtitle: 'Profiles, role assignments and account status.',
+    title: 'Users',
+    subtitle: 'Accounts and permissions',
   },
   itineraries: {
-    title: 'Itinerary Administration',
-    subtitle: 'Monitor saved itineraries across registered users.',
+    title: 'Itineraries',
+    subtitle: 'Saved trips across users',
   },
   'data-quality': {
-    title: 'Data Quality Center',
-    subtitle: 'Identify missing fields, broken media, and data issues.',
+    title: 'Data quality',
+    subtitle: 'Issues and consistency checks',
   },
   audit: {
-    title: 'Audit Trail',
-    subtitle: 'Append-only history of every administrative mutation.',
+    title: 'Audit trail',
+    subtitle: 'Administrative activity log',
   },
   'system-health': {
-    title: 'System Health',
-    subtitle: 'API, database, storage and operational status.',
+    title: 'System health',
+    subtitle: 'Service and storage status',
+  },
+  settings: {
+    title: 'Settings',
+    subtitle: 'Platform configuration',
   },
 };
 
@@ -57,56 +58,42 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   const meta = VIEW_META[activeTab];
 
   return (
-    <header className="sticky top-0 z-30 bg-ivory-100/90 backdrop-blur border-b border-sand-200">
-      <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
-        {/* Mobile nav toggle */}
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-sand-200">
+      <div className="px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-3">
         <button
           type="button"
           onClick={onOpenMobileMenu}
           aria-label="Open navigation"
-          className="lg:hidden p-2 -ml-2 rounded-xl text-stone-600 hover:bg-sand-200/70 hover:text-charcoal-950 transition-colors"
+          className="lg:hidden p-1.5 -ml-1 rounded-md text-stone-600 hover:bg-sand-50 hover:text-charcoal-950 transition-colors"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Page title */}
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-xl font-serif font-bold text-charcoal-950 leading-tight truncate">
-            {meta.title}
-          </h1>
-          <p className="hidden sm:block text-[11px] text-stone-500 truncate">
-            {meta.subtitle}
-          </p>
+          <h1 className="text-base font-semibold text-charcoal-950 leading-tight truncate">{meta.title}</h1>
+          <p className="hidden sm:block text-xs text-stone-500 truncate">{meta.subtitle}</p>
         </div>
 
-        {/* Session chip */}
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-200 text-emerald-700">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span className="text-[10px] font-bold uppercase tracking-wide">
-            Policy-scoped
-          </span>
-        </div>
+        {activeTab === 'places' && (
+          <button
+            type="button"
+            onClick={onAddPlace}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-charcoal-950 hover:bg-charcoal-900 text-white text-xs font-medium transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{meta.cta || 'New place'}</span>
+          </button>
+        )}
 
-        {/* Primary action */}
-        <button
-          type="button"
-          onClick={onAddPlace}
-          className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 text-xs font-bold tracking-wide transition-all shadow-sm hover:shadow-md"
-        >
-          <Plus className="w-4 h-4 text-gold-400" />
-          <span className="hidden sm:inline">{meta.cta || 'Add Place'}</span>
-        </button>
-
-        {/* Acting admin */}
         <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-sand-200">
-          <div className="w-8 h-8 rounded-full bg-gold-500 text-charcoal-950 font-bold text-xs flex items-center justify-center">
+          <div className="w-7 h-7 rounded-full bg-sand-100 text-charcoal-950 text-xs font-medium flex items-center justify-center">
             {(user?.name || 'A').charAt(0).toUpperCase()}
           </div>
           <div className="hidden xl:block leading-tight">
-            <p className="text-xs font-bold text-charcoal-950 truncate max-w-[140px]">
+            <p className="text-xs font-medium text-charcoal-950 truncate max-w-[140px]">
               {user?.name || 'Administrator'}
             </p>
-            <p className="text-[10px] text-stone-500">Acting administrator</p>
+            <p className="text-[11px] text-stone-500">Admin</p>
           </div>
         </div>
       </div>
