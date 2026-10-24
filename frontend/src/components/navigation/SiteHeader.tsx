@@ -195,7 +195,6 @@ export const SiteHeader: React.FC = () => {
               </Link>
             </div>
 
-            {/* Zone 2: Redesigned Hero Nav (Clean, Refined Editorial Typography) */}
             <nav className="hidden flex-1 justify-center lg:flex items-center gap-4 xl:gap-7" aria-label="Primary">
               {NAV_ITEMS.map((item) => {
                 const active = isNavActive(item);

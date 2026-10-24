@@ -35,17 +35,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Hero content */}
       <div className="relative z-10 container-page text-center pt-28 pb-24 lg:pt-32 lg:pb-28 flex flex-col items-center">
         <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-pill bg-white/10 border border-white/20 text-white text-[11px] sm:text-xs font-semibold tracking-[0.2em] uppercase mb-6 backdrop-blur-sm animate-fadeInUp">
-          The Eastern Corridor, mapped properly
+          Eastern Corridor
         </span>
 
         <h1 className="text-hero font-serif font-bold text-white max-w-4xl animate-fadeInUp [animation-delay:80ms]">
-          Find your way to somewhere{' '}
-          <span className="italic font-normal text-turquoise-300">extraordinary</span>.
+          Explore the Eastern Province
         </h1>
 
         <p className="mt-6 text-base sm:text-lg text-navy-100 max-w-2xl leading-relaxed animate-fadeInUp [animation-delay:160ms]">
-          Real destinations with verified coordinates, unhurried routes and living culture —
-          all measured from where you actually are.
+          Destinations with verified coordinates and routes from your location.
         </p>
 
         <div className="mt-9 flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto animate-fadeInUp [animation-delay:240ms]">
