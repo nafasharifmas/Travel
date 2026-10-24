@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Plus, Search, Bell, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Menu, Plus, Search, Bell } from 'lucide-react';
 import type { AdminTab } from './AdminSidebar';
 import { Button } from '@/components/ui/button';
 
@@ -8,8 +8,6 @@ interface AdminTopbarProps {
   user?: { name: string; email: string } | null;
   onOpenMobileMenu: () => void;
   onAddPlace: () => void;
-  isSidebarCollapsed?: boolean;
-  onToggleCollapse?: () => void;
 }
 
 const VIEW_META: Record<AdminTab, { title: string; subtitle: string; cta?: string }> = {
@@ -57,8 +55,6 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   user,
   onOpenMobileMenu,
   onAddPlace,
-  isSidebarCollapsed = false,
-  onToggleCollapse,
 }) => {
   const meta = VIEW_META[activeTab];
 
@@ -74,23 +70,6 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         >
           <Menu className="w-5 h-5" />
         </button>
-
-        {/* Desktop sidebar collapse/expand toggle */}
-        {onToggleCollapse && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden lg:flex p-2 -ml-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition-all"
-            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isSidebarCollapsed ? (
-              <PanelLeftOpen className="w-5 h-5 text-cyan-600" />
-            ) : (
-              <PanelLeftClose className="w-5 h-5" />
-            )}
-          </button>
-        )}
 
         <div className="min-w-0 flex-1">
           <h1 className="text-lg font-semibold text-slate-900 leading-tight truncate">{meta.title}</h1>
