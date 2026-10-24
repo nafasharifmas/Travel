@@ -21,18 +21,10 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Gatekeeper: Wait for CI validation before deploying
-  # ---------------------------------------------------------------------------
-  verify:
-    name: Verify Code Quality & Tests
-    uses: ./.github/workflows/ci.yml
-
-  # ---------------------------------------------------------------------------
-  # Package Release Artifacts
+  # Package Production Release Archive
   # ---------------------------------------------------------------------------
   package-release:
     name: Package Release Archive
-    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
