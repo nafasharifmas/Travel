@@ -372,6 +372,9 @@ class DatabaseSeeder extends Seeder
             'environment' => 'production_seed',
         ], $admin);
 
+        // Settings
+        $this->call(SettingSeeder::class);
+
         // Kalmunai area-of-interest catalogue.
         $this->call(AoiPlacesSeeder::class);
         $this->call(LocalSubmissionSeeder::class);
