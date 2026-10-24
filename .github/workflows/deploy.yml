@@ -1,0 +1,93 @@
+name: Visitflow CD & Release Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Package Production Release Archive
+  # ---------------------------------------------------------------------------
+  package-release:
+    name: Package Release Archive
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend for production
+        working-directory: frontend
+        run: |
+          npm ci || npm install
+          npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api.visitflow.lk/api' }}
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, pdo, bcmath, fileinfo, gd
+
+      - name: Install backend production dependencies
+        working-directory: backend
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Create unified production release archive
+        run: |
+          mkdir -p release/frontend release/backend
+          cp -r frontend/dist release/frontend/dist
+          cp -r backend release/backend/app
+          # Remove local testing artifacts
+          rm -f release/backend/app/.env release/backend/app/database/*.sqlite
+          tar -czf visitflow-release-${{ github.sha }}.tar.gz -C release .
+
+      - name: Store release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: visitflow-release-bundle
+          path: visitflow-release-${{ github.sha }}.tar.gz
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Vercel Frontend Deployment (Optional if secrets are configured)
+  # ---------------------------------------------------------------------------
+  deploy-frontend:
+    name: Deploy Frontend (Vercel)
+    needs: package-release
+    runs-on: ubuntu-latest
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}
+          working-directory: frontend
