@@ -29,6 +29,19 @@ class AoiPlacesSeeder extends Seeder
             ['Kallady Beach', 'Beach & Scenic', 'Waves', '#0891b2', 7.7188, 81.7247, 24.5, 'A wide eastern coastline offering scenic ocean views, casuarina groves, and proximity to the Lady Manning Bridge.', 'Kallady, Batticaloa, Eastern Province, Sri Lanka', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Kallady_Beach_05.jpg/1280px-Kallady_Beach_05.jpg'],
         ];
 
+        $travelTips = [
+            'Maruthamunai Beach Park' => 'Visit near sunset, bring sun protection, and follow local swimming guidance.',
+            'Kalmunai Muhyiddeen Jummah Grand Mosque' => 'Dress modestly and ask permission before photographing worshippers or interiors.',
+            'Jamia Jummah Masjid (Kalmunai Town Red Mosque)' => 'Plan around prayer times and keep noise low near the entrance.',
+            'Heritage Museum, Kattankudy' => 'Allow at least an hour for the exhibits and confirm opening access locally before travelling.',
+            'Oluvil Lighthouse' => 'Use daylight for the harbour approach and keep a safe distance from restricted maritime areas.',
+            'Deegawapi Raja Maha Vihara' => 'Dress respectfully, remove footwear where requested, and carry drinking water.',
+            'Kokkaddicholai Thaanthonreeswarar Temple' => 'Check festival-day access, dress respectfully, and remove footwear before entering shrine areas.',
+            'Batticaloa Dutch Fort' => 'The ramparts are best explored in the cooler morning or late afternoon; wear comfortable shoes.',
+            'Batticaloa Gate' => 'Combine the visit with the nearby waterfront and take care around traffic at the road crossing.',
+            'Kallady Beach' => 'Enjoy the coast during daylight, bring water, and follow local advice about sea conditions.',
+        ];
+
         foreach ($places as [$name, $categoryName, $icon, $color, $lat, $lng, $distance, $description, $address, $photo]) {
             $category = Category::updateOrCreate(
                 ['slug' => Str::slug($categoryName)],
@@ -40,7 +53,8 @@ class AoiPlacesSeeder extends Seeder
                 [
                     'category_id' => $category->id,
                     'name' => $name,
-                    'description' => $description . " (AOI distance: {$distance} km from Kalmunai center.)",
+                    'description' => $description,
+                    'travel_tips' => $travelTips[$name] ?? 'Check local access conditions before visiting and respect the site and surrounding community.',
                     'address' => $address,
                     'lat' => $lat,
                     'lng' => $lng,

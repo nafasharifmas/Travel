@@ -374,5 +374,6 @@ class DatabaseSeeder extends Seeder
 
         // Kalmunai area-of-interest catalogue.
         $this->call(AoiPlacesSeeder::class);
+        $this->call(LocalSubmissionSeeder::class);
     }
 }

@@ -20,6 +20,91 @@ class VisitflowApiTest extends TestCase
     protected Category $category;
     protected Place $place;
 
+    public function test_admin_can_create_update_and_clear_travel_tips(): void
+    {
+        $payload = [
+            'category_id' => $this->category->id,
+            'name' => 'Local travel tips regression',
+            'description' => 'A local attraction for regression testing.',
+            'lat' => 7.44,
+            'lng' => 81.82,
+            'opening_hours' => '08:00 - 17:00',
+            'travel_tips' => 'Bring drinking water.',
+        ];
+        $created = $this->actingAs($this->adminUser)->postJson('/api/admin/places', $payload);
+        $created->assertCreated()->assertJsonPath('place.travel_tips', $payload['travel_tips']);
+        $id = $created->json('place.id');
+        $payload['travel_tips'] = 'Visit in the morning.';
+        $this->putJson("/api/admin/places/{$id}", $payload)
+            ->assertOk()->assertJsonPath('place.travel_tips', $payload['travel_tips']);
+        $this->getJson("/api/places/{$id}")->assertOk()
+            ->assertJsonPath('place.travel_tips', $payload['travel_tips'])
+            ->assertJsonPath('place.opening_hours', '08:00 - 17:00');
+        $payload['travel_tips'] = null;
+        $this->putJson("/api/admin/places/{$id}", $payload)
+            ->assertOk()->assertJsonPath('place.travel_tips', null);
+        $this->assertDatabaseHas('places', ['id' => $id, 'travel_tips' => null]);
+    }
+
+    public function test_admin_travel_tips_validation_preserves_422_errors(): void
+    {
+        $this->actingAs($this->adminUser)->postJson('/api/admin/places', [
+            'category_id' => $this->category->id,
+            'name' => 'Invalid travel tips',
+            'description' => 'Test validation.',
+            'lat' => 7.44,
+            'lng' => 81.82,
+            'travel_tips' => str_repeat('x', 2001),
+        ])->assertUnprocessable()->assertJsonValidationErrors('travel_tips');
+    }
+
+    public function test_public_catalogue_excludes_places_beyond_25_km(): void
+    {
+        $outside = Place::create([
+            'category_id' => $this->category->id,
+            'name' => 'Outside local radius',
+            'slug' => 'outside-local-radius',
+            'description' => 'Just beyond the boundary, although rounded distance is 25.0.',
+            'lat' => Place::REFERENCE_LAT + rad2deg(25.01 / 6371),
+            'lng' => Place::REFERENCE_LNG,
+            'created_by' => $this->adminUser->id,
+            'is_active' => true,
+        ]);
+        $inside = Place::create([
+            'category_id' => $this->category->id,
+            'name' => 'Inside local radius',
+            'slug' => 'inside-local-radius',
+            'description' => 'Just inside the boundary.',
+            'lat' => Place::REFERENCE_LAT + rad2deg(24.99 / 6371),
+            'lng' => Place::REFERENCE_LNG,
+            'created_by' => $this->adminUser->id,
+            'is_active' => true,
+        ]);
+        $list = $this->getJson('/api/places')->assertOk();
+        $ids = collect($list->json('places'))->pluck('id')->all();
+        $this->assertContains($inside->id, $ids);
+        $this->assertNotContains($outside->id, $ids);
+        $this->getJson("/api/places/{$outside->slug}")->assertNotFound();
+        $this->getJson('/api/places?search=Outside')->assertOk()->assertJsonPath('count', 0);
+        $this->actingAs($this->adminUser)->getJson('/api/admin/places')
+            ->assertOk()->assertJsonFragment(['slug' => $outside->slug]);
+    }
+
+    public function test_submission_seed_has_ten_local_attractions_with_travel_tips(): void
+    {
+        $this->seed(\Database\Seeders\AoiPlacesSeeder::class);
+        $this->seed(\Database\Seeders\LocalSubmissionSeeder::class);
+        $local = Place::where('is_active', true)->withinLocalArea()
+            ->where('id', '!=', $this->place->id)->get();
+        $this->assertGreaterThanOrEqual(10, $local->count());
+        foreach ($local as $place) {
+            $this->assertNotEmpty($place->travel_tips, $place->name);
+        }
+        $count = Place::count();
+        $this->seed(\Database\Seeders\LocalSubmissionSeeder::class);
+        $this->assertSame($count, Place::count());
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,9 +133,10 @@ class VisitflowApiTest extends TestCase
                 'category_id' => $this->category->id,
                 'name' => 'Test Sigiriya Rock',
                 'description' => 'Magnificent ancient fortress with sky palace and water gardens.',
+                'travel_tips' => 'Start early and carry water.',
                 'address' => 'Sigiriya Road',
-                'lat' => 7.957,
-                'lng' => 80.760,
+                'lat' => 7.44,
+                'lng' => 81.82,
                 'opening_hours' => '07:00 - 17:30',
                 'created_by' => $this->adminUser->id,
                 'is_active' => true,
@@ -90,6 +176,8 @@ class VisitflowApiTest extends TestCase
                      'place' => ['id', 'name', 'lat', 'lng', 'category', 'media'],
                      'map_config' => ['lat', 'lng', 'attribution', 'tile_layer'],
                  ]);
+
+        $this->assertSame('Start early and carry water.', $response->json('place.travel_tips'));
 
         $this->assertStringContainsString('OpenStreetMap', $response->json('map_config.attribution'));
     }
