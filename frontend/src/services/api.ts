@@ -213,6 +213,22 @@ class ApiService {
     return this.request('/admin/dashboard');
   }
 
+  async getAdminAnalytics(): Promise<any> {
+    return this.request('/admin/analytics');
+  }
+
+  async getAdminDataQuality(): Promise<any> {
+    return this.request('/admin/data-quality');
+  }
+
+  async getAdminSystemHealth(): Promise<any> {
+    return this.request('/admin/system-health');
+  }
+
+  async getAdminItineraries(): Promise<{ itineraries: any[] }> {
+    return this.request('/admin/itineraries');
+  }
+
   async getAdminPlaces(params?: {
     status?: 'active' | 'archived' | 'inactive';
     search?: string;

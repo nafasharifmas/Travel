@@ -138,6 +138,13 @@ export const AdminDashboardPage: React.FC = () => {
   // Users Data
   const [usersList, setUsersList] = useState<User[]>([]);
 
+  // Itineraries Data
+  const [adminItineraries, setAdminItineraries] = useState<any[]>([]);
+
+  // Data Quality & Health
+  const [dataQuality, setDataQuality] = useState<any>(null);
+  const [systemHealth, setSystemHealth] = useState<any>(null);
+
   // Audit Logs Data
   const [allAuditLogs, setAllAuditLogs] = useState<AuditLogItem[]>([]);
 
@@ -228,11 +235,46 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  const loadAdminItineraries = async () => {
+    try {
+      const res = await api.getAdminItineraries();
+      setAdminItineraries(res.itineraries || []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const loadDataQuality = async () => {
+    try {
+      const res = await api.getAdminDataQuality();
+      setDataQuality(res);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const loadSystemHealth = async () => {
+    try {
+      const res = await api.getAdminSystemHealth();
+      setSystemHealth(res);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   useEffect(() => {
     if (!isAdmin) return;
     setLoading(true);
-    Promise.all([loadDashboard(), loadPlaces(), loadCategories(), loadUsers(), loadAuditLogs()])
-      .finally(() => setLoading(false));
+    Promise.all([
+      loadDashboard(),
+      loadPlaces(),
+      loadCategories(),
+      loadUsers(),
+      loadAuditLogs(),
+      loadAdminItineraries(),
+      loadDataQuality(),
+      loadSystemHealth(),
+    ]).finally(() => setLoading(false));
   }, [isAdmin]);
 
   useEffect(() => {
@@ -1194,7 +1236,123 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 5: AUDIT LOG (Page 6 & 7) */}
+          {/* TAB 5: ITINERARIES ADMINISTRATION */}
+          {activeTab === 'itineraries' && (
+            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-black text-charcoal-950">Itinerary Administration</h3>
+                  <p className="text-xs text-stone-500">Monitor saved itineraries across registered users.</p>
+                </div>
+                <span className="self-start sm:self-auto px-3 py-1.5 rounded-full bg-sand-100 text-stone-700 text-[11px] font-bold">
+                  {adminItineraries.length} Entries
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-sand-200 text-stone-500 font-bold uppercase text-[10px] tracking-wider bg-ivory-100">
+                      <th className="p-3 rounded-l-xl">Itinerary</th>
+                      <th className="p-3">Owner</th>
+                      <th className="p-3">Items</th>
+                      <th className="p-3">Start Date</th>
+                      <th className="p-3 rounded-r-xl">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-sand-100">
+                    {adminItineraries.length === 0 && (
+                      <tr>
+                        <td colSpan={5}>
+                          <EmptyState icon={CalendarDays} title="No itineraries found" hint="Registered users' saved itineraries will appear here." />
+                        </td>
+                      </tr>
+                    )}
+                    {adminItineraries.map((it: any) => (
+                      <tr key={it.id} className="hover:bg-sand-50/70">
+                        <td className="p-3">
+                          <p className="font-bold text-charcoal-950">{it.title}</p>
+                          {it.notes && <p className="text-[11px] text-stone-500 truncate max-w-xs">{it.notes}</p>}
+                        </td>
+                        <td className="p-3">
+                          {it.user ? (
+                            <div>
+                              <p className="font-semibold text-stone-700">{it.user.name}</p>
+                              <p className="text-[11px] text-stone-500 font-mono">{it.user.email}</p>
+                            </div>
+                          ) : (
+                            <span className="text-stone-400">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 font-semibold text-stone-700">{it.items_count}</td>
+                        <td className="p-3 text-stone-600">{it.start_date || '—'}</td>
+                        <td className="p-3 text-stone-500">{it.created_at ? new Date(it.created_at).toLocaleString() : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: DATA QUALITY */}
+          {activeTab === 'data-quality' && (
+            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-black text-charcoal-950">Data Quality Center</h3>
+                  <p className="text-xs text-stone-500">Real validation checks on catalogue data.</p>
+                </div>
+                <button type="button" onClick={loadDataQuality} className="px-3 py-1.5 rounded-lg bg-sand-100 hover:bg-sand-200 text-stone-700 text-xs font-bold">Recheck</button>
+              </div>
+              {dataQuality?.issues?.length === 0 ? (
+                <EmptyState icon={CheckCircle2} title="No issues detected" hint="Catalogue data passes current validation checks." />
+              ) : (
+                <ul className="space-y-2">
+                  {(dataQuality?.issues || []).map((issue: any, idx: number) => (
+                    <li key={idx} className="flex items-center justify-between p-3 rounded-xl border border-sand-200">
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className={`w-4 h-4 ${issue.severity === 'high' ? 'text-red-600' : issue.severity === 'medium' ? 'text-amber-600' : 'text-stone-500'}`} />
+                        <div>
+                          <p className="text-sm font-bold text-charcoal-950">{issue.message}</p>
+                          <p className="text-[11px] text-stone-500">Severity: {issue.severity}</p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-sand-100 text-stone-700 text-[11px] font-bold">{issue.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {/* TAB 7: SYSTEM HEALTH */}
+          {activeTab === 'system-health' && (
+            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-black text-charcoal-950">System Health</h3>
+                  <p className="text-xs text-stone-500">Lightweight operational checks.</p>
+                </div>
+                <button type="button" onClick={loadSystemHealth} className="px-3 py-1.5 rounded-lg bg-sand-100 hover:bg-sand-200 text-stone-700 text-xs font-bold">Refresh</button>
+              </div>
+              {systemHealth && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(systemHealth.checks || {}).map(([key, val]: [string, any]) => (
+                    <div key={key} className="p-4 rounded-2xl border border-sand-200 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-charcoal-950 capitalize">{key}</p>
+                        <p className="text-[11px] text-stone-500">Status</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${val.status === 'ok' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{val.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {systemHealth?.timestamp && <p className="text-[11px] text-stone-500">Last checked: {new Date(systemHealth.timestamp).toLocaleString()}</p>}
+            </div>
+          )}
+
+          {/* TAB 8: AUDIT LOG (Page 6 & 7) */}
           {activeTab === 'audit' && (
             <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
