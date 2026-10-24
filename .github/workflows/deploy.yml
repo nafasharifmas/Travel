@@ -48,7 +48,7 @@ jobs:
       - name: Build frontend for production
         working-directory: frontend
         run: |
-          npm ci
+          npm ci || npm install
           npm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api.visitflow.lk/api' }}
@@ -99,4 +99,3 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}
           working-directory: frontend
-
