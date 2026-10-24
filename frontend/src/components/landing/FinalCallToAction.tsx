@@ -27,11 +27,10 @@ export const FinalCallToAction: React.FC = () => {
             Start your journey
           </span>
 
-          <h2 className="text-h2 text-white mt-5">Your next story starts somewhere.</h2>
+          <h2 className="text-h2 text-white mt-5">Plan your route</h2>
 
           <p className="text-base text-navy-100 max-w-xl mx-auto leading-relaxed">
-            Discover destinations that feel made for you — handcrafted routes, real coordinates,
-            zero guesswork.
+            Discover destinations with verified coordinates and build your itinerary.
           </p>
 
           <div className="pt-5 flex flex-col sm:flex-row items-center justify-center gap-3.5">
@@ -45,7 +44,7 @@ export const FinalCallToAction: React.FC = () => {
 
             <Link to="/explore" className="btn-on-dark w-full sm:w-auto px-8">
               <Navigation className="w-4 h-4 text-turquoise-300" />
-              <span>Explore Interactive Route Map</span>
+              <span>Explore Map</span>
             </Link>
           </div>
         </RevealOnScroll>

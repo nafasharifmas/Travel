@@ -37,8 +37,7 @@ export const DestinationSection: React.FC = () => {
               </span>
               <h2 className="text-h2">Ten stops. One shoreline.</h2>
               <p className="text-sm sm:text-base text-navy-500 leading-relaxed">
-                Sunrise beaches, lagoon villages and centuries-old sanctuaries — real places with
-                verified coordinates, mapped from your origin at Maruthamunai (7.4394, 81.8172).
+                Beaches, lagoons, temples and heritage sites with verified coordinates from Maruthamunai (7.4394, 81.8172).
               </p>
             </div>
 

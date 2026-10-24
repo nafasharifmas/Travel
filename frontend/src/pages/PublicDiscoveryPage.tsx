@@ -394,12 +394,10 @@ export const PublicDiscoveryPage: React.FC = () => {
 
           <div className="max-w-3xl space-y-3">
             <h1 className="text-h1 text-white">
-              Explore the <span className="italic text-turquoise-300">local attractions</span> &amp;
-              Beyond
+              Explore the Eastern Corridor
             </h1>
             <p className="text-sm sm:text-base text-navy-100 leading-relaxed max-w-2xl">
-              Verified coastal sanctuaries, sacred temples and living heritage museums — every
-              distance measured from {originLabel} at{' '}
+              Destinations with verified coordinates. Distances measured from {originLabel} at{' '}
               <strong className="font-semibold text-white">
                 {origin[0].toFixed(4)}, {origin[1].toFixed(4)}
               </strong>
