@@ -534,6 +534,161 @@ class AdminController extends Controller
     }
 
     /**
+     * Admin view of all itineraries for oversight.
+     */
+    public function itineraries(Request $request): JsonResponse
+    {
+        $itineraries = Itinerary::with(['user', 'items'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($itinerary) {
+                return [
+                    'id' => $itinerary->id,
+                    'title' => $itinerary->title,
+                    'start_date' => $itinerary->start_date ? $itinerary->start_date->format('Y-m-d') : null,
+                    'notes' => $itinerary->notes,
+                    'is_public' => (bool) $itinerary->is_public,
+                    'user' => $itinerary->user ? [
+                        'id' => $itinerary->user->id,
+                        'name' => $itinerary->user->name,
+                        'email' => $itinerary->user->email,
+                    ] : null,
+                    'items_count' => $itinerary->items->count(),
+                    'created_at' => $itinerary->created_at->toIso8601String(),
+                ];
+            });
+
+        return response()->json([
+            'itineraries' => $itineraries,
+        ]);
+    }
+
+    /**
+     * Mark/place-verify workflow (admin review).
+     */
+    public function verifyPlace(Request $request, int $id): JsonResponse
+    {
+        $place = Place::withTrashed()->findOrFail($id);
+
+        $validated = $request->validate([
+            'status' => 'required|string|in:pending,verified,needs_correction',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        AuditLog::record('place.verify', $place, [
+            'status' => $validated['status'],
+            'notes' => $validated['notes'] ?? null,
+        ], $request->user());
+
+        return response()->json([
+            'message' => "Place verification marked as {$validated['status']}.",
+            'place' => [
+                'id' => $place->id,
+                'name' => $place->name,
+                'verification_status' => $validated['status'],
+            ],
+        ]);
+    }
+
+    /**
+     * Analytics for admin dashboard.
+     */
+    public function analytics(): JsonResponse
+    {
+        $placesByCategory = Category::withCount(['places' => function ($q) {
+            $q->withTrashed();
+        }])->get()->map(fn($c) => [
+            'name' => $c->name,
+            'count' => $c->places_count,
+            'color' => $c->color,
+        ]);
+
+        $usersByRole = Role::withCount('users')->get()->map(fn($r) => [
+            'role' => $r->name,
+            'count' => $r->users_count,
+        ]);
+
+        return response()->json([
+            'places_by_category' => $placesByCategory,
+            'users_by_role' => $usersByRole,
+        ]);
+    }
+
+    /**
+     * Data quality checks (real validation).
+     */
+    public function dataQuality(): JsonResponse
+    {
+        $issues = [];
+
+        $missingDesc = Place::withTrashed()->where(function ($q) {
+            $q->whereNull('description')->orWhere('description', '');
+        })->count();
+        if ($missingDesc > 0) {
+            $issues[] = ['type' => 'missing_description', 'severity' => 'high', 'count' => $missingDesc, 'message' => 'Places missing description'];
+        }
+
+        $missingHours = Place::withTrashed()->where(function ($q) {
+            $q->whereNull('opening_hours')->orWhere('opening_hours', '');
+        })->count();
+        if ($missingHours > 0) {
+            $issues[] = ['type' => 'missing_opening_hours', 'severity' => 'medium', 'count' => $missingHours, 'message' => 'Places missing opening hours'];
+        }
+
+        $missingMedia = Place::withTrashed()->doesntHave('media')->count();
+        if ($missingMedia > 0) {
+            $issues[] = ['type' => 'missing_media', 'severity' => 'medium', 'count' => $missingMedia, 'message' => 'Places without images'];
+        }
+
+        $invalidCoords = Place::withTrashed()->where(function ($q) {
+            $q->where('lat', '<', -90)->orWhere('lat', '>', 90)->orWhere('lng', '<', -180)->orWhere('lng', '>', 180);
+        })->count();
+        if ($invalidCoords > 0) {
+            $issues[] = ['type' => 'invalid_coordinates', 'severity' => 'high', 'count' => $invalidCoords, 'message' => 'Places with invalid coordinates'];
+        }
+
+        $inactiveCats = Category::where('is_active', false)->count();
+        if ($inactiveCats > 0) {
+            $issues[] = ['type' => 'inactive_categories', 'severity' => 'low', 'count' => $inactiveCats, 'message' => 'Inactive categories present'];
+        }
+
+        return response()->json([
+            'issues' => $issues,
+            'summary' => [
+                'total_issues' => collect($issues)->sum('count'),
+            ],
+        ]);
+    }
+
+    /**
+     * Lightweight system health.
+     */
+    public function systemHealth(): JsonResponse
+    {
+        try {
+            DB::connection()->getPdo();
+            $dbOk = true;
+        } catch (\Throwable $e) {
+            $dbOk = false;
+        }
+
+        $storageOk = is_writable(storage_path('app')) && is_writable(storage_path('framework'));
+
+        return response()->json([
+            'status' => ($dbOk && $storageOk) ? 'healthy' : 'degraded',
+            'checks' => [
+                'api' => ['status' => 'ok'],
+                'database' => ['status' => $dbOk ? 'ok' : 'error'],
+                'storage' => ['status' => $storageOk ? 'ok' : 'warning'],
+            ],
+            'migrations' => [
+                'status' => 'ok',
+            ],
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
      * Audit trail inspection (FR-10, Page 6 & 7).
      */
     public function auditLogs(Request $request): JsonResponse

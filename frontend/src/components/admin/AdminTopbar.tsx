@@ -30,9 +30,21 @@ const VIEW_META: Record<
     title: 'User Accounts',
     subtitle: 'Profiles, role assignments and account status.',
   },
+  itineraries: {
+    title: 'Itinerary Administration',
+    subtitle: 'Monitor saved itineraries across registered users.',
+  },
+  'data-quality': {
+    title: 'Data Quality Center',
+    subtitle: 'Identify missing fields, broken media, and data issues.',
+  },
   audit: {
     title: 'Audit Trail',
     subtitle: 'Append-only history of every administrative mutation.',
+  },
+  'system-health': {
+    title: 'System Health',
+    subtitle: 'API, database, storage and operational status.',
   },
 };
 
