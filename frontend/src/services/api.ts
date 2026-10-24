@@ -232,6 +232,7 @@ class ApiService {
     name: string;
     category_id: number;
     description: string;
+    travel_tips?: string;
     address?: string;
     lat: number;
     lng: number;
@@ -252,6 +253,7 @@ class ApiService {
       name: string;
       category_id: number;
       description: string;
+      travel_tips?: string;
       address?: string;
       lat: number;
       lng: number;

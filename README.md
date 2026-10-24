@@ -7,8 +7,8 @@
 
 ## 🏛️ System Architecture & Tech Stack
 
-- **Tier 1 (Frontend SPA):** React 18 + TypeScript + Vite + Tailwind CSS (`frontend/`)
-- **Tier 2 (API Modules):** Laravel 11/12 (PHP 8.2+) RESTful JSON API (`backend/`)
+- **Tier 1 (Frontend SPA):** React 19 + TypeScript + Vite + Tailwind CSS (`frontend/`)
+- **Tier 2 (API Modules):** Laravel 11 (PHP 8.2+) RESTful JSON API (`backend/`)
 - **Tier 3 (Persistence & Media):** MySQL 8 (`visitflow` database) + secure local storage
 - **External Integration:** Leaflet + OpenStreetMap tiles with verified attribution (`FR-14`)
 
@@ -32,7 +32,7 @@ php artisan serve --host=127.0.0.1 --port=8000
 ```
 API endpoints will be live at: `http://127.0.0.1:8000/api`
 
-### 3. Frontend (React 18 SPA)
+### 3. Frontend (React 19 SPA)
 ```bash
 cd frontend
 # Development server with hot reload

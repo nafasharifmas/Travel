@@ -366,6 +366,14 @@ export const PlaceDetailPage: React.FC = () => {
               </p>
             </section>
 
+            {place.travel_tips && (
+              <section className="card p-6 sm:p-8 space-y-3">
+                <span className="eyebrow"><Info className="w-3.5 h-3.5" aria-hidden="true" /> Visitor guidance</span>
+                <h2 className="text-h3">Travel tips</h2>
+                <p className="text-sm text-navy-600 leading-relaxed whitespace-pre-line">{place.travel_tips}</p>
+              </section>
+            )}
+
             {/* Highlights */}
             <section className="card p-6 sm:p-8 space-y-5">
               <div className="space-y-1">
