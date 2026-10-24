@@ -1,6 +1,7 @@
 name: Visitflow CI Pipeline
 
 on:
+  workflow_call:
   push:
     branches:
       - main
@@ -116,3 +117,4 @@ jobs:
           QUEUE_CONNECTION: sync
           CLOUDINARY_ENABLED: false
         run: php artisan test
+
