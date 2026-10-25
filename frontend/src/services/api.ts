@@ -229,6 +229,28 @@ class ApiService {
     return this.request('/admin/itineraries');
   }
 
+  async getAdminItinerary(id: number): Promise<{ itinerary: any }> {
+    return this.request(`/admin/itineraries/${id}`);
+  }
+
+  async createAdminItinerary(data: any): Promise<{ message: string; itinerary: any }> {
+    return this.request('/admin/itineraries', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminItinerary(id: number, data: any): Promise<{ message: string; itinerary: any }> {
+    return this.request(`/admin/itineraries/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAdminItinerary(id: number): Promise<{ message: string }> {
+    return this.request(`/admin/itineraries/${id}`, { method: 'DELETE' });
+  }
+
   async getAdminSettings(): Promise<any> {
     return this.request('/admin/settings');
   }
@@ -297,6 +319,10 @@ class ApiService {
 
   async archiveAdminPlace(id: number): Promise<{ message: string }> {
     return this.request(`/admin/places/${id}`, { method: 'DELETE' });
+  }
+
+  async deleteAdminPlace(id: number): Promise<{ message: string }> {
+    return this.request(`/admin/places/${id}/permanent`, { method: 'DELETE' });
   }
 
   async restoreAdminPlace(id: number): Promise<{ message: string }> {

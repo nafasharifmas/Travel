@@ -49,6 +49,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/places', [AdminController::class, 'places']);
     Route::post('/places', [AdminController::class, 'storePlace']);
     Route::put('/places/{id}', [AdminController::class, 'updatePlace']);
+    Route::delete('/places/{id}/permanent', [AdminController::class, 'destroyPlace']);
     Route::delete('/places/{id}', [AdminController::class, 'archivePlace']);
     Route::post('/places/{id}/restore', [AdminController::class, 'restorePlace']);
     Route::post('/places/{id}/verify', [AdminController::class, 'verifyPlace']);
@@ -64,8 +65,12 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::put('/users/{id}/role', [AdminController::class, 'updateUserRole']);
     Route::put('/users/{id}/status', [AdminController::class, 'updateUserStatus']);
 
-    // Itineraries Overview (Admin)
+    // Itineraries Management (Admin)
     Route::get('/itineraries', [AdminController::class, 'itineraries']);
+    Route::get('/itineraries/{id}', [AdminController::class, 'showItinerary']);
+    Route::post('/itineraries', [AdminController::class, 'storeItinerary']);
+    Route::put('/itineraries/{id}', [AdminController::class, 'updateItinerary']);
+    Route::delete('/itineraries/{id}', [AdminController::class, 'destroyItinerary']);
 
     // Media Uploads (FR-11)
     Route::post('/places/{id}/media', [AdminController::class, 'uploadMedia']);

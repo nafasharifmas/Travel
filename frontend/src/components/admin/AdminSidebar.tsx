@@ -13,6 +13,8 @@ import {
   Activity,
   FileCheck,
   Settings,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 
 export type AdminTab =
@@ -88,6 +90,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   mobileOpen,
   onCloseMobile,
   onLogout,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const countFor = (tab: AdminTab) => {
     if (tab === 'places') return counts.places;
@@ -103,10 +107,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   const body = (
     <>
-      <div className="px-5 py-4 border-b border-white/10 shrink-0 flex items-center">
+      <div className="px-3 py-4 border-b border-white/10 shrink-0 flex items-center gap-2">
         <Link
           to="/"
-          className="flex items-center gap-3 group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 transition-all"
+          className={`flex items-center gap-3 group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 transition-all flex-1 min-w-0 ${
+            collapsed ? 'justify-center px-1' : 'px-2'
+          }`}
           title="VisitFlow Home"
         >
           <div className="relative shrink-0">
@@ -116,23 +122,38 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               className="w-10 h-10 rounded-xl object-contain shadow-lg shadow-cyan-500/25 group-hover:shadow-cyan-400/40 transition-shadow"
             />
           </div>
-          <div className="flex flex-col leading-none gap-0.5 whitespace-nowrap overflow-hidden">
-            <span className="text-base font-bold tracking-tight bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">
-              VisitFlow
-            </span>
-            <span className="text-[9px] font-semibold tracking-[0.28em] text-cyan-300/70 uppercase">
-              Admin Console
-            </span>
-          </div>
+          {!collapsed && (
+            <div className="flex flex-col leading-none gap-0.5 whitespace-nowrap overflow-hidden">
+              <span className="text-base font-bold tracking-tight bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">
+                VisitFlow
+              </span>
+              <span className="text-[9px] font-semibold tracking-[0.28em] text-cyan-300/70 uppercase">
+                Admin Console
+              </span>
+            </div>
+          )}
         </Link>
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 sidebar-scrollbar">
+      <nav className={`flex-1 overflow-y-auto py-4 space-y-6 sidebar-scrollbar ${collapsed ? 'px-2' : 'px-3'}`}>
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
-            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
-              {section.label}
-            </p>
+            {!collapsed && (
+              <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                {section.label}
+              </p>
+            )}
             <ul className="space-y-1">
               {section.items.map((item) => {
                 const Icon = item.icon;
@@ -144,31 +165,38 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       type="button"
                       onClick={() => handleSelect(item.key)}
                       aria-current={isActive ? 'page' : undefined}
-                      className={`group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 text-left relative overflow-hidden ${
+                      title={collapsed ? item.label : undefined}
+                      className={`group w-full flex items-center rounded-xl text-sm transition-all duration-200 text-left relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${
+                        collapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2'
+                      } ${
                         isActive
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-teal-500/10 text-white font-medium shadow-lg shadow-cyan-500/10'
+                          ? 'bg-cyan-300 text-[#082033] font-semibold shadow-[0_8px_18px_rgba(34,211,238,0.16)]'
                           : 'text-white/70 hover:bg-white/5 hover:text-white'
                       }`}
                     >
                       {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-cyan-400 to-teal-400 rounded-r-full" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#f7f4ed] rounded-r-full" />
                       )}
                       <Icon
                         className={`w-4 h-4 shrink-0 transition-colors ${
-                          isActive ? 'text-cyan-300' : 'text-white/40 group-hover:text-white/70'
+                          isActive ? 'text-[#082033]' : 'text-white/40 group-hover:text-white/70'
                         }`}
                       />
-                      <span className="flex-1 truncate">{item.label}</span>
-                      {count !== undefined && (
-                        <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${
-                            isActive
-                              ? 'bg-cyan-400/20 text-cyan-200'
-                              : 'bg-white/5 text-white/50'
-                          }`}
-                        >
-                          {count}
-                        </span>
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1 truncate">{item.label}</span>
+                          {count !== undefined && (
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${
+                                isActive
+                                  ? 'bg-[#082033]/10 text-[#082033]'
+                                  : 'bg-white/5 text-white/50'
+                              }`}
+                            >
+                              {count}
+                            </span>
+                          )}
+                        </>
                       )}
                     </button>
                   </li>
@@ -180,40 +208,66 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </nav>
 
       <div className="px-3 py-4 border-t border-white/10 shrink-0 space-y-2">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/5">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 text-white text-sm font-semibold flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/20">
-            {(user?.name || 'A').charAt(0).toUpperCase()}
+        {!collapsed && (
+          <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/5">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 text-white text-sm font-semibold flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/20">
+              {(user?.name || 'A').charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white truncate">{user?.name || 'Administrator'}</p>
+              <p className="text-xs text-white/50 truncate">{user?.email}</p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-white truncate">{user?.name || 'Administrator'}</p>
-            <p className="text-xs text-white/50 truncate">{user?.email}</p>
-          </div>
-        </div>
+        )}
 
-        <div className="flex items-center gap-1.5">
-          <Link
-            to="/"
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-white/70 hover:bg-white/5 hover:text-white transition-all"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            View site
-          </Link>
-          <button
-            type="button"
-            onClick={onLogout}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-white/70 hover:bg-white/5 hover:text-white transition-all"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            Sign out
-          </button>
-        </div>
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-1.5">
+            <Link
+              to="/"
+              className="flex items-center justify-center w-9 h-9 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-all"
+              title="View site"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="flex items-center justify-center w-9 h-9 rounded-lg text-white/70 hover:bg-white/5 hover:text-white transition-all"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <Link
+              to="/"
+              className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-white/70 hover:bg-white/5 hover:text-white transition-all"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View site
+            </Link>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-white/70 hover:bg-white/5 hover:text-white transition-all"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sign out
+            </button>
+          </div>
+        )}
       </div>
     </>
   );
 
   return (
     <>
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 z-40 w-64 flex-col bg-gradient-to-b from-[#0a1525] via-[#0b1a2e] to-[#07111f] border-r border-white/10 shadow-2xl">
+      <aside
+        className={`hidden lg:flex fixed inset-y-0 left-0 z-40 flex-col bg-[#082033] border-r border-cyan-100/15 shadow-2xl transition-all duration-300 ${
+          collapsed ? 'w-[76px]' : 'w-64'
+        }`}
+      >
         {body}
       </aside>
 
@@ -224,12 +278,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             onClick={onCloseMobile}
             aria-hidden="true"
           />
-          <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] flex flex-col bg-gradient-to-b from-[#0a1525] via-[#0b1a2e] to-[#07111f] border-r border-white/10 shadow-2xl">
+          <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] flex flex-col bg-[#082033] border-r border-cyan-100/15 shadow-2xl">
             <button
               type="button"
               onClick={onCloseMobile}
               aria-label="Close navigation"
-              className="absolute top-4 right-4 z-10 p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-all"
+              className="absolute top-4 right-4 z-10 p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
             >
               <X className="w-4 h-4" />
             </button>
