@@ -37,7 +37,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export const SiteHeader: React.FC = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
-  const { stops, setIsDrawerOpen } = useItinerary();
+  const { visibleStops, setIsDrawerOpen } = useItinerary();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -236,9 +236,9 @@ export const SiteHeader: React.FC = () => {
               >
                 <MapPin className="w-4 h-4 text-turquoise-300" />
                 <span>My Trip</span>
-                {stops.length > 0 && (
+                {visibleStops.length > 0 && (
                   <span className="grid place-items-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold bg-ocean-500 text-white rounded-full shadow-sm">
-                    {stops.length}
+                    {visibleStops.length}
                   </span>
                 )}
               </button>
@@ -305,9 +305,9 @@ export const SiteHeader: React.FC = () => {
                             <MapPin className="w-4 h-4 text-turquoise-400" />
                             Current Trip Plan
                           </span>
-                          {stops.length > 0 && (
+                          {visibleStops.length > 0 && (
                             <span className="text-[10px] font-bold text-turquoise-300 bg-white/10 px-2 py-0.5 rounded-full">
-                              {stops.length}
+                              {visibleStops.length}
                             </span>
                           )}
                         </button>
@@ -364,9 +364,9 @@ export const SiteHeader: React.FC = () => {
                 aria-label="Open trip plan"
               >
                 <MapPin className="w-4 h-4 text-turquoise-300" />
-                {stops.length > 0 && (
+                {visibleStops.length > 0 && (
                   <span className="absolute -top-1 -right-1 grid place-items-center min-w-[18px] h-4.5 px-1 text-[10px] font-bold bg-ocean-500 text-white rounded-full shadow-sm">
-                    {stops.length}
+                    {visibleStops.length}
                   </span>
                 )}
               </button>
