@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Place } from '../../types';
-import { useItinerary } from '../../context/ItineraryContext';
 import {
   DEFAULT_USER_LOCATION,
   calculateDistanceKm,
