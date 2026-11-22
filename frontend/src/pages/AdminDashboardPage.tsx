@@ -42,8 +42,6 @@ import {
   Palette,
   Info,
   Activity,
-  Eye,
-  MoreHorizontal,
   Sparkles,
 } from 'lucide-react';
 import { SettingsCard } from '../components/admin/settings/SettingsCard';

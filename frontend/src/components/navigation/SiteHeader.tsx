@@ -485,5 +485,3 @@ export const SiteHeader: React.FC = () => {
     </>
   );
 };
-
-export default SiteHeader;
