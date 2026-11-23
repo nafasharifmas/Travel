@@ -63,9 +63,6 @@ This project features a fully automated Continuous Integration (CI) and Continuo
 - **Packaging**: Packages production frontend assets (`dist/`) and production backend code into a timestamped release bundle artifact.
 - **Vercel Deployment (Optional)**: Automatically triggers if `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` secrets are added to the repository.
 
-### 2.3 Dependabot (`.github/dependabot.yml`)
-- Automatically monitors `npm`, `composer`, and `github-actions` dependencies weekly for security advisories and updates.
-
 ---
 
 ## 3. Local CI Validation
