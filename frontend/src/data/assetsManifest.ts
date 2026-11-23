@@ -25,7 +25,7 @@ export const ASSETS = {
       tag: 'Corridor Stop #1 · Sunrise Shore',
       categories: ['coastal'],
       image:
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Maruthamunai_beach.jpg/1280px-Maruthamunai_beach.jpg',
+        'https://res.cloudinary.com/dfcq7dpvz/image/upload/v1792611991/visitflow/places/catalogue-64-maruthamunai-beach.jpg',
       creditUrl:
         'https://commons.wikimedia.org/wiki/File:Maruthamunai_beach.jpg',
       description:
@@ -71,7 +71,7 @@ export const ASSETS = {
       tag: 'Corridor Stop #2 · Living Coast',
       categories: ['coastal', 'heritage'],
       image:
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Seashore_-_Kalmunai_Beach.jpg/1280px-Seashore_-_Kalmunai_Beach.jpg',
+        'https://res.cloudinary.com/dfcq7dpvz/image/upload/v1792611979/visitflow/places/catalogue-27-maruthamunai-beach.jpg',
       creditUrl:
         'https://commons.wikimedia.org/wiki/File:Seashore_-_Kalmunai_Beach.jpg',
       description:
@@ -155,7 +155,7 @@ export const ASSETS = {
       location: 'Eastern Shore Corridor · 7.4394° N, 81.8172° E',
       stat: '100% Curated · 0 Crowds · 1 Coherent Route',
       image:
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Maruthamunai_beach.jpg/1280px-Maruthamunai_beach.jpg',
+        'https://res.cloudinary.com/dfcq7dpvz/image/upload/v1792611991/visitflow/places/catalogue-64-maruthamunai-beach.jpg',
       alt: 'Golden sunrise shoreline at Maruthamunai on the Eastern Shore of Sri Lanka',
     },
   },

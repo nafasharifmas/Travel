@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useItinerary } from '../../context/ItineraryContext';
 import { useAuth } from '../../context/AuthContext';
 import { SavePromptModal } from './SavePromptModal';
@@ -61,6 +62,8 @@ const DrawerShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 export const ItineraryDrawer: React.FC = () => {
   const {
     stops,
+    visibleStops,
+    currentTrip,
     removeStop,
     updateStop,
     reorderStop,
@@ -70,6 +73,7 @@ export const ItineraryDrawer: React.FC = () => {
   } = useItinerary();
   const { isAuthenticated } = useAuth();
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const isViewingSavedTrip = stops.length === 0 && !!currentTrip;
 
   // Escape closes the drawer. The plan lives in ItineraryContext, so nothing is lost.
   // Deliberately no backdrop-click close: an accidental click must not interrupt editing.
@@ -85,7 +89,7 @@ export const ItineraryDrawer: React.FC = () => {
   if (!isDrawerOpen) return null;
 
   // Approximate duration calculation: ~2.5 hrs per stop + travel
-  const estimatedHours = stops.length * 2.5;
+  const estimatedHours = visibleStops.length * 2.5;
 
   const iconButtonClass =
     'grid h-11 w-11 shrink-0 place-items-center rounded-full text-navy-500 transition-colors hover:bg-navy-100 hover:text-navy-800 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent';
@@ -98,7 +102,7 @@ export const ItineraryDrawer: React.FC = () => {
           <div className="flex items-start justify-between gap-3">
             <span className="eyebrow text-turquoise-300">
               <Route className="h-3.5 w-3.5" />
-              One-Day Route Plan
+              {isViewingSavedTrip ? 'Saved One-Day Route' : 'One-Day Route Plan'}
             </span>
             <button
               type="button"
@@ -111,15 +115,15 @@ export const ItineraryDrawer: React.FC = () => {
           </div>
 
           <h2 id={DRAWER_TITLE_ID} className="mt-2 font-serif text-h4 text-white">
-            Day Journey Draft
+            {isViewingSavedTrip ? currentTrip!.title : 'Day Journey Draft'}
           </h2>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-navy-300">
             <span className="inline-flex items-center gap-1.5 font-semibold text-white">
               <MapPin className="h-4 w-4 text-turquoise-300" />
-              {stops.length} {stops.length === 1 ? 'Stop' : 'Stops'} Selected
+              {visibleStops.length} {visibleStops.length === 1 ? 'Stop' : 'Stops'} Selected
             </span>
-            {stops.length > 0 && (
+            {visibleStops.length > 0 && (
               <span className="inline-flex items-center gap-1.5">
                 <Clock className="h-4 w-4 text-turquoise-300" />
                 ~{estimatedHours} Hours Total
@@ -133,7 +137,17 @@ export const ItineraryDrawer: React.FC = () => {
           className="thin-scroll flex-1 space-y-3 overflow-y-auto bg-ivory-100 p-4"
           aria-live="polite"
         >
-          {stops.length === 0 ? (
+          {isViewingSavedTrip && (
+            <p className="rounded-card border border-ocean-200 bg-ocean-50/70 px-4 py-3 text-xs leading-relaxed text-navy-600">
+              Viewing your latest saved trip. To change its stops, open{' '}
+              <Link to="/itineraries" className="font-bold text-ocean-700 underline">
+                My Saved Itineraries
+              </Link>
+              .
+            </p>
+          )}
+
+          {visibleStops.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center p-6 text-center">
               <div className="mb-4 grid h-16 w-16 place-items-center rounded-media border border-ocean-100 bg-ocean-50 text-ocean-500">
                 <MapPin className="h-8 w-8" />
@@ -147,7 +161,7 @@ export const ItineraryDrawer: React.FC = () => {
               </p>
             </div>
           ) : (
-            stops.map((stop, index) => {
+            visibleStops.map((stop, index) => {
               const place = stop.place;
               return (
                 <article
@@ -163,34 +177,36 @@ export const ItineraryDrawer: React.FC = () => {
                       {place?.name || `Place #${stop.place_id}`}
                     </h4>
 
-                    <div className="-mr-1.5 flex shrink-0 items-center">
-                      <button
-                        type="button"
-                        onClick={() => reorderStop(index, 'up')}
-                        disabled={index === 0}
-                        aria-label={`Move ${place?.name} up`}
-                        className={iconButtonClass}
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => reorderStop(index, 'down')}
-                        disabled={index === stops.length - 1}
-                        aria-label={`Move ${place?.name} down`}
-                        className={iconButtonClass}
-                      >
-                        <ArrowDown className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeStop(stop.place_id)}
-                        aria-label={`Remove ${place?.name} from plan`}
-                        className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {!isViewingSavedTrip && (
+                      <div className="-mr-1.5 flex shrink-0 items-center">
+                        <button
+                          type="button"
+                          onClick={() => reorderStop(index, 'up')}
+                          disabled={index === 0}
+                          aria-label={`Move ${place?.name} up`}
+                          className={iconButtonClass}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => reorderStop(index, 'down')}
+                          disabled={index === visibleStops.length - 1}
+                          aria-label={`Move ${place?.name} down`}
+                          className={iconButtonClass}
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeStop(stop.place_id)}
+                          aria-label={`Remove ${place?.name} from plan`}
+                          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Thumbnail & planned time */}
@@ -204,36 +220,45 @@ export const ItineraryDrawer: React.FC = () => {
                       />
                     )}
                     <div className="min-w-0 flex-1">
-                      <label htmlFor={`stop-time-${stop.place_id}`} className="field-label">
-                        Planned time
-                      </label>
-                      <div className="relative">
-                        <Clock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-500" />
-                        <input
-                          id={`stop-time-${stop.place_id}`}
-                          type="time"
-                          value={stop.visit_time || ''}
-                          onChange={(e) => updateStop(stop.place_id, undefined, e.target.value)}
-                          placeholder="Planned time"
-                          className="field pl-10"
-                        />
-                      </div>
+                      <p className="field-label">Planned time</p>
+                      {isViewingSavedTrip ? (
+                        <p className="inline-flex items-center gap-2 text-sm font-semibold text-navy-800">
+                          <Clock className="h-4 w-4 text-ocean-500" />
+                          {stop.visit_time || 'Not set'}
+                        </p>
+                      ) : (
+                        <div className="relative">
+                          <Clock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-500" />
+                          <input
+                            id={`stop-time-${stop.place_id}`}
+                            type="time"
+                            value={stop.visit_time || ''}
+                            onChange={(e) => updateStop(stop.place_id, undefined, e.target.value)}
+                            placeholder="Planned time"
+                            className="field pl-10"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Optional stop notes */}
                   <div className="mt-3">
-                    <label htmlFor={`stop-notes-${stop.place_id}`} className="field-label">
-                      Stop notes
-                    </label>
-                    <input
-                      id={`stop-notes-${stop.place_id}`}
-                      type="text"
-                      value={stop.notes || ''}
-                      onChange={(e) => updateStop(stop.place_id, e.target.value, undefined)}
-                      placeholder="Optional stop notes (e.g. entrance ticket / best photo spot)"
-                      className="field"
-                    />
+                    <p className="field-label">Stop notes</p>
+                    {isViewingSavedTrip ? (
+                      <p className="text-sm leading-relaxed text-navy-700">
+                        {stop.notes || 'No notes for this stop.'}
+                      </p>
+                    ) : (
+                      <input
+                        id={`stop-notes-${stop.place_id}`}
+                        type="text"
+                        value={stop.notes || ''}
+                        onChange={(e) => updateStop(stop.place_id, e.target.value, undefined)}
+                        placeholder="Optional stop notes (e.g. entrance ticket / best photo spot)"
+                        className="field"
+                      />
+                    )}
                   </div>
                 </article>
               );

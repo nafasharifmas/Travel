@@ -9,7 +9,7 @@ import {
   EASTERN_PROVINCE_ORDER,
   EASTERN_CORRIDOR_BOUNDS,
 } from '../../utils/geo';
-import { Compass, Route as RouteIcon, LocateFixed, Plus, Check, ExternalLink, Maximize2 } from 'lucide-react';
+import { Compass, Route as RouteIcon, LocateFixed, ExternalLink, Maximize2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 /** Neutral placeholder when a destination has no photograph on record. */
@@ -81,7 +81,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const markersMapRef = useRef<Map<number, L.Marker>>(new Map());
-  const { stops, addPlaceToPlan, isPlaceInPlan } = useItinerary();
+  const { stops } = useItinerary();
 
   const [routeInfo, setRouteInfo] = useState<{
     distanceKm: number;
@@ -325,17 +325,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
               text-decoration: none;
               border: 1px solid #E2E8F0;
             ">Explore Details</a>
-            <button id="map-add-btn-${place.id}" style="
-              flex: 1;
-              padding: 7px 10px;
-              background-color: #FF914D;
-              color: #0B1F33;
-              border: none;
-              border-radius: 8px;
-              font-size: 11px;
-              font-weight: 800;
-              cursor: pointer;
-            ">+ Add to Trip</button>
           </div>
         </div>
       `;
@@ -345,16 +334,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
       marker.on('click', () => {
         if (onSelectPlace) {
           onSelectPlace(place);
-        }
-      });
-
-      marker.on('popupopen', () => {
-        const btn = document.getElementById(`map-add-btn-${place.id}`);
-        if (btn) {
-          btn.onclick = () => {
-            addPlaceToPlan(place);
-            marker.closePopup();
-          };
         }
       });
 
@@ -621,27 +600,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
               <span className="hidden sm:inline">Details</span>
             </Link>
 
-            <button
-              type="button"
-              onClick={() => addPlaceToPlan(selectedPlace)}
-              className={`px-3 py-2 rounded-btn text-xs font-bold flex items-center gap-1 transition-all ${
-                isPlaceInPlan(selectedPlace.id)
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-sunset-400 text-navy-950 hover:bg-sunset-500'
-              }`}
-            >
-              {isPlaceInPlan(selectedPlace.id) ? (
-                <>
-                  <Check className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">In Trip</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
       ) : routeInfo ? (

@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await api.logout();
-    } catch (e) {
+    } catch {
       // ignore
     } finally {
       localStorage.removeItem('visitflow_token');

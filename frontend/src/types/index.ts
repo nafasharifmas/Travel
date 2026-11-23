@@ -32,6 +32,7 @@ export interface Place {
   name: string;
   slug: string;
   description: string;
+  travel_tips?: string | null;
   address?: string;
   lat: number;
   lng: number;
