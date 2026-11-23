@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\CloudinaryService;
 
 class AdminController extends Controller
 {
@@ -82,6 +83,7 @@ class AdminController extends Controller
                 'name' => $place->name,
                 'slug' => $place->slug,
                 'description' => $place->description,
+                'travel_tips' => $place->travel_tips,
                 'address' => $place->address,
                 'lat' => (float) $place->lat,
                 'lng' => (float) $place->lng,
@@ -95,6 +97,12 @@ class AdminController extends Controller
                 ] : null,
                 'primary_photo' => ($place->media->firstWhere('is_primary', true) ?? $place->media->first())?->url,
                 'media_count' => $place->media->count(),
+                'media' => $place->media->map(fn ($media) => [
+                    'id' => $media->id,
+                    'url' => $media->url,
+                    'original_name' => $media->original_name,
+                    'is_primary' => (bool) $media->is_primary,
+                ])->values(),
                 'created_at' => $place->created_at->toIso8601String(),
             ];
         });
@@ -114,6 +122,7 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:places,slug',
             'description' => 'required|string',
+            'travel_tips' => 'nullable|string|max:2000',
             'address' => 'nullable|string|max:255',
             'lat' => 'required|numeric|between:-90,90',
             'lng' => 'required|numeric|between:-180,180',
@@ -140,6 +149,7 @@ class AdminController extends Controller
                 'name' => $validated['name'],
                 'slug' => $slug,
                 'description' => $validated['description'],
+                'travel_tips' => $validated['travel_tips'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'lat' => $validated['lat'],
                 'lng' => $validated['lng'],
@@ -186,6 +196,7 @@ class AdminController extends Controller
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
             'description' => 'required|string',
+            'travel_tips' => 'nullable|string|max:2000',
             'address' => 'nullable|string|max:255',
             'lat' => 'required|numeric|between:-90,90',
             'lng' => 'required|numeric|between:-180,180',
@@ -222,6 +233,43 @@ class AdminController extends Controller
 
         return response()->json([
             'message' => 'Place archived successfully. It is now hidden from public discovery while preserved in existing itineraries.',
+        ]);
+    }
+
+    /**
+     * Permanently remove a place, its media, and its itinerary stops.
+     */
+    public function destroyPlace(Request $request, int $id, CloudinaryService $cloudinary): JsonResponse
+    {
+        $place = Place::withTrashed()->with('media')->findOrFail($id);
+
+        foreach ($place->media as $media) {
+            if ($media->cloudinary_public_id && $cloudinary->isConfigured()) {
+                try {
+                    $cloudinary->destroy($media->cloudinary_public_id);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            } elseif (!str_starts_with($media->file_path, 'http')) {
+                Storage::disk('local')->delete($media->file_path);
+            }
+        }
+
+        $removedItineraryItems = DB::transaction(function () use ($place): int {
+            $count = $place->itineraryItems()->count();
+            $place->itineraryItems()->delete();
+            $place->forceDelete();
+
+            return $count;
+        });
+
+        AuditLog::record('place.delete', $place, [
+            'name' => $place->name,
+            'removed_itinerary_items' => $removedItineraryItems,
+        ], $request->user());
+
+        return response()->json([
+            'message' => 'Place permanently deleted.',
         ]);
     }
 
@@ -371,6 +419,12 @@ class AdminController extends Controller
             'role' => 'required|string|in:admin,user',
         ]);
 
+        if ($user->id === $admin->id && $validated['role'] !== 'admin') {
+            return response()->json([
+                'message' => 'You cannot remove administrator privileges from your own account.',
+            ], 422);
+        }
+
         $role = Role::where('name', $validated['role'])->firstOrFail();
         $oldRole = $user->role ? $user->role->name : 'none';
 
@@ -431,9 +485,9 @@ class AdminController extends Controller
      * Media upload & management (FR-11).
      * Uploaded through validated, type- and size-checked uploads and stored outside public code tree.
      */
-    public function uploadMedia(Request $request, int $placeId): JsonResponse
+    public function uploadMedia(Request $request, int $id, CloudinaryService $cloudinary): JsonResponse
     {
-        $place = Place::withTrashed()->findOrFail($placeId);
+        $place = Place::withTrashed()->findOrFail($id);
 
         $request->validate([
             'photo' => 'required|file|image|mimes:jpeg,png,webp,jpg|max:5120', // max 5MB
@@ -441,7 +495,19 @@ class AdminController extends Controller
         ]);
 
         $file = $request->file('photo');
-        $storedPath = $file->store('places_media', 'local'); // stored in storage/app/places_media outside public code tree!
+        $cloudinaryUpload = null;
+        if ($cloudinary->isConfigured()) {
+            try {
+                $cloudinaryUpload = $cloudinary->upload($file, Str::uuid()->toString());
+                $storedPath = $cloudinaryUpload['secure_url'];
+            } catch (\Throwable $exception) {
+                report($exception);
+                // Fall back gracefully to local disk storage if Cloudinary upload fails
+                $storedPath = $file->store('places_media', 'local');
+            }
+        } else {
+            $storedPath = $file->store('places_media', 'local');
+        }
 
         $isPrimary = $request->boolean('is_primary') || $place->media()->count() === 0;
 
@@ -452,6 +518,7 @@ class AdminController extends Controller
         $media = Media::create([
             'place_id' => $place->id,
             'file_path' => $storedPath,
+            'cloudinary_public_id' => $cloudinaryUpload['public_id'] ?? null,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getClientMimeType(),
             'size' => $file->getSize(),
@@ -476,24 +543,373 @@ class AdminController extends Controller
         ], 201);
     }
 
-    public function deleteMedia(Request $request, int $mediaId): JsonResponse
+    public function deleteMedia(Request $request, int $id, CloudinaryService $cloudinary): JsonResponse
     {
-        $media = Media::findOrFail($mediaId);
+        $media = Media::findOrFail($id);
         $place = $media->place;
 
-        // If local file on disk, remove it
-        if (!str_starts_with($media->file_path, 'http')) {
+        // If local file on disk or Cloudinary public ID, remove it
+        if ($media->cloudinary_public_id && $cloudinary->isConfigured()) {
+            try {
+                $cloudinary->destroy($media->cloudinary_public_id);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        } elseif (!str_starts_with($media->file_path, 'http')) {
             Storage::disk('local')->delete($media->file_path);
         }
 
         $media->delete();
 
         AuditLog::record('media.delete', $place, [
-            'media_id' => $mediaId,
+            'media_id' => $id,
         ], $request->user());
 
         return response()->json([
             'message' => 'Media deleted successfully.',
+        ]);
+    }
+
+    /**
+     * Admin view of all itineraries for oversight.
+     */
+    public function itineraries(Request $request): JsonResponse
+    {
+        $itineraries = Itinerary::with(['user', 'items.place'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($itinerary) {
+                return [
+                    'id' => $itinerary->id,
+                    'title' => $itinerary->title,
+                    'start_date' => $itinerary->start_date ? $itinerary->start_date->format('Y-m-d') : null,
+                    'notes' => $itinerary->notes,
+                    'is_public' => (bool) $itinerary->is_public,
+                    'user' => $itinerary->user ? [
+                        'id' => $itinerary->user->id,
+                        'name' => $itinerary->user->name,
+                        'email' => $itinerary->user->email,
+                    ] : null,
+                    'items_count' => $itinerary->items->count(),
+                    'items' => $itinerary->items->sortBy('sequence_order')->values()->map(function ($item) {
+                        $place = $item->place;
+                        return [
+                            'id' => $item->id,
+                            'place_id' => $item->place_id,
+                            'day_no' => $item->day_no,
+                            'sequence_order' => $item->sequence_order,
+                            'visit_time' => $item->visit_time,
+                            'notes' => $item->notes,
+                            'place' => $place ? [
+                                'id' => $place->id,
+                                'name' => $place->name,
+                                'is_archived' => $place->trashed(),
+                            ] : null,
+                        ];
+                    }),
+                    'created_at' => $itinerary->created_at->toIso8601String(),
+                ];
+            });
+
+        return response()->json([
+            'itineraries' => $itineraries,
+        ]);
+    }
+
+    public function showItinerary(Request $request, int $id): JsonResponse
+    {
+        $itinerary = Itinerary::with(['user', 'items.place' => fn ($q) => $q->withTrashed()->with('category')])->findOrFail($id);
+
+        return response()->json([
+            'itinerary' => [
+                'id' => $itinerary->id,
+                'title' => $itinerary->title,
+                'start_date' => $itinerary->start_date ? $itinerary->start_date->format('Y-m-d') : null,
+                'notes' => $itinerary->notes,
+                'is_public' => (bool) $itinerary->is_public,
+                'user' => $itinerary->user ? [
+                    'id' => $itinerary->user->id,
+                    'name' => $itinerary->user->name,
+                    'email' => $itinerary->user->email,
+                ] : null,
+                'items' => $itinerary->items->sortBy('sequence_order')->values()->map(function ($item) {
+                    $place = $item->place;
+                    return [
+                        'id' => $item->id,
+                        'place_id' => $item->place_id,
+                        'day_no' => $item->day_no,
+                        'sequence_order' => $item->sequence_order,
+                        'visit_time' => $item->visit_time,
+                        'notes' => $item->notes,
+                        'place' => $place ? [
+                            'id' => $place->id,
+                            'name' => $place->name,
+                            'slug' => $place->slug,
+                            'address' => $place->address,
+                            'category' => $place->category ? $place->category->name : null,
+                            'is_archived' => $place->trashed(),
+                        ] : null,
+                    ];
+                }),
+                'created_at' => $itinerary->created_at->toIso8601String(),
+                'updated_at' => $itinerary->updated_at->toIso8601String(),
+            ],
+        ]);
+    }
+
+    public function storeItinerary(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'title' => 'required|string|max:255',
+            'start_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:1000',
+            'is_public' => 'boolean',
+            'items' => 'nullable|array',
+            'items.*.place_id' => 'required|exists:places,id',
+            'items.*.day_no' => 'nullable|integer|min:1',
+            'items.*.sequence_order' => 'nullable|integer|min:0',
+            'items.*.visit_time' => 'nullable|string',
+            'items.*.notes' => 'nullable|string|max:500',
+        ]);
+
+        $admin = $request->user();
+
+        $itinerary = DB::transaction(function () use ($validated, $admin) {
+            $itinerary = Itinerary::create([
+                'user_id' => $validated['user_id'],
+                'title' => $validated['title'],
+                'start_date' => $validated['start_date'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'is_public' => $validated['is_public'] ?? false,
+            ]);
+
+            if (!empty($validated['items'])) {
+                $seq = 1;
+                foreach ($validated['items'] as $item) {
+                    \App\Models\ItineraryItem::create([
+                        'itinerary_id' => $itinerary->id,
+                        'place_id' => $item['place_id'],
+                        'day_no' => $item['day_no'] ?? 1,
+                        'sequence_order' => $item['sequence_order'] ?? $seq++,
+                        'visit_time' => !empty($item['visit_time']) ? $item['visit_time'] : null,
+                        'notes' => $item['notes'] ?? null,
+                    ]);
+                }
+            }
+
+            AuditLog::record('itinerary.create', $itinerary, [
+                'title' => $itinerary->title,
+                'user_id' => $itinerary->user_id,
+            ], $admin);
+
+            return $itinerary;
+        });
+
+        return response()->json([
+            'message' => 'Itinerary created successfully.',
+            'itinerary' => $itinerary->load(['user', 'items.place']),
+        ], 201);
+    }
+
+    public function updateItinerary(Request $request, int $id): JsonResponse
+    {
+        $itinerary = Itinerary::findOrFail($id);
+        $admin = $request->user();
+
+        $validated = $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'title' => 'required|string|max:255',
+            'start_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:1000',
+            'is_public' => 'boolean',
+            'items' => 'nullable|array',
+            'items.*.place_id' => 'required|exists:places,id',
+            'items.*.day_no' => 'nullable|integer|min:1',
+            'items.*.sequence_order' => 'nullable|integer|min:0',
+            'items.*.visit_time' => 'nullable|string',
+            'items.*.notes' => 'nullable|string|max:500',
+        ]);
+
+        DB::transaction(function () use ($itinerary, $validated) {
+            $updateData = [
+                'title' => $validated['title'],
+                'start_date' => $validated['start_date'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'is_public' => $validated['is_public'] ?? false,
+            ];
+            if (isset($validated['user_id'])) {
+                $updateData['user_id'] = $validated['user_id'];
+            }
+            $itinerary->update($updateData);
+
+            if (isset($validated['items'])) {
+                $itinerary->items()->delete();
+                $seq = 1;
+                foreach ($validated['items'] as $item) {
+                    \App\Models\ItineraryItem::create([
+                        'itinerary_id' => $itinerary->id,
+                        'place_id' => $item['place_id'],
+                        'day_no' => $item['day_no'] ?? 1,
+                        'sequence_order' => $item['sequence_order'] ?? $seq++,
+                        'visit_time' => !empty($item['visit_time']) ? $item['visit_time'] : null,
+                        'notes' => $item['notes'] ?? null,
+                    ]);
+                }
+            }
+        });
+
+        AuditLog::record('itinerary.update', $itinerary, [
+            'title' => $itinerary->title,
+        ], $admin);
+
+        return response()->json([
+            'message' => 'Itinerary updated successfully.',
+            'itinerary' => $itinerary->fresh(['user', 'items.place']),
+        ]);
+    }
+
+    public function destroyItinerary(Request $request, int $id): JsonResponse
+    {
+        $itinerary = Itinerary::findOrFail($id);
+        $admin = $request->user();
+
+        $title = $itinerary->title;
+        $itinerary->items()->delete();
+        $itinerary->delete();
+
+        AuditLog::record('itinerary.delete', null, [
+            'title' => $title,
+            'itinerary_id' => $id,
+        ], $admin);
+
+        return response()->json([
+            'message' => 'Itinerary deleted successfully.',
+        ]);
+    }
+
+    /**
+     * Mark/place-verify workflow (admin review).
+     */
+    public function verifyPlace(Request $request, int $id): JsonResponse
+    {
+        $place = Place::withTrashed()->findOrFail($id);
+
+        $validated = $request->validate([
+            'status' => 'required|string|in:pending,verified,needs_correction',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        AuditLog::record('place.verify', $place, [
+            'status' => $validated['status'],
+            'notes' => $validated['notes'] ?? null,
+        ], $request->user());
+
+        return response()->json([
+            'message' => "Place verification marked as {$validated['status']}.",
+            'place' => [
+                'id' => $place->id,
+                'name' => $place->name,
+                'verification_status' => $validated['status'],
+            ],
+        ]);
+    }
+
+    /**
+     * Analytics for admin dashboard.
+     */
+    public function analytics(): JsonResponse
+    {
+        $placesByCategory = Category::withCount(['places' => function ($q) {
+            $q->withTrashed();
+        }])->get()->map(fn($c) => [
+            'name' => $c->name,
+            'count' => $c->places_count,
+            'color' => $c->color,
+        ]);
+
+        $usersByRole = Role::withCount('users')->get()->map(fn($r) => [
+            'role' => $r->name,
+            'count' => $r->users_count,
+        ]);
+
+        return response()->json([
+            'places_by_category' => $placesByCategory,
+            'users_by_role' => $usersByRole,
+        ]);
+    }
+
+    /**
+     * Data quality checks (real validation).
+     */
+    public function dataQuality(): JsonResponse
+    {
+        $issues = [];
+
+        $missingDesc = Place::withTrashed()->where(function ($q) {
+            $q->whereNull('description')->orWhere('description', '');
+        })->count();
+        if ($missingDesc > 0) {
+            $issues[] = ['type' => 'missing_description', 'severity' => 'high', 'count' => $missingDesc, 'message' => 'Places missing description'];
+        }
+
+        $missingHours = Place::withTrashed()->where(function ($q) {
+            $q->whereNull('opening_hours')->orWhere('opening_hours', '');
+        })->count();
+        if ($missingHours > 0) {
+            $issues[] = ['type' => 'missing_opening_hours', 'severity' => 'medium', 'count' => $missingHours, 'message' => 'Places missing opening hours'];
+        }
+
+        $missingMedia = Place::withTrashed()->doesntHave('media')->count();
+        if ($missingMedia > 0) {
+            $issues[] = ['type' => 'missing_media', 'severity' => 'medium', 'count' => $missingMedia, 'message' => 'Places without images'];
+        }
+
+        $invalidCoords = Place::withTrashed()->where(function ($q) {
+            $q->where('lat', '<', -90)->orWhere('lat', '>', 90)->orWhere('lng', '<', -180)->orWhere('lng', '>', 180);
+        })->count();
+        if ($invalidCoords > 0) {
+            $issues[] = ['type' => 'invalid_coordinates', 'severity' => 'high', 'count' => $invalidCoords, 'message' => 'Places with invalid coordinates'];
+        }
+
+        $inactiveCats = Category::where('is_active', false)->count();
+        if ($inactiveCats > 0) {
+            $issues[] = ['type' => 'inactive_categories', 'severity' => 'low', 'count' => $inactiveCats, 'message' => 'Inactive categories present'];
+        }
+
+        return response()->json([
+            'issues' => $issues,
+            'summary' => [
+                'total_issues' => collect($issues)->sum('count'),
+            ],
+        ]);
+    }
+
+    /**
+     * Lightweight system health.
+     */
+    public function systemHealth(): JsonResponse
+    {
+        try {
+            DB::connection()->getPdo();
+            $dbOk = true;
+        } catch (\Throwable $e) {
+            $dbOk = false;
+        }
+
+        $storageOk = is_writable(storage_path('app')) && is_writable(storage_path('framework'));
+
+        return response()->json([
+            'status' => ($dbOk && $storageOk) ? 'healthy' : 'degraded',
+            'checks' => [
+                'api' => ['status' => 'ok'],
+                'database' => ['status' => $dbOk ? 'ok' : 'error'],
+                'storage' => ['status' => $storageOk ? 'ok' : 'warning'],
+            ],
+            'migrations' => [
+                'status' => 'ok',
+            ],
+            'timestamp' => now()->toIso8601String(),
         ]);
     }
 

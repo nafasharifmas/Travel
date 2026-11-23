@@ -7,7 +7,9 @@ import {
   AdminMetrics,
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// The local Laravel API runs on port 8000 by default. VITE_API_URL remains the
+// deployment hook for environments where the API is hosted elsewhere.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
 class ApiService {
   private getToken(): string | null {
@@ -37,17 +39,31 @@ class ApiService {
       headers,
     });
 
+    const responseText = await response.text();
+    let responseData: any = null;
+    try {
+      responseData = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      responseData = null;
+    }
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = responseData || {};
       const message =
         errorData.message ||
         (errorData.errors
           ? Object.values(errorData.errors).flat().join(' ')
-          : `HTTP error ${response.status}`);
+          : responseText.trim().startsWith('<')
+            ? `The server returned an HTML error page (HTTP ${response.status}). Check the Laravel log for the underlying exception.`
+            : `HTTP error ${response.status}`);
       throw new Error(message);
     }
 
-    return response.json();
+    if (!responseData) {
+      throw new Error('The server returned an empty response.');
+    }
+
+    return responseData as T;
   }
 
   // --- Auth ---
@@ -197,6 +213,55 @@ class ApiService {
     return this.request('/admin/dashboard');
   }
 
+  async getAdminAnalytics(): Promise<any> {
+    return this.request('/admin/analytics');
+  }
+
+  async getAdminDataQuality(): Promise<any> {
+    return this.request('/admin/data-quality');
+  }
+
+  async getAdminSystemHealth(): Promise<any> {
+    return this.request('/admin/system-health');
+  }
+
+  async getAdminItineraries(): Promise<{ itineraries: any[] }> {
+    return this.request('/admin/itineraries');
+  }
+
+  async getAdminItinerary(id: number): Promise<{ itinerary: any }> {
+    return this.request(`/admin/itineraries/${id}`);
+  }
+
+  async createAdminItinerary(data: any): Promise<{ message: string; itinerary: any }> {
+    return this.request('/admin/itineraries', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdminItinerary(id: number, data: any): Promise<{ message: string; itinerary: any }> {
+    return this.request(`/admin/itineraries/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAdminItinerary(id: number): Promise<{ message: string }> {
+    return this.request(`/admin/itineraries/${id}`, { method: 'DELETE' });
+  }
+
+  async getAdminSettings(): Promise<any> {
+    return this.request('/admin/settings');
+  }
+
+  async updateAdminSettings(data: any): Promise<{ message: string }> {
+    return this.request('/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getAdminPlaces(params?: {
     status?: 'active' | 'archived' | 'inactive';
     search?: string;
@@ -216,6 +281,7 @@ class ApiService {
     name: string;
     category_id: number;
     description: string;
+    travel_tips?: string;
     address?: string;
     lat: number;
     lng: number;
@@ -236,6 +302,7 @@ class ApiService {
       name: string;
       category_id: number;
       description: string;
+      travel_tips?: string;
       address?: string;
       lat: number;
       lng: number;
@@ -252,6 +319,10 @@ class ApiService {
 
   async archiveAdminPlace(id: number): Promise<{ message: string }> {
     return this.request(`/admin/places/${id}`, { method: 'DELETE' });
+  }
+
+  async deleteAdminPlace(id: number): Promise<{ message: string }> {
+    return this.request(`/admin/places/${id}/permanent`, { method: 'DELETE' });
   }
 
   async restoreAdminPlace(id: number): Promise<{ message: string }> {
@@ -348,4 +419,3 @@ class ApiService {
 }
 
 export const api = new ApiService();
-

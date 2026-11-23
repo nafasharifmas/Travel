@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import {
@@ -34,53 +35,89 @@ import {
   Search,
   ArrowRight,
   CalendarDays,
+  Settings,
+  Globe,
+  HardDrive,
+  Mail,
+  Palette,
+  Info,
+  Activity,
+  Sparkles,
 } from 'lucide-react';
-
-type Tone = 'gold' | 'emerald' | 'amber' | 'stone';
-
-const TONE_CLASSES: Record<Tone, string> = {
-  gold: 'bg-gold-500/15 text-gold-700 ring-gold-500/25',
-  emerald: 'bg-emerald-50 text-emerald-600 ring-emerald-200',
-  amber: 'bg-amber-50 text-amber-600 ring-amber-200',
-  stone: 'bg-sand-100 text-stone-600 ring-sand-200',
-};
+import { SettingsCard } from '../components/admin/settings/SettingsCard';
+import { SettingsInput } from '../components/admin/settings/SettingsInput';
+import { SettingsToggle } from '../components/admin/settings/SettingsToggle';
+import { SettingsSelect } from '../components/admin/settings/SettingsSelect';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface KpiCardProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number;
   note: string;
-  tone: Tone;
+  gradient: string;
+  destination: string;
+  onOpen: () => void;
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ icon: Icon, label, value, note, tone }) => (
-  <div className="bg-white p-4 rounded-2xl border border-sand-200 shadow-sm hover:shadow-md transition-shadow">
-    <div className="flex items-start justify-between gap-2">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
-        {label}
-      </span>
-      <span
-        className={`w-8 h-8 rounded-xl flex items-center justify-center ring-1 shrink-0 ${TONE_CLASSES[tone]}`}
-      >
-        <Icon className="w-4 h-4" />
-      </span>
-    </div>
-    <p className="mt-3 text-3xl font-black text-charcoal-950 tabular-nums leading-none">
-      {value}
-    </p>
-    <p className="mt-1.5 text-[11px] text-stone-500">{note}</p>
-  </div>
+const KpiCard: React.FC<KpiCardProps> = ({
+  icon: Icon,
+  label,
+  value,
+  note,
+  gradient,
+  destination,
+  onOpen,
+}) => (
+  <Card
+    role="button"
+    tabIndex={0}
+    aria-label={`${label}: ${value.toLocaleString()}. Open ${destination} management`}
+    onClick={onOpen}
+    onKeyDown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onOpen();
+      }
+    }}
+    className="relative cursor-pointer overflow-hidden border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_14px_28px_rgba(8,32,51,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 focus-visible:ring-offset-2 group"
+  >
+    <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${gradient}`} />
+    <CardContent className="p-5 pt-6 relative">
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-slate-600">{label}</p>
+          <p className="text-3xl font-bold text-[#082033] tabular-nums tracking-tight">{value.toLocaleString()}</p>
+          <p className="text-xs text-slate-500">{note}</p>
+        </div>
+        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+          <Icon className="w-6 h-6 text-white" />
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-cyan-800 transition-colors group-hover:text-cyan-600">
+        Open {destination}
+        <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </CardContent>
+  </Card>
 );
 
 const KpiSkeleton: React.FC = () => (
-  <div className="bg-white p-4 rounded-2xl border border-sand-200 animate-pulse">
-    <div className="flex items-start justify-between">
-      <div className="h-3 w-16 bg-sand-200 rounded" />
-      <div className="w-8 h-8 rounded-xl bg-sand-100" />
-    </div>
-    <div className="h-8 w-14 bg-sand-100 rounded mt-4" />
-    <div className="h-2.5 w-24 bg-sand-100 rounded mt-3" />
-  </div>
+  <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)] animate-pulse">
+    <CardContent className="p-5">
+      <div className="flex items-start justify-between">
+        <div className="space-y-3 flex-1">
+          <div className="h-4 w-24 bg-[#dfe9e5] rounded" />
+          <div className="h-8 w-16 bg-[#dfe9e5] rounded" />
+          <div className="h-3 w-32 bg-[#dfe9e5] rounded" />
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-[#dfe9e5]" />
+      </div>
+    </CardContent>
+  </Card>
 );
 
 const EmptyState: React.FC<{
@@ -88,12 +125,12 @@ const EmptyState: React.FC<{
   title: string;
   hint: string;
 }> = ({ icon: Icon, title, hint }) => (
-  <div className="py-14 flex flex-col items-center text-center">
-    <div className="w-12 h-12 rounded-2xl bg-sand-100 ring-1 ring-sand-200 flex items-center justify-center">
-      <Icon className="w-5 h-5 text-stone-500" />
+  <div className="py-12 flex flex-col items-center text-center">
+    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+      <Icon className="w-6 h-6 text-slate-400" />
     </div>
-    <p className="mt-3 text-sm font-bold text-charcoal-950">{title}</p>
-    <p className="mt-1 text-xs text-stone-500 max-w-xs">{hint}</p>
+    <p className="text-sm font-semibold text-slate-900">{title}</p>
+    <p className="mt-1 text-sm text-slate-500 max-w-sm">{hint}</p>
   </div>
 );
 
@@ -114,12 +151,66 @@ const formatTime = (iso: string) =>
     minute: '2-digit',
   });
 
-const SRS_BASELINE = 10;
+const OperationalPulse: React.FC<{
+  label: string;
+  detail: string;
+  value: string;
+  progress: number;
+  tone?: 'cyan' | 'amber';
+}> = ({ label, detail, value, progress, tone = 'cyan' }) => {
+  const signal = tone === 'amber' ? 'bg-amber-500' : 'bg-cyan-500';
+  const fill = tone === 'amber' ? 'from-amber-400 to-amber-500' : 'from-cyan-500 to-teal-500';
 
-export const AdminDashboardPage: React.FC = () => {
+  return (
+    <div className="rounded-xl border border-[#d7e5e1] bg-[#f4f8f5] px-3.5 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`relative flex h-2 w-2 ${signal} rounded-full`}>
+              <span className={`absolute inset-0 animate-ping rounded-full ${signal} opacity-40`} />
+            </span>
+            <p className="text-xs font-semibold text-[#163a56]">{label}</p>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">{detail}</p>
+        </div>
+        <span className="text-sm font-bold tabular-nums text-[#082033]">{value}</span>
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#dfe9e5]">
+        <div className={`h-full rounded-full bg-gradient-to-r ${fill} transition-all duration-700`} style={{ width: `${progress}%` }} />
+      </div>
+    </div>
+  );
+};
+
+interface AdminDashboardPageProps {
+  defaultTab?: AdminTab;
+}
+
+export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultTab }) => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const tabParam = searchParams.get('tab') as AdminTab | null;
+  const initialTab: AdminTab =
+    defaultTab ||
+    (location.pathname.includes('/settings')
+      ? 'settings'
+      : tabParam || 'overview');
+
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('admin-sidebar-collapsed') === 'true';
+  });
+
+  // Settings Data
+  const [settings, setSettings] = useState<Record<string, any>>({});
+  const [systemInfo, setSystemInfo] = useState<Record<string, any>>({});
+  const [settingsSection, setSettingsSection] = useState('general');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [loadingSettings, setLoadingSettings] = useState(false);
+  const [settingsFeedback, setSettingsFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Overview Data
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
@@ -138,6 +229,29 @@ export const AdminDashboardPage: React.FC = () => {
   // Users Data
   const [usersList, setUsersList] = useState<User[]>([]);
 
+  // Itineraries Data
+  const [adminItineraries, setAdminItineraries] = useState<any[]>([]);
+  const [isItineraryModalOpen, setIsItineraryModalOpen] = useState(false);
+  const [editingItinerary, setEditingItinerary] = useState<any | null>(null);
+  const [itineraryForm, setItineraryForm] = useState({
+    user_id: 0,
+    title: '',
+    start_date: '',
+    notes: '',
+    is_public: false,
+    items: [] as Array<{ place_id: number; day_no: number; sequence_order: number; visit_time: string; notes: string }>,
+  });
+  const [itineraryItemForm, setItineraryItemForm] = useState({
+    place_id: '',
+    day_no: 1,
+    visit_time: '',
+    notes: '',
+  });
+
+  // Data Quality & Health
+  const [dataQuality, setDataQuality] = useState<any>(null);
+  const [systemHealth, setSystemHealth] = useState<any>(null);
+
   // Audit Logs Data
   const [allAuditLogs, setAllAuditLogs] = useState<AuditLogItem[]>([]);
 
@@ -148,6 +262,7 @@ export const AdminDashboardPage: React.FC = () => {
     name: '',
     category_id: 1,
     description: '',
+    travel_tips: '',
     address: '',
     lat: 7.957,
     lng: 80.76,
@@ -227,11 +342,106 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  const loadAdminItineraries = async () => {
+    try {
+      const res = await api.getAdminItineraries();
+      setAdminItineraries(res.itineraries || []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const loadDataQuality = async () => {
+    try {
+      const res = await api.getAdminDataQuality();
+      setDataQuality(res);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const loadSystemHealth = async () => {
+    try {
+      const res = await api.getAdminSystemHealth();
+      setSystemHealth(res);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      setLoadingSettings(true);
+      const res = await api.getAdminSettings();
+      const settingsMap: Record<string, any> = {};
+      Object.values(res.settings || {}).forEach((group: any) => {
+        if (Array.isArray(group)) {
+          group.forEach((item: any) => {
+            settingsMap[item.key] = item.value;
+          });
+        }
+      });
+      setSettings(settingsMap);
+      setSystemInfo(res.system_info || {});
+    } catch (err: any) {
+      setError(err.message || 'Failed to load platform settings.');
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
+
+  const handleSaveSettings = async (keys: string[]) => {
+    setSavingSettings(true);
+    try {
+      const payload: Record<string, any> = {};
+      keys.forEach((key) => {
+        if (settings[key] !== undefined) {
+          payload[key] = settings[key];
+        }
+      });
+      await api.updateAdminSettings({ settings: payload });
+      setSettingsFeedback({ type: 'success', text: 'Settings updated successfully.' });
+      setTimeout(() => setSettingsFeedback(null), 3500);
+    } catch (err: any) {
+      setSettingsFeedback({ type: 'error', text: err.message || 'Failed to update settings.' });
+      setTimeout(() => setSettingsFeedback(null), 3500);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const updateSetting = (key: string, value: any) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    } else if (location.pathname.includes('/settings')) {
+      setActiveTab('settings');
+    }
+  }, [defaultTab, location.pathname]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('admin-sidebar-collapsed', sidebarCollapsed ? 'true' : 'false');
+    }
+  }, [sidebarCollapsed]);
+
   useEffect(() => {
     if (!isAdmin) return;
     setLoading(true);
-    Promise.all([loadDashboard(), loadPlaces(), loadCategories(), loadUsers(), loadAuditLogs()])
-      .finally(() => setLoading(false));
+    Promise.all([
+      loadDashboard(),
+      loadPlaces(),
+      loadCategories(),
+      loadUsers(),
+      loadAuditLogs(),
+      loadAdminItineraries(),
+      loadDataQuality(),
+      loadSystemHealth(),
+      loadSettings(),
+    ]).finally(() => setLoading(false));
   }, [isAdmin]);
 
   useEffect(() => {
@@ -242,14 +452,20 @@ export const AdminDashboardPage: React.FC = () => {
 
   if (!isAuthenticated || !isAdmin) {
     return (
-      <div className="max-w-md mx-auto my-24 p-8 bg-white rounded-3xl border border-red-200 shadow-md text-center space-y-4">
-        <ShieldAlert className="w-12 h-12 text-red-600 mx-auto" />
-        <h2 className="text-xl font-bold text-charcoal-950">
-          Admin Privileges Required
-        </h2>
-        <p className="text-xs text-stone-600">
-          FR-12 Authorization guard: privileged console actions require verified administrator credentials.
-        </p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full border-0 shadow-2xl">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+              <ShieldAlert className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">
+              Admin Privileges Required
+            </h2>
+            <p className="text-sm text-slate-600">
+              Privileged console actions require verified administrator credentials.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -261,6 +477,7 @@ export const AdminDashboardPage: React.FC = () => {
       name: '',
       category_id: categories.length > 0 ? categories[0].id : 1,
       description: '',
+      travel_tips: '',
       address: '',
       lat: 7.957,
       lng: 80.76,
@@ -277,6 +494,7 @@ export const AdminDashboardPage: React.FC = () => {
       name: place.name,
       category_id: place.category ? place.category.id : 1,
       description: place.description,
+      travel_tips: place.travel_tips || '',
       address: place.address || '',
       lat: place.lat,
       lng: place.lng,
@@ -295,6 +513,7 @@ export const AdminDashboardPage: React.FC = () => {
           name: placeForm.name,
           category_id: placeForm.category_id,
           description: placeForm.description,
+          travel_tips: placeForm.travel_tips,
           address: placeForm.address,
           lat: Number(placeForm.lat),
           lng: Number(placeForm.lng),
@@ -307,6 +526,7 @@ export const AdminDashboardPage: React.FC = () => {
           name: placeForm.name,
           category_id: placeForm.category_id,
           description: placeForm.description,
+          travel_tips: placeForm.travel_tips,
           address: placeForm.address,
           lat: Number(placeForm.lat),
           lng: Number(placeForm.lng),
@@ -353,6 +573,20 @@ export const AdminDashboardPage: React.FC = () => {
       loadAuditLogs();
     } catch (err: any) {
       alert(err.message);
+    }
+  };
+
+  const handleDeletePlace = async (place: Place) => {
+    if (!window.confirm(`Permanently delete "${place.name}", its photos, and its stops in saved itineraries? This cannot be undone.`)) return;
+
+    try {
+      await api.deleteAdminPlace(place.id);
+      setMessage(`"${place.name}" permanently deleted.`);
+      loadPlaces();
+      loadDashboard();
+      loadAuditLogs();
+    } catch (err: any) {
+      alert(err.message || 'Failed to permanently delete place.');
     }
   };
 
@@ -461,13 +695,114 @@ export const AdminDashboardPage: React.FC = () => {
     setIsCategoryModalOpen(true);
   };
 
+  const handleOpenItineraryCreate = () => {
+    setEditingItinerary(null);
+    setItineraryForm({
+      user_id: usersList[0]?.id || 0,
+      title: '',
+      start_date: '',
+      notes: '',
+      is_public: false,
+      items: [],
+    });
+    setItineraryItemForm({ place_id: '', day_no: 1, visit_time: '', notes: '' });
+    setIsItineraryModalOpen(true);
+  };
+
+  const handleOpenItineraryEdit = async (it: any) => {
+    try {
+      const res = await api.getAdminItinerary(it.id);
+      const itin = res.itinerary;
+      setEditingItinerary(itin);
+      setItineraryForm({
+        user_id: itin.user?.id || 0,
+        title: itin.title || '',
+        start_date: itin.start_date || '',
+        notes: itin.notes || '',
+        is_public: !!itin.is_public,
+        items: (itin.items || []).map((item: any, idx: number) => ({
+          place_id: item.place_id,
+          day_no: item.day_no || 1,
+          sequence_order: item.sequence_order ?? idx + 1,
+          visit_time: item.visit_time || '',
+          notes: item.notes || '',
+        })),
+      });
+      setItineraryItemForm({ place_id: '', day_no: 1, visit_time: '', notes: '' });
+      setIsItineraryModalOpen(true);
+    } catch (err: any) {
+      alert(err.message || 'Failed to load itinerary');
+    }
+  };
+
+  const handleAddItineraryItem = () => {
+    if (!itineraryItemForm.place_id) return;
+    const placeId = Number(itineraryItemForm.place_id);
+    if (Number.isNaN(placeId)) return;
+    setItineraryForm((prev) => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          place_id: placeId,
+          day_no: Number(itineraryItemForm.day_no) || 1,
+          sequence_order: prev.items.length + 1,
+          visit_time: itineraryItemForm.visit_time,
+          notes: itineraryItemForm.notes,
+        },
+      ],
+    }));
+    setItineraryItemForm({ place_id: '', day_no: 1, visit_time: '', notes: '' });
+  };
+
+  const handleRemoveItineraryItem = (idx: number) => {
+    setItineraryForm((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== idx).map((item, i) => ({ ...item, sequence_order: i + 1 })),
+    }));
+  };
+
+  const handleSaveItinerary = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!itineraryForm.user_id) {
+        alert('Please select a user');
+        return;
+      }
+      if (editingItinerary) {
+        await api.updateAdminItinerary(editingItinerary.id, itineraryForm);
+        setMessage('Itinerary updated successfully.');
+      } else {
+        await api.createAdminItinerary(itineraryForm);
+        setMessage('Itinerary created successfully.');
+      }
+      setIsItineraryModalOpen(false);
+      loadAdminItineraries();
+      loadDashboard();
+      loadAuditLogs();
+    } catch (err: any) {
+      alert(err.message || 'Error saving itinerary.');
+    }
+  };
+
+  const handleDeleteItinerary = async (it: any) => {
+    if (!window.confirm(`Delete itinerary "${it.title}"? This cannot be undone.`)) return;
+    try {
+      await api.deleteAdminItinerary(it.id);
+      setMessage('Itinerary deleted successfully.');
+      loadAdminItineraries();
+      loadDashboard();
+      loadAuditLogs();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete itinerary.');
+    }
+  };
+
   // Derived overview figures
   const totalPlaces = metrics ? metrics.total_places : 0;
   const activeShare =
     totalPlaces > 0 && metrics ? Math.round((metrics.active_places / totalPlaces) * 100) : 0;
-  const compliancePct = metrics
-    ? Math.min(100, Math.round((metrics.active_places / SRS_BASELINE) * 100))
-    : 0;
+  const qualityIssueCount = dataQuality?.issues?.length ?? 0;
   const topCategories = [...categories]
     .sort((a, b) => (b.places_count || 0) - (a.places_count || 0))
     .slice(0, 6);
@@ -481,8 +816,7 @@ export const AdminDashboardPage: React.FC = () => {
   const uploadPlace = uploadPlaceId ? places.find((place) => place.id === uploadPlaceId) : null;
 
   return (
-    <div className="min-h-screen bg-ivory-100 text-charcoal-950">
-      {/* CRM Sidebar Navigation */}
+    <div className="admin-console min-h-screen bg-[#f7f4ed] text-[#082033]">
       <AdminSidebar
         activeTab={activeTab}
         onSelect={setActiveTab}
@@ -495,10 +829,15 @@ export const AdminDashboardPage: React.FC = () => {
         mobileOpen={isMobileNavOpen}
         onCloseMobile={() => setIsMobileNavOpen(false)}
         onLogout={handleLogout}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
       />
 
-      {/* Main console surface */}
-      <div className="lg:pl-64 flex flex-col min-h-screen">
+      <div
+        className={`flex flex-col min-h-screen transition-all duration-300 ${
+          sidebarCollapsed ? 'lg:pl-[76px]' : 'lg:pl-64'
+        }`}
+      >
         <AdminTopbar
           activeTab={activeTab}
           user={user}
@@ -509,15 +848,15 @@ export const AdminDashboardPage: React.FC = () => {
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           {/* Feedback banners */}
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-bold">
+            <div className="p-4 bg-red-50/80 backdrop-blur border border-red-200 text-red-800 rounded-xl flex items-center justify-between shadow-lg animate-in slide-in-from-top-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
                 <AlertTriangle className="w-4 h-4 text-red-600" />
                 {error}
               </div>
               <button
                 type="button"
                 onClick={() => setError(null)}
-                className="text-red-500 hover:text-red-800 p-1"
+                className="text-red-500 hover:text-red-700 p-1 transition-colors"
                 aria-label="Dismiss error"
               >
                 <X className="w-4 h-4" />
@@ -526,15 +865,15 @@ export const AdminDashboardPage: React.FC = () => {
           )}
 
           {message && (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-bold">
+            <div className="p-4 bg-emerald-50/80 backdrop-blur border border-emerald-200 text-emerald-800 rounded-xl flex items-center justify-between shadow-lg animate-in slide-in-from-top-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 {message}
               </div>
               <button
                 type="button"
                 onClick={() => setMessage(null)}
-                className="text-emerald-700 hover:text-emerald-950 p-1"
+                className="text-emerald-600 hover:text-emerald-700 p-1 transition-colors"
                 aria-label="Dismiss message"
               >
                 <X className="w-4 h-4" />
@@ -545,8 +884,22 @@ export const AdminDashboardPage: React.FC = () => {
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              {/* KPI Counters */}
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+              <section className="flex flex-col gap-3 border-l-4 border-cyan-500 pl-4 sm:flex-row sm:items-end sm:justify-between" aria-labelledby="operations-briefing-title">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-700">Operations briefing</p>
+                  <h2 id="operations-briefing-title" className="mt-1 text-2xl font-bold tracking-tight text-[#082033]">Today&apos;s platform status</h2>
+                  <p className="mt-1 text-sm text-slate-600">Catalogue, quality checks, and administrator activity in one working view.</p>
+                </div>
+                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-600" />
+                  </span>
+                  {metrics ? `${metrics.active_places} active place${metrics.active_places === 1 ? '' : 's'}` : 'Loading status'}
+                </span>
+              </section>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
                 {loading || !metrics ? (
                   Array.from({ length: 6 }).map((_, i) => <KpiSkeleton key={i} />)
                 ) : (
@@ -556,698 +909,819 @@ export const AdminDashboardPage: React.FC = () => {
                       label="Total Places"
                       value={metrics.total_places}
                       note="Catalogue records"
-                      tone="stone"
+                      gradient="from-[#163a56] to-cyan-500"
+                      destination="Places"
+                      onOpen={() => setActiveTab('places')}
                     />
                     <KpiCard
                       icon={CheckCircle2}
                       label="Active (Live)"
                       value={metrics.active_places}
                       note="Visible in discovery"
-                      tone="emerald"
+                      gradient="from-cyan-500 to-teal-500"
+                      destination="Places"
+                      onOpen={() => setActiveTab('places')}
                     />
                     <KpiCard
                       icon={Archive}
                       label="Archived"
                       value={metrics.archived_places}
                       note="Soft-deleted records"
-                      tone="amber"
+                      gradient="from-amber-400 to-amber-600"
+                      destination="Places"
+                      onOpen={() => setActiveTab('places')}
                     />
                     <KpiCard
                       icon={FolderTree}
                       label="Categories"
                       value={metrics.categories}
                       note="Taxonomy terms"
-                      tone="gold"
+                      gradient="from-[#163a56] to-cyan-500"
+                      destination="Categories"
+                      onOpen={() => setActiveTab('categories')}
                     />
                     <KpiCard
                       icon={Users}
                       label="Registered Users"
                       value={metrics.users}
                       note="All accounts"
-                      tone="stone"
+                      gradient="from-[#163a56] to-[#285d7d]"
+                      destination="Users"
+                      onOpen={() => setActiveTab('users')}
                     />
                     <KpiCard
                       icon={CalendarDays}
                       label="Itineraries"
                       value={metrics.itineraries}
                       note="Trips planned"
-                      tone="gold"
+                      gradient="from-teal-500 to-cyan-600"
+                      destination="Itineraries"
+                      onOpen={() => setActiveTab('itineraries')}
                     />
                   </>
                 )}
               </div>
 
-              {/* Health + Quick Actions */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Catalogue health & distribution */}
-                <section className="lg:col-span-7 bg-white p-6 rounded-3xl border border-sand-200 shadow-sm space-y-5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">
-                      Catalogue Health
-                    </h3>
-                    <span className="text-[11px] font-semibold text-stone-500">
-                      {activeShare}% live
-                    </span>
-                  </div>
+                <Card className="lg:col-span-7 border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg font-semibold text-[#082033]">Catalogue health</CardTitle>
+                        <CardDescription>Current availability and category coverage</CardDescription>
+                      </div>
+                      <Badge variant="info">{activeShare}% Live</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
 
                   {metrics ? (
                     <>
-                      <div className="space-y-2">
-                        <div className="h-3 rounded-full bg-sand-100 overflow-hidden flex">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-700">Status Distribution</span>
+                        </div>
+                        <div className="h-3 rounded-full bg-[#dfe9e5] overflow-hidden flex shadow-inner">
                           <div
-                            className="h-full bg-emerald-500 transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-700 ease-out"
                             style={{ width: `${activeShare}%` }}
                           />
                           <div
-                            className="h-full bg-amber-400 transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-amber-400 to-orange-400 transition-all duration-700 ease-out"
                             style={{ width: `${100 - activeShare}%` }}
                           />
                         </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="flex items-center gap-1.5 font-semibold text-emerald-700">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                            Active: {metrics.active_places}
-                          </span>
-                          <span className="flex items-center gap-1.5 font-semibold text-amber-700">
-                            <span className="w-2 h-2 rounded-full bg-amber-400" />
-                            Archived: {metrics.archived_places}
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+                            <span className="text-sm text-slate-600">
+                              Active: <span className="font-semibold text-slate-900">{metrics.active_places}</span>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-400 to-orange-400" />
+                            <span className="text-sm text-slate-600">
+                              Archived: <span className="font-semibold text-slate-900">{metrics.archived_places}</span>
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="pt-4 border-t border-sand-200 space-y-3">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                          Places per category
-                        </p>
+                      <div className="pt-6 border-t border-[#dfe9e5] space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold text-slate-900">Top Categories</h4>
+                          <Button variant="ghost" size="sm" onClick={() => setActiveTab('categories')} className="text-xs">
+                            View all
+                            <ArrowRight className="w-3 h-3 ml-1" />
+                          </Button>
+                        </div>
                         {topCategories.length === 0 ? (
-                          <p className="text-xs text-stone-500">No categories created yet.</p>
+                          <p className="text-sm text-slate-500 text-center py-4">No categories created yet.</p>
                         ) : (
-                          topCategories.map((cat) => (
-                            <div key={cat.id} className="space-y-1">
-                              <div className="flex items-center justify-between text-[11px]">
-                                <span className="font-semibold text-stone-700 truncate">
-                                  {cat.name}
-                                </span>
-                                <span className="font-bold text-stone-500 tabular-nums">
-                                  {cat.places_count || 0}
-                                </span>
+                          <div className="space-y-3">
+                            {topCategories.map((cat) => (
+                              <div key={cat.id} className="space-y-2 group">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div
+                                      className="w-2 h-2 rounded-full"
+                                      style={{ backgroundColor: cat.color || '#06b6d4' }}
+                                    />
+                                    <span className="text-sm font-medium text-slate-700 truncate group-hover:text-slate-900 transition-colors">
+                                      {cat.name}
+                                    </span>
+                                  </div>
+                                  <Badge variant="secondary" className="tabular-nums">
+                                    {cat.places_count || 0}
+                                  </Badge>
+                                </div>
+                                <div className="h-2 rounded-full bg-[#dfe9e5] overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-700 ease-out"
+                                    style={{
+                                      width: `${((cat.places_count || 0) / maxCategoryCount) * 100}%`,
+                                      background: `linear-gradient(90deg, ${cat.color || '#06b6d4'} 0%, ${cat.color || '#14b8a6'} 100%)`,
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="h-2 rounded-full bg-sand-100 overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all duration-500"
-                                  style={{
-                                    width: `${((cat.places_count || 0) / maxCategoryCount) * 100}%`,
-                                    backgroundColor: cat.color || '#d4af37',
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))
+                            ))}
+                          </div>
                         )}
                       </div>
                     </>
                   ) : (
-                    <div className="py-8 flex justify-center text-stone-400">
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                    <div className="py-12 flex justify-center text-slate-400">
+                      <Loader2 className="w-6 h-6 animate-spin" />
                     </div>
                   )}
-                </section>
+                  </CardContent>
+                </Card>
 
-                {/* Quick actions + compliance */}
-                <section className="lg:col-span-5 bg-white p-6 rounded-3xl border border-sand-200 shadow-sm space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">
-                    Quick Actions
-                  </h3>
-                  <div className="space-y-2">
-                    <button
-                      type="button"
-                      onClick={handleOpenPlaceCreate}
-                      className="w-full py-2.5 px-4 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-                    >
-                      <Plus className="w-4 h-4 text-gold-400" />
-                      Add Verified Place (FR-08)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleOpenCategoryCreate}
-                      className="w-full py-2.5 px-4 bg-sand-100 hover:bg-sand-200 text-stone-800 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all"
-                    >
-                      <Plus className="w-4 h-4 text-stone-600" />
-                      Create Taxonomy Category (FR-09)
-                    </button>
-                  </div>
+                <Card className="lg:col-span-5 border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-cyan-500" />
+                      Quick actions
+                    </CardTitle>
+                    <CardDescription>Common administrative tasks</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Button
+                        onClick={handleOpenPlaceCreate}
+                        className="w-full justify-start bg-[#0f766e] text-white shadow-sm hover:bg-[#0b625c]"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add New Place
+                      </Button>
+                      <Button
+                        onClick={handleOpenCategoryCreate}
+                        variant="outline"
+                        className="w-full justify-start"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add New Category
+                      </Button>
+                      <Button
+                        onClick={() => setActiveTab('users')}
+                        variant="outline"
+                        className="w-full justify-start"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Manage Users
+                      </Button>
+                    </div>
 
-                  <div className="p-4 bg-gold-500/[0.07] rounded-2xl border border-gold-500/25 space-y-2.5">
-                    <p className="font-bold flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-gold-700">
-                      <ShieldCheck className="w-4 h-4 text-gold-600" />
-                      SRS Launch Baseline
-                    </p>
-                    {metrics ? (
-                      <>
-                        <p className="text-[11px] text-stone-600 leading-relaxed">
-                          <strong className="text-charcoal-950">{metrics.active_places}</strong> of{' '}
-                          {SRS_BASELINE} required verified places are live.
-                        </p>
-                        <div className="h-2 rounded-full bg-sand-200 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gold-500 transition-all duration-500"
-                            style={{ width: `${compliancePct}%` }}
-                          />
-                        </div>
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                          {compliancePct >= 100
-                            ? 'Baseline satisfied'
-                            : `${SRS_BASELINE - metrics.active_places} more needed`}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-[11px] text-stone-500">Loading compliance data…</p>
-                    )}
-                  </div>
-                </section>
+                    <div className="space-y-2">
+                      <OperationalPulse
+                        label="Active catalogue"
+                        detail={`${metrics?.active_places ?? 0} of ${totalPlaces} places are visible in discovery`}
+                        value={`${activeShare}%`}
+                        progress={activeShare}
+                      />
+                      <OperationalPulse
+                        label="Data quality"
+                        detail={dataQuality ? (qualityIssueCount === 0 ? 'All checks returned clear' : `${qualityIssueCount} issue${qualityIssueCount === 1 ? '' : 's'} need review`) : 'Checking current validation results'}
+                        value={dataQuality ? (qualityIssueCount === 0 ? 'Clear' : 'Review') : 'Checking'}
+                        progress={dataQuality ? (qualityIssueCount === 0 ? 100 : 0) : 0}
+                        tone={qualityIssueCount > 0 ? 'amber' : 'cyan'}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Recent activity timeline */}
-              <section className="bg-white p-6 rounded-3xl border border-sand-200 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">
-                      Recent Administrative Activity
-                    </h3>
-                    <p className="text-[11px] text-stone-500 mt-0.5">
-                      Every mutation is recorded in the append-only audit trail.
-                    </p>
+              <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-cyan-500" />
+                        Recent Activity
+                      </CardTitle>
+                      <CardDescription>Latest administrative actions across the platform</CardDescription>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('audit')}>
+                      View all
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('audit')}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-charcoal-950 hover:text-gold-700 transition-colors"
-                  >
-                    Full audit trail
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {recentAudits.length === 0 ? (
-                  <EmptyState
-                    icon={History}
-                    title="No activity recorded yet"
-                    hint="Actions such as creating places or changing roles will appear here."
-                  />
-                ) : (
-                  <ul className="space-y-1">
-                    {recentAudits.slice(0, 8).map((a) => {
-                      const Icon = actionIcon(a.action);
-                      return (
-                        <li
-                          key={a.id}
-                          className="flex items-start gap-3 p-3 rounded-xl hover:bg-sand-50 transition-colors"
-                        >
-                          <span className="mt-0.5 w-7 h-7 rounded-lg bg-sand-100 ring-1 ring-sand-200 flex items-center justify-center shrink-0">
-                            <Icon className="w-3.5 h-3.5 text-stone-600" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <span className="font-mono text-[11px] font-bold text-charcoal-950 bg-sand-100 px-1.5 py-0.5 rounded">
-                              {a.action}
-                            </span>
-                            <p className="text-[11px] text-stone-500 mt-1 truncate">
-                              By {a.actor ? a.actor.name : 'System'} · {a.ip_address || '127.0.0.1'}
-                            </p>
+                </CardHeader>
+                <CardContent>
+                  {recentAudits.length === 0 ? (
+                    <EmptyState
+                      icon={History}
+                      title="No activity yet"
+                      hint="Administrative actions will appear here as they occur."
+                    />
+                  ) : (
+                    <div className="space-y-1">
+                      {recentAudits.slice(0, 8).map((a, idx) => {
+                        const Icon = actionIcon(a.action);
+                        return (
+                          <div
+                            key={a.id}
+                            className="flex items-center gap-4 border-l-2 border-transparent p-3 rounded-lg hover:border-cyan-400 hover:bg-cyan-50/50 transition-colors group"
+                            style={{ animationDelay: `${idx * 50}ms` }}
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                              <Icon className="w-4 h-4 text-slate-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-slate-900 truncate">{a.action}</p>
+                              <p className="text-xs text-slate-500 truncate">
+                                by {a.actor ? a.actor.name : 'System'} • {a.ip_address || '127.0.0.1'}
+                              </p>
+                            </div>
+                            <span className="text-xs text-slate-400 whitespace-nowrap">{formatTime(a.created_at)}</span>
                           </div>
-                          <span className="text-[10px] text-stone-400 whitespace-nowrap">
-                            {formatTime(a.created_at)}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </section>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 
           {/* TAB 2: PLACES CRUD & ARCHIVE (FR-08) */}
           {activeTab === 'places' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-charcoal-950">
-                    Places Catalogue Management
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Create, edit, archive (soft delete), and upload validated media for destinations.
-                  </p>
+            <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-[#082033]">Places management</CardTitle>
+                    <CardDescription>Manage your destination catalogue</CardDescription>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="search"
+                        value={placeSearch}
+                        onChange={(e) => setPlaceSearch(e.target.value)}
+                        placeholder="Search places..."
+                        className="pl-9 pr-4 py-2 w-full sm:w-64 text-sm bg-[#f4f8f5] border border-[#c9dcd6] rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-600 transition-all"
+                      />
+                    </div>
+
+                    <select
+                      value={placeStatusFilter || ''}
+                      onChange={(e) =>
+                        setPlaceStatusFilter((e.target.value as 'active' | 'archived') || undefined)
+                      }
+                      aria-label="Filter Places by status"
+                      className="px-3 py-2 text-sm bg-[#f4f8f5] border border-[#c9dcd6] rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-600 transition-all"
+                    >
+                      <option value="">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                  </div>
                 </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  {/* Search */}
-                  <label className="relative block">
-                    <span className="sr-only">Search places</span>
-                    <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="search"
-                      value={placeSearch}
-                      onChange={(e) => setPlaceSearch(e.target.value)}
-                      placeholder="Search places…"
-                      className="w-full sm:w-52 pl-8 pr-3 py-2 text-xs bg-white border border-sand-300 rounded-xl font-medium text-stone-800 placeholder:text-stone-400"
-                    />
-                  </label>
-
-                  {/* Status Filter */}
-                  <select
-                    value={placeStatusFilter || ''}
-                    onChange={(e) =>
-                      setPlaceStatusFilter(
-                        (e.target.value as 'active' | 'archived') || undefined
-                      )
-                    }
-                    aria-label="Filter Places by status"
-                    className="px-3 py-2 text-xs bg-white border border-sand-300 rounded-xl font-semibold text-stone-700"
-                  >
-                    <option value="">All Statuses</option>
-                    <option value="active">Active Only</option>
-                    <option value="archived">Archived (Soft-Deleted)</option>
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={handleOpenPlaceCreate}
-                    className="px-4 py-2 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                  >
-                    <Plus className="w-4 h-4 text-gold-400" />
-                    Add Place
-                  </button>
-                </div>
-              </div>
-
-              {/* Places Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-sand-200 text-stone-500 font-bold uppercase text-[10px] tracking-wider bg-ivory-100">
-                      <th className="p-3 rounded-l-xl">Destination</th>
-                      <th className="p-3">Category</th>
-                      <th className="p-3">Coordinates</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3">Media</th>
-                      <th className="p-3 text-right rounded-r-xl">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-sand-100">
-                    {places.length === 0 && (
-                      <tr>
-                        <td colSpan={6}>
-                          <EmptyState
-                            icon={MapPin}
-                            title="No places found"
-                            hint="Adjust your filters, or add a verified destination to the catalogue."
-                          />
-                        </td>
-                      </tr>
-                    )}
-                    {places.map((place) => (
-                      <tr key={place.id} className="hover:bg-sand-50/70 transition-colors">
-                        <td className="p-3">
-                          <div className="flex items-center gap-3">
-                            {place.primary_photo ? (
-                              <img
-                                src={place.primary_photo}
-                                alt={place.name}
-                                className="w-10 h-10 object-cover rounded-lg border border-sand-200"
-                              />
-                            ) : (
-                              <span className="w-10 h-10 rounded-lg bg-sand-100 border border-sand-200 flex items-center justify-center">
-                                <MapPin className="w-4 h-4 text-stone-400" />
-                              </span>
-                            )}
-                            <div>
-                              <p className="font-bold text-charcoal-950">{place.name}</p>
-                              <p className="text-[11px] text-stone-500 truncate max-w-xs">
-                                {place.address || 'No address recorded'}
-                              </p>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-xl border border-[#d7e5e1] overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#edf5f1]">
+                        <TableHead className="font-semibold text-[#163a56]">Place</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Category</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Coordinates</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Status</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Media</TableHead>
+                        <TableHead className="text-right font-semibold text-[#163a56]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {places.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6}>
+                            <EmptyState
+                              icon={MapPin}
+                              title="No places found"
+                              hint="Adjust your filters, or add a new destination to get started."
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {places.map((place) => (
+                        <TableRow key={place.id} className="hover:bg-cyan-50/40 transition-colors">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              {place.primary_photo ? (
+                                <img
+                                  src={place.primary_photo}
+                                  alt={place.name}
+                                  className="w-10 h-10 object-cover rounded-lg border border-slate-200"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200 flex items-center justify-center">
+                                  <MapPin className="w-4 h-4 text-slate-400" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-slate-900 truncate">{place.name}</p>
+                                <p className="text-xs text-slate-500 truncate max-w-xs">
+                                  {place.address || 'No address'}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </TableCell>
 
-                        <td className="p-3">
-                          <span className="font-semibold text-stone-700">
-                            {place.category ? place.category.name : '—'}
-                          </span>
-                        </td>
+                          <TableCell>
+                            <Badge variant="secondary">{place.category ? place.category.name : 'Uncategorized'}</Badge>
+                          </TableCell>
 
-                        <td className="p-3 font-mono text-[11px] text-stone-500">
-                          {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
-                        </td>
-
-                        <td className="p-3">
-                          {place.is_archived ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                              <Archive className="w-3 h-3" />
-                              Archived
+                          <TableCell>
+                            <span className="text-xs font-mono text-slate-600">
+                              {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Active
-                            </span>
-                          )}
-                        </td>
+                          </TableCell>
 
-                        <td className="p-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setUploadPlaceId(place.id);
-                              setIsUploadModalOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg transition-colors"
-                          >
-                            <Upload className="w-3 h-3" />
-                            Photo ({place.media_count || place.photos_count || 1})
-                          </button>
-                        </td>
-
-                        <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenPlaceEdit(place)}
-                              className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-sand-100"
-                              title="Edit place"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-
+                          <TableCell>
                             {place.is_archived ? (
-                              <button
-                                type="button"
-                                onClick={() => handleRestorePlace(place)}
-                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50"
-                                title="Restore archived place"
-                              >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                              </button>
+                              <Badge variant="warning">Archived</Badge>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleArchivePlace(place)}
-                                className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50"
-                                title="Archive place (soft delete)"
-                              >
-                                <Archive className="w-3.5 h-3.5" />
-                              </button>
+                              <Badge variant="success">Active</Badge>
                             )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                          </TableCell>
+
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setUploadPlaceId(place.id);
+                                setIsUploadModalOpen(true);
+                              }}
+                              className="text-xs"
+                            >
+                              <Upload className="w-3 h-3 mr-1" />
+                              {place.media_count || place.photos_count || 0} photos
+                            </Button>
+                          </TableCell>
+
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenPlaceEdit(place)}
+                                className="h-8 w-8"
+                                aria-label={`Edit ${place.name}`}
+                                title="Edit place"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+
+                              {place.is_archived ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleRestorePlace(place)}
+                                  className="h-8 w-8"
+                                  aria-label={`Restore ${place.name}`}
+                                  title="Restore place"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleArchivePlace(place)}
+                                  className="h-8 w-8"
+                                  aria-label={`Archive ${place.name}`}
+                                  title="Archive place"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </Button>
+                              )}
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeletePlace(place)}
+                                className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                aria-label={`Permanently delete ${place.name}`}
+                                title="Permanently delete place"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* TAB 3: CATEGORIES CRUD (FR-09) */}
           {activeTab === 'categories' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-charcoal-950">
-                    Category Taxonomy Management
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Discovery taxonomy for places. Deletion is blocked if places reference the category.
-                  </p>
+            <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg font-semibold">Categories</CardTitle>
+                    <CardDescription>Organize destinations by themes and interests</CardDescription>
+                  </div>
+
+                  <Button
+                    onClick={handleOpenCategoryCreate}
+                    className="bg-[#0f766e] text-white shadow-sm hover:bg-[#0b625c]"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Category
+                  </Button>
                 </div>
+              </CardHeader>
+              <CardContent>
+                {categories.length === 0 ? (
+                  <EmptyState
+                    icon={FolderTree}
+                    title="No categories yet"
+                    hint="Create taxonomy terms so travellers can filter destinations by interest."
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categories.map((cat) => (
+                      <Card
+                        key={cat.id}
+                        className="border border-[#d7e5e1] bg-[#fffefa] hover:border-cyan-300 hover:shadow-md transition-all duration-200 group"
+                      >
+                        <CardContent className="p-5 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md"
+                                style={{ background: `linear-gradient(135deg, ${cat.color || '#06b6d4'} 0%, ${cat.color}dd 100%)` }}
+                              >
+                                <FolderTree className="w-5 h-5 text-white" />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-semibold text-slate-900 truncate group-hover:text-cyan-700 transition-colors">{cat.name}</h4>
+                                <p className="text-xs text-slate-500 truncate">{cat.slug}</p>
+                              </div>
+                            </div>
 
-                <button
-                  type="button"
-                  onClick={handleOpenCategoryCreate}
-                  className="px-4 py-2 bg-charcoal-950 hover:bg-charcoal-800 text-ivory-50 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                >
-                  <Plus className="w-4 h-4 text-gold-400" />
-                  Add Category
-                </button>
-              </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingCategory(cat);
+                                  setCategoryForm({
+                                    name: cat.name,
+                                    description: cat.description || '',
+                                    icon: cat.icon || 'MapPin',
+                                    color: cat.color || '#06b6d4',
+                                  });
+                                  setIsCategoryModalOpen(true);
+                                }}
+                                className="h-8 w-8"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteCategory(cat)}
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
 
-              {categories.length === 0 ? (
-                <EmptyState
-                  icon={FolderTree}
-                  title="No categories yet"
-                  hint="Create taxonomy terms so travellers can filter destinations by interest."
-                />
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat.id}
-                      className="p-4 rounded-2xl border border-sand-200 bg-sand-50/50 hover:border-sand-300 hover:shadow-sm transition-all space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span
-                            className="w-3.5 h-3.5 rounded-full shrink-0 ring-2 ring-white"
-                            style={{ backgroundColor: cat.color || '#f59e0b' }}
-                          />
-                          <h4 className="font-bold text-sm text-charcoal-950 truncate">
-                            {cat.name}
-                          </h4>
-                        </div>
+                          <p className="text-sm text-slate-600 line-clamp-2 min-h-[40px]">
+                            {cat.description || 'No description provided'}
+                          </p>
 
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingCategory(cat);
-                              setCategoryForm({
-                                name: cat.name,
-                                description: cat.description || '',
-                                icon: cat.icon || 'MapPin',
-                                color: cat.color || '#f59e0b',
-                              });
-                              setIsCategoryModalOpen(true);
-                            }}
-                            className="p-1 text-stone-500 hover:text-stone-800"
-                            title="Edit category"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCategory(cat)}
-                            className="p-1 text-red-500 hover:text-red-700"
-                            title="Delete category"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-stone-600 line-clamp-2">
-                        {cat.description || 'No description provided.'}
-                      </p>
-
-                      <div className="flex items-center justify-between text-[11px] text-stone-500 pt-2 border-t border-sand-200">
-                        <span className="font-mono truncate">slug: {cat.slug}</span>
-                        <span className="font-bold text-stone-700 whitespace-nowrap ml-2">
-                          {cat.places_count || 0} Places
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                          <div className="pt-3 border-t border-[#dfe9e5] flex items-center justify-between">
+                            <span className="text-xs text-slate-500">Destinations</span>
+                            <Badge variant="info">{cat.places_count || 0}</Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {/* TAB 4: USERS MANAGEMENT (FR-10) */}
           {activeTab === 'users' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
-              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-charcoal-950">
-                    User Accounts & Role Permissions
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Inspect profiles, change roles, and deactivate accounts. All actions write to the audit trail.
-                  </p>
+            <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-[#082033]">User management</CardTitle>
+                    <CardDescription>Manage accounts, roles and permissions</CardDescription>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">{usersList.length} Total</Badge>
+                    <Badge variant="info">{adminCount} Admins</Badge>
+                    <Badge variant="success">{activeUserCount} Active</Badge>
+                  </div>
                 </div>
-
-                <div className="flex flex-wrap gap-2 text-[11px] font-bold">
-                  <span className="px-3 py-1.5 rounded-full bg-sand-100 text-stone-700">
-                    {usersList.length} Total
-                  </span>
-                  <span className="px-3 py-1.5 rounded-full bg-gold-500/15 text-gold-700">
-                    {adminCount} Admins
-                  </span>
-                  <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800">
-                    {activeUserCount} Active
-                  </span>
-                  <span className="px-3 py-1.5 rounded-full bg-red-100 text-red-700">
-                    {usersList.length - activeUserCount} Deactivated
-                  </span>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-sand-200 text-stone-500 font-bold uppercase text-[10px] tracking-wider bg-ivory-100">
-                      <th className="p-3 rounded-l-xl">User Profile</th>
-                      <th className="p-3">Email Address</th>
-                      <th className="p-3">Assigned Role</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3">Itineraries</th>
-                      <th className="p-3 text-right rounded-r-xl">Administrative Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-sand-100">
-                    {usersList.length === 0 && (
-                      <tr>
-                        <td colSpan={6}>
-                          <EmptyState
-                            icon={Users}
-                            title="No user accounts found"
-                            hint="Registered users will appear here once they create an account."
-                          />
-                        </td>
-                      </tr>
-                    )}
-                    {usersList.map((u) => (
-                      <tr key={u.id} className="hover:bg-sand-50/70 transition-colors">
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sand-200 to-sand-300 flex items-center justify-center font-bold text-stone-700 shrink-0">
-                              {u.name.charAt(0).toUpperCase()}
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-xl border border-[#d7e5e1] overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#edf5f1]">
+                        <TableHead className="font-semibold text-[#163a56]">User</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Email</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Role</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Status</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Itineraries</TableHead>
+                        <TableHead className="text-right font-semibold text-[#163a56]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {usersList.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6}>
+                            <EmptyState
+                              icon={Users}
+                              title="No user accounts found"
+                              hint="Registered users will appear here once they create an account."
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {usersList.map((u) => (
+                        <TableRow key={u.id} className="hover:bg-cyan-50/40 transition-colors">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 text-white text-sm font-semibold flex items-center justify-center shadow-md">
+                                {u.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-sm font-medium text-slate-900">{u.name}</span>
                             </div>
-                            <span className="font-bold text-charcoal-950">{u.name}</span>
-                          </div>
-                        </td>
+                          </TableCell>
 
-                        <td className="p-3 font-mono text-[11px] text-stone-600">
-                          {u.email}
-                        </td>
+                          <TableCell className="text-sm text-slate-600">{u.email}</TableCell>
 
-                        <td className="p-3">
-                          <span
-                            className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase ${
-                              u.role === 'admin'
-                                ? 'bg-gold-500/15 text-gold-700'
-                                : 'bg-stone-100 text-stone-700'
-                            }`}
-                          >
-                            {u.role}
-                          </span>
-                        </td>
+                          <TableCell>
+                            {u.role === 'admin' ? (
+                              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">Admin</Badge>
+                            ) : (
+                              <Badge variant="secondary">User</Badge>
+                            )}
+                          </TableCell>
 
-                        <td className="p-3">
-                          {u.is_active ? (
-                            <span className="text-emerald-700 font-bold flex items-center gap-1 text-[11px]">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="text-red-600 font-bold flex items-center gap-1 text-[11px]">
-                              <AlertTriangle className="w-3 h-3" />
-                              Deactivated
-                            </span>
-                          )}
-                        </td>
+                          <TableCell>
+                            {u.is_active ? (
+                              <Badge variant="success">Active</Badge>
+                            ) : (
+                              <Badge variant="secondary">Deactivated</Badge>
+                            )}
+                          </TableCell>
 
-                        <td className="p-3 font-semibold text-stone-700">
-                          {u.itineraries_count || 0} trips
-                        </td>
+                          <TableCell className="text-sm text-slate-600 tabular-nums">{u.itineraries_count || 0}</TableCell>
 
-                        <td className="p-3 text-right space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleUserRole(u)}
-                            className="px-2 py-1 bg-sand-100 hover:bg-sand-200 text-stone-800 rounded-lg font-bold text-[11px] transition-colors"
-                          >
-                            Switch to {u.role === 'admin' ? 'User' : 'Admin'}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleToggleUserStatus(u)}
-                            className={`px-2 py-1 rounded-lg font-bold text-[11px] transition-colors ${
-                              u.is_active
-                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                            }`}
-                          >
-                            {u.is_active ? 'Deactivate' : 'Activate'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleUserRole(u)}
+                              >
+                                {u.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+                              </Button>
+                              <Button
+                                variant={u.is_active ? 'outline' : 'default'}
+                                size="sm"
+                                onClick={() => handleToggleUserStatus(u)}
+                                className={u.is_active ? '' : 'bg-[#0f766e] hover:bg-[#0b625c]'}
+                              >
+                                {u.is_active ? 'Deactivate' : 'Activate'}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {/* TAB 5: AUDIT LOG (Page 6 & 7) */}
-          {activeTab === 'audit' && (
-            <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-6 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-charcoal-950">
-                    Audit Trail (Traceable History)
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Append-only log of every administrative mutation on places, categories, roles, and media.
-                  </p>
+          {/* TAB 5: ITINERARIES ADMINISTRATION */}
+          {activeTab === 'itineraries' && (
+            <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg font-semibold">Itineraries</CardTitle>
+                    <CardDescription>Manage user travel plans</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{adminItineraries.length} Total</Badge>
+                    <Button
+                      onClick={handleOpenItineraryCreate}
+                      className="bg-[#0f766e] text-white shadow-sm hover:bg-[#0b625c]"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Itinerary
+                    </Button>
+                  </div>
                 </div>
-                <span className="self-start sm:self-auto px-3 py-1.5 rounded-full bg-sand-100 text-stone-700 text-[11px] font-bold">
-                  {allAuditLogs.length} Entries
-                </span>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-xl border border-[#d7e5e1] overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#edf5f1]">
+                        <TableHead className="font-semibold text-[#163a56]">Itinerary</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Owner</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Items</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Start date</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Public</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Created</TableHead>
+                        <TableHead className="text-right font-semibold text-[#163a56]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {adminItineraries.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7}>
+                            <EmptyState icon={CalendarDays} title="No itineraries" hint="Create one to get started." />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {adminItineraries.map((it: any) => (
+                        <TableRow key={it.id} className="hover:bg-cyan-50/40 transition-colors">
+                          <TableCell>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-900 truncate">{it.title}</p>
+                              {it.notes && <p className="text-xs text-slate-500 truncate max-w-xs">{it.notes}</p>}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {it.user ? (
+                              <div>
+                                <p className="text-sm text-slate-900">{it.user.name}</p>
+                                <p className="text-xs text-slate-500">{it.user.email}</p>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-slate-600 tabular-nums">{it.items_count}</TableCell>
+                          <TableCell className="text-sm text-slate-600">{it.start_date || '—'}</TableCell>
+                          <TableCell>
+                            {it.is_public ? <Badge variant="success">Public</Badge> : <Badge variant="secondary">Private</Badge>}
+                          </TableCell>
+                          <TableCell className="text-sm text-slate-500">{it.created_at ? new Date(it.created_at).toLocaleDateString() : '—'}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => handleOpenItineraryEdit(it)} className="h-8 w-8">
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteItinerary(it)} className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* TAB 6: DATA QUALITY */}
+          {activeTab === 'data-quality' && (
+            <section className="bg-[#fffefa] rounded-xl border border-[#d7e5e1] p-5 shadow-[0_10px_24px_rgba(8,32,51,0.06)] space-y-4" aria-labelledby="data-quality-heading">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 id="data-quality-heading" className="text-base font-semibold text-[#082033]">Data quality</h3>
+                  <p className="text-xs text-slate-500">Validation checks that need an administrator&apos;s attention.</p>
+                </div>
+                <button type="button" onClick={loadDataQuality} className="px-2.5 py-1 text-xs font-semibold text-cyan-800 hover:text-cyan-600 hover:bg-cyan-50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600">Recheck</button>
+              </div>
+              {dataQuality?.issues?.length === 0 ? (
+                <EmptyState icon={CheckCircle2} title="No issues" hint="All checks passed." />
+              ) : (
+                <ul className="divide-y divide-[#dfe9e5]">
+                  {(dataQuality?.issues || []).map((issue: any, idx: number) => (
+                    <li key={idx} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-2.5">
+                        <AlertTriangle className="w-4 h-4 text-stone-400" />
+                        <div>
+                          <p className="text-sm text-charcoal-950">{issue.message}</p>
+                          <p className="text-xs text-stone-500">Severity: {issue.severity}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-stone-500">{issue.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
+          {/* TAB 7: SYSTEM HEALTH */}
+          {activeTab === 'system-health' && (
+            <section className="bg-[#fffefa] rounded-xl border border-[#d7e5e1] p-5 shadow-[0_10px_24px_rgba(8,32,51,0.06)] space-y-4" aria-labelledby="system-health-heading">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 id="system-health-heading" className="text-base font-semibold text-[#082033]">System health</h3>
+                  <p className="text-xs text-slate-500">Current service and performance checks.</p>
+                </div>
+                <button type="button" onClick={loadSystemHealth} className="px-2.5 py-1 text-xs font-semibold text-cyan-800 hover:text-cyan-600 hover:bg-cyan-50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600">Refresh</button>
+              </div>
+              {systemHealth && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {Object.entries(systemHealth.checks || {}).map(([key, val]: [string, any]) => (
+                    <div key={key} className="p-3 rounded-lg border border-[#d7e5e1] bg-[#f4f8f5] flex items-center justify-between">
+                      <p className="text-sm text-charcoal-950 capitalize">{key}</p>
+                      <span className="text-xs text-stone-600">{val.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {systemHealth?.timestamp && <p className="text-xs text-stone-500">Last checked: {new Date(systemHealth.timestamp).toLocaleString()}</p>}
+            </section>
+          )}
+
+          {/* TAB 8: AUDIT LOG (Page 6 & 7) */}
+          {activeTab === 'audit' && (
+            <section className="bg-[#fffefa] rounded-xl border border-[#d7e5e1] p-5 shadow-[0_10px_24px_rgba(8,32,51,0.06)] space-y-4" aria-labelledby="audit-heading">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 id="audit-heading" className="text-base font-semibold text-[#082033]">Audit trail</h3>
+                  <p className="text-xs text-slate-500">A durable record of administrator activity.</p>
+                </div>
+                <span className="text-xs text-stone-500">{allAuditLogs.length} entries</span>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[860px] text-left text-xs border-collapse">
+                <table className="w-full min-w-[760px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-sand-200 text-stone-500 font-bold uppercase text-[10px] tracking-wider bg-ivory-100">
-                      <th className="p-3 rounded-l-xl">Timestamp</th>
-                      <th className="p-3">Acting Account</th>
-                      <th className="p-3">Action</th>
-                      <th className="p-3">Target Entity</th>
-                      <th className="p-3">IP Address</th>
-                      <th className="p-3 rounded-r-xl">Payload Details</th>
+                    <tr className="border-b border-[#d7e5e1] bg-[#edf5f1]">
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">Time</th>
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">Actor</th>
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">Action</th>
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">Target</th>
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">IP</th>
+                      <th className="py-2 text-right text-xs font-semibold text-[#163a56]">Details</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-sand-100 font-mono text-[11px]">
+                  <tbody>
                     {allAuditLogs.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="font-sans">
-                          <EmptyState
-                            icon={History}
-                            title="No audit entries yet"
-                            hint="Administrative changes will be recorded here automatically."
-                          />
+                        <td colSpan={6}>
+                          <EmptyState icon={History} title="No entries" hint="No activity recorded." />
                         </td>
                       </tr>
                     )}
                     {allAuditLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-sand-50/70">
-                        <td className="p-3 text-stone-600 whitespace-nowrap">
+                      <tr key={log.id} className="border-b border-[#e8efeb] last:border-0 hover:bg-cyan-50/40">
+                        <td className="py-2.5 pr-3 text-xs text-stone-500 whitespace-nowrap">
                           {new Date(log.created_at).toLocaleString()}
                         </td>
-                        <td className="p-3 font-semibold text-stone-900 font-sans">
-                          {log.actor ? log.actor.name : 'System Baseline'}
+                        <td className="py-2.5 pr-3 text-sm text-charcoal-950">
+                          {log.actor ? log.actor.name : 'System'}
                         </td>
-                        <td className="p-3">
-                          <span className="font-bold text-gold-700 bg-gold-500/10 px-1.5 py-0.5 rounded">
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="p-3 text-stone-500">
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">{log.action}</td>
+                        <td className="py-2.5 pr-3 text-sm text-stone-600">
                           {log.subject_type ? `${log.subject_type.split('\\').pop()} #${log.subject_id}` : '—'}
                         </td>
-                        <td className="p-3 text-stone-500">
-                          {log.ip_address || '127.0.0.1'}
-                        </td>
-                        <td className="p-3 text-stone-600 font-sans max-w-xs truncate">
+                        <td className="py-2.5 pr-3 text-xs text-stone-500">{log.ip_address || '—'}</td>
+                        <td className="py-2.5 text-right text-xs text-stone-500 max-w-xs truncate">
                           {log.payload ? JSON.stringify(log.payload) : '—'}
                         </td>
                       </tr>
@@ -1255,51 +1729,703 @@ export const AdminDashboardPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+            </section>
+          )}
+
+          {/* TAB 9: SETTINGS */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              {settingsFeedback && (
+                <div
+                  className={`p-4 rounded-2xl flex items-center justify-between text-xs font-bold border shadow-sm ${
+                    settingsFeedback.type === 'success'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : 'bg-red-50 border-red-200 text-red-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {settingsFeedback.type === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                    )}
+                    <span>{settingsFeedback.text}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSettingsFeedback(null)}
+                    className="text-stone-400 hover:text-stone-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Subcategory Navigation */}
+                <div className="lg:w-64 shrink-0">
+                  <div className="bg-white rounded-3xl border border-sand-200 shadow-sm p-3 space-y-1">
+                    <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                      Settings Group
+                    </p>
+                    {[
+                      { id: 'general', label: 'General', icon: Settings },
+                      { id: 'map', label: 'Map & Location', icon: Globe },
+                      { id: 'security', label: 'Security', icon: ShieldCheck },
+                      { id: 'catalogue', label: 'Catalogue', icon: FolderTree },
+                      { id: 'media', label: 'Media & Storage', icon: HardDrive },
+                      { id: 'email', label: 'Email (SMTP)', icon: Mail },
+                      { id: 'appearance', label: 'Appearance', icon: Palette },
+                      { id: 'system', label: 'System Info', icon: Info },
+                    ].map((item) => {
+                      const SubIcon = item.icon;
+                      const isSubActive = settingsSection === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSettingsSection(item.id)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
+                            isSubActive
+                              ? 'bg-turquoise-500 text-navy-950 shadow-sm ring-1 ring-turquoise-400/40'
+                              : 'text-stone-600 hover:bg-sand-100/70 hover:text-charcoal-950'
+                          }`}
+                        >
+                          <SubIcon className={`w-4 h-4 ${isSubActive ? 'text-navy-950' : 'text-stone-400'}`} />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Settings Forms */}
+                <div className="flex-1">
+                  {loadingSettings ? (
+                    <div className="bg-white rounded-3xl border border-sand-200 p-12 text-center shadow-sm">
+                      <Loader2 className="w-8 h-8 text-turquoise-500 animate-spin mx-auto" />
+                      <p className="mt-3 text-xs font-bold text-charcoal-950">Loading platform settings...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* General */}
+                      {settingsSection === 'general' && (
+                        <SettingsCard
+                          title="General Settings"
+                          description="Core platform identity, contact channels, and customer support information."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'app_name',
+                              'app_tagline',
+                              'contact_email',
+                              'support_number',
+                              'footer_text',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsInput
+                            label="Application Name"
+                            value={settings.app_name || ''}
+                            onChange={(v) => updateSetting('app_name', v)}
+                            placeholder="VisitFlow"
+                          />
+                          <SettingsInput
+                            label="Tagline"
+                            value={settings.app_tagline || ''}
+                            onChange={(v) => updateSetting('app_tagline', v)}
+                            placeholder="Curated Sri Lanka Travel Intelligence"
+                          />
+                          <SettingsInput
+                            label="Contact Email"
+                            type="email"
+                            value={settings.contact_email || ''}
+                            onChange={(v) => updateSetting('contact_email', v)}
+                            placeholder="support@visitflow.lk"
+                          />
+                          <SettingsInput
+                            label="Support Phone"
+                            value={settings.support_number || ''}
+                            onChange={(v) => updateSetting('support_number', v)}
+                            placeholder="+94 11 234 5678"
+                          />
+                          <SettingsInput
+                            label="Footer Disclaimer / Text"
+                            value={settings.footer_text || ''}
+                            onChange={(v) => updateSetting('footer_text', v)}
+                            placeholder="© 2026 VisitFlow Sri Lanka"
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Map & Location */}
+                      {settingsSection === 'map' && (
+                        <SettingsCard
+                          title="Map & Spatial Boundaries"
+                          description="Configure geographic reference center, discovery radius, and boundary clamps."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'map_ref_lat',
+                              'map_ref_lng',
+                              'map_radius_km',
+                              'map_default_zoom',
+                              'enable_map_bounds',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsInput
+                            label="Reference Latitude"
+                            type="number"
+                            value={settings.map_ref_lat ?? ''}
+                            onChange={(v) => updateSetting('map_ref_lat', v)}
+                            description="Default origin for Haversine distance calculations (e.g. 7.8731 for Sri Lanka center)"
+                          />
+                          <SettingsInput
+                            label="Reference Longitude"
+                            type="number"
+                            value={settings.map_ref_lng ?? ''}
+                            onChange={(v) => updateSetting('map_ref_lng', v)}
+                            description="Default longitude center point (e.g. 80.7718)"
+                          />
+                          <SettingsInput
+                            label="Discovery Radius (km)"
+                            type="number"
+                            value={settings.map_radius_km ?? ''}
+                            onChange={(v) => updateSetting('map_radius_km', v)}
+                            description="Maximum operational travel discovery radial envelope"
+                          />
+                          <SettingsInput
+                            label="Default Map Zoom"
+                            type="number"
+                            value={settings.map_default_zoom ?? ''}
+                            onChange={(v) => updateSetting('map_default_zoom', v)}
+                            description="Interactive map initial zoom scale"
+                          />
+                          <SettingsToggle
+                            label="Strict Territorial Bounds"
+                            description="Restrict place coordinates strictly within Sri Lankan sovereign territorial envelope"
+                            checked={!!settings.enable_map_bounds}
+                            onChange={(v) => updateSetting('enable_map_bounds', v)}
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Security */}
+                      {settingsSection === 'security' && (
+                        <SettingsCard
+                          title="Security & Access Governance"
+                          description="Manage session revocation rules, role modification policies, and audit visibility."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'force_logout_on_role_change',
+                              'allow_user_deactivation',
+                              'audit_logs_admin_only',
+                              'session_timeout_minutes',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsToggle
+                            label="Immediate Session Revocation on Role Mutation"
+                            description="Force token invalidation immediately when an administrator changes a user's role"
+                            checked={!!settings.force_logout_on_role_change}
+                            onChange={(v) => updateSetting('force_logout_on_role_change', v)}
+                          />
+                          <SettingsToggle
+                            label="Allow Administrative User Deactivation"
+                            description="Permit administrators to temporarily suspend access without deleting user accounts"
+                            checked={!!settings.allow_user_deactivation}
+                            onChange={(v) => updateSetting('allow_user_deactivation', v)}
+                          />
+                          <SettingsToggle
+                            label="Audit Logs Administrator-Only"
+                            description="Lock audit trails exclusively to administrator accounts (blocks non-privileged read)"
+                            checked={!!settings.audit_logs_admin_only}
+                            onChange={(v) => updateSetting('audit_logs_admin_only', v)}
+                          />
+                          <SettingsInput
+                            label="Session Idle Timeout (Minutes)"
+                            type="number"
+                            value={settings.session_timeout_minutes ?? ''}
+                            onChange={(v) => updateSetting('session_timeout_minutes', v)}
+                            description="Inactivity timeout before requiring re-authentication"
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Catalogue */}
+                      {settingsSection === 'catalogue' && (
+                        <SettingsCard
+                          title="Catalogue & Taxonomy Policies"
+                          description="Configure curation workflow rules, publishing requirements, and archive defaults."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'auto_approve_places',
+                              'require_images_publish',
+                              'show_archived_admin_default',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsToggle
+                            label="Auto-approve Contributed Destinations"
+                            description="Instantly mark newly registered places as verified without editorial review"
+                            checked={!!settings.auto_approve_places}
+                            onChange={(v) => updateSetting('auto_approve_places', v)}
+                          />
+                          <SettingsToggle
+                            label="Mandatory Validated Media on Publish"
+                            description="Require at least one verified high-resolution photograph before a destination goes live"
+                            checked={!!settings.require_images_publish}
+                            onChange={(v) => updateSetting('require_images_publish', v)}
+                          />
+                          <SettingsToggle
+                            label="Default Show Archived Places in Admin"
+                            description="Display soft-deleted records in the catalogue table by default"
+                            checked={!!settings.show_archived_admin_default}
+                            onChange={(v) => updateSetting('show_archived_admin_default', v)}
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Media & Storage */}
+                      {settingsSection === 'media' && (
+                        <SettingsCard
+                          title="Media & Storage Infrastructure"
+                          description="Configure cloud/local storage drivers, file payload thresholds, and optimization."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'storage_driver',
+                              'max_upload_size_mb',
+                              'auto_generate_thumbnails',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsSelect
+                            label="Active Storage Driver"
+                            value={settings.storage_driver || 'local'}
+                            onChange={(v) => updateSetting('storage_driver', v)}
+                            options={[
+                              { value: 'local', label: 'Local Disk Storage (public/storage)' },
+                              { value: 'cloudinary', label: 'Cloudinary CDN & Media Cloud' },
+                            ]}
+                            description="Target file system for destination photography and asset uploads"
+                          />
+                          <SettingsInput
+                            label="Maximum Upload Payload (MB)"
+                            type="number"
+                            value={settings.max_upload_size_mb ?? ''}
+                            onChange={(v) => updateSetting('max_upload_size_mb', v)}
+                            description="Upper ceiling per media asset upload"
+                          />
+                          <SettingsToggle
+                            label="Automatic WebP & Thumbnail Generation"
+                            description="Pre-render responsive web thumbnails upon successful media upload"
+                            checked={!!settings.auto_generate_thumbnails}
+                            onChange={(v) => updateSetting('auto_generate_thumbnails', v)}
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Email */}
+                      {settingsSection === 'email' && (
+                        <SettingsCard
+                          title="Email & Notification Engine (SMTP)"
+                          description="Configure transactional email transport, server credentials, and dispatch headers."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'mail_enabled',
+                              'mail_host',
+                              'mail_port',
+                              'mail_username',
+                              'mail_password',
+                              'mail_from_address',
+                              'mail_from_name',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsToggle
+                            label="Enable Outbound SMTP Dispatch"
+                            description="Enable transactional emails for verification, password resets, and notifications"
+                            checked={!!settings.mail_enabled}
+                            onChange={(v) => updateSetting('mail_enabled', v)}
+                          />
+                          <SettingsInput
+                            label="SMTP Server Host"
+                            value={settings.mail_host || ''}
+                            onChange={(v) => updateSetting('mail_host', v)}
+                            placeholder="smtp.mailtrap.io"
+                          />
+                          <SettingsInput
+                            label="SMTP Port"
+                            type="number"
+                            value={settings.mail_port ?? ''}
+                            onChange={(v) => updateSetting('mail_port', v)}
+                            placeholder="587"
+                          />
+                          <SettingsInput
+                            label="SMTP Username"
+                            value={settings.mail_username || ''}
+                            onChange={(v) => updateSetting('mail_username', v)}
+                          />
+                          <SettingsInput
+                            label="SMTP Password"
+                            type="password"
+                            value={settings.mail_password || ''}
+                            onChange={(v) => updateSetting('mail_password', v)}
+                            placeholder="••••••••"
+                          />
+                          <SettingsInput
+                            label="From Sender Address"
+                            type="email"
+                            value={settings.mail_from_address || ''}
+                            onChange={(v) => updateSetting('mail_from_address', v)}
+                            placeholder="noreply@visitflow.lk"
+                          />
+                          <SettingsInput
+                            label="From Sender Display Name"
+                            value={settings.mail_from_name || ''}
+                            onChange={(v) => updateSetting('mail_from_name', v)}
+                            placeholder="VisitFlow Sri Lanka"
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* Appearance */}
+                      {settingsSection === 'appearance' && (
+                        <SettingsCard
+                          title="Visual Identity & Theming"
+                          description="Customize platform branding, logos, and accent highlights."
+                          onSave={() =>
+                            handleSaveSettings([
+                              'logo_url',
+                              'favicon_url',
+                              'primary_color',
+                              'accent_color',
+                            ])
+                          }
+                          saving={savingSettings}
+                        >
+                          <SettingsInput
+                            label="Branded Logo URL"
+                            value={settings.logo_url || ''}
+                            onChange={(v) => updateSetting('logo_url', v)}
+                            placeholder="/logo.svg"
+                          />
+                          <SettingsInput
+                            label="Browser Favicon URL"
+                            value={settings.favicon_url || ''}
+                            onChange={(v) => updateSetting('favicon_url', v)}
+                            placeholder="/favicon.ico"
+                          />
+                          <SettingsInput
+                            label="Primary Brand Color (Hex)"
+                            value={settings.primary_color || ''}
+                            onChange={(v) => updateSetting('primary_color', v)}
+                            placeholder="#0FAF8F"
+                          />
+                          <SettingsInput
+                            label="Accent Color (Hex)"
+                            value={settings.accent_color || ''}
+                            onChange={(v) => updateSetting('accent_color', v)}
+                            placeholder="#E7B94C"
+                          />
+                        </SettingsCard>
+                      )}
+
+                      {/* System Info */}
+                      {settingsSection === 'system' && (
+                        <SettingsCard
+                          title="System Diagnostic Telemetry"
+                          description="Read-only environmental runtime parameters and database status."
+                          showSave={false}
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                Laravel Framework
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1">
+                                {systemInfo.laravel_version || 'v11.x'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                PHP Engine
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1">
+                                {systemInfo.php_version || '8.2+'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                Runtime Environment
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1 capitalize">
+                                {systemInfo.environment || 'local'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                Database Connection
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1 uppercase">
+                                {systemInfo.db_connection || 'mysql / sqlite'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-sand-50 rounded-2xl border border-sand-200 sm:col-span-2">
+                              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                                Application URL
+                              </p>
+                              <p className="text-sm font-black font-mono text-charcoal-950 mt-1">
+                                {systemInfo.app_url || 'http://localhost'}
+                              </p>
+                            </div>
+                          </div>
+                        </SettingsCard>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Place Create/Edit Modal */}
-      {isPlaceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-xl p-6 border border-sand-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-sand-200 pb-3">
+      {isItineraryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/40">
+          <div className="bg-white rounded-lg w-full max-w-2xl border border-sand-200 shadow-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-sand-200">
               <div>
-                <h3 className="font-bold text-base text-charcoal-950">
-                  {editingPlace ? `Edit Place: ${editingPlace.name}` : 'Add Verified Place'}
+                <h3 className="text-sm font-medium text-charcoal-950">
+                  {editingItinerary ? 'Edit itinerary' : 'New itinerary'}
                 </h3>
-                <p className="text-[11px] text-stone-500">FR-08 catalogue management</p>
+                <p className="text-xs text-stone-500">Itinerary details and items</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsItineraryModalOpen(false)}
+                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveItinerary} className="px-5 py-4 space-y-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-600 mb-1">User</label>
+                  <select
+                    required
+                    value={itineraryForm.user_id}
+                    onChange={(e) => setItineraryForm({ ...itineraryForm, user_id: Number(e.target.value) })}
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                  >
+                    <option value={0} disabled>Select user</option>
+                    {usersList.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-600 mb-1">Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={itineraryForm.title}
+                    onChange={(e) => setItineraryForm({ ...itineraryForm, title: e.target.value })}
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-600 mb-1">Start date</label>
+                  <input
+                    type="date"
+                    value={itineraryForm.start_date}
+                    onChange={(e) => setItineraryForm({ ...itineraryForm, start_date: e.target.value })}
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 text-xs text-stone-600">
+                    <input
+                      type="checkbox"
+                      checked={itineraryForm.is_public}
+                      onChange={(e) => setItineraryForm({ ...itineraryForm, is_public: e.target.checked })}
+                      className="rounded border-sand-300"
+                    />
+                    Public
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-stone-600 mb-1">Notes</label>
+                <textarea
+                  rows={2}
+                  value={itineraryForm.notes}
+                  onChange={(e) => setItineraryForm({ ...itineraryForm, notes: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-charcoal-950">Items</p>
+                  <p className="text-xs text-stone-500">{itineraryForm.items.length} added</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs text-stone-600 mb-1">Place</label>
+                    <select
+                      value={itineraryItemForm.place_id}
+                      onChange={(e) => setItineraryItemForm({ ...itineraryItemForm, place_id: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                    >
+                      <option value="">Select place</option>
+                      {places.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-stone-600 mb-1">Day</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={itineraryItemForm.day_no}
+                      onChange={(e) => setItineraryItemForm({ ...itineraryItemForm, day_no: Number(e.target.value) })}
+                      className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-stone-600 mb-1">Visit time</label>
+                    <input
+                      type="text"
+                      placeholder="09:00"
+                      value={itineraryItemForm.visit_time}
+                      onChange={(e) => setItineraryItemForm({ ...itineraryItemForm, visit_time: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                    />
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={handleAddItineraryItem}
+                      className="px-2.5 py-1.5 text-xs bg-slate-900 text-white rounded-md"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Item notes (optional)"
+                  value={itineraryItemForm.notes}
+                  onChange={(e) => setItineraryItemForm({ ...itineraryItemForm, notes: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                />
+
+                {itineraryForm.items.length > 0 && (
+                  <div className="rounded-lg border border-slate-200 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50/50">
+                          <TableHead className="font-semibold">#</TableHead>
+                          <TableHead className="font-semibold">Place</TableHead>
+                          <TableHead className="font-semibold">Day</TableHead>
+                          <TableHead className="font-semibold">Time</TableHead>
+                          <TableHead className="font-semibold">Notes</TableHead>
+                          <TableHead className="text-right font-semibold">Remove</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {itineraryForm.items.map((item, idx) => {
+                          const place = places.find((p) => p.id === item.place_id);
+                          return (
+                            <TableRow key={idx}>
+                              <TableCell className="text-xs text-slate-500">{idx + 1}</TableCell>
+                              <TableCell className="text-sm text-slate-900">{place?.name || item.place_id}</TableCell>
+                              <TableCell className="text-sm text-slate-600">{item.day_no}</TableCell>
+                              <TableCell className="text-sm text-slate-600">{item.visit_time || '—'}</TableCell>
+                              <TableCell className="text-xs text-slate-500 max-w-[160px] truncate">{item.notes || '—'}</TableCell>
+                              <TableCell className="text-right">
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveItineraryItem(idx)} className="h-7 w-7">
+                                  <X className="w-3.5 h-3.5" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-1.5 pt-3 border-t border-sand-200">
+                <button
+                  type="button"
+                  onClick={() => setIsItineraryModalOpen(false)}
+                  className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-2.5 py-1 text-xs bg-charcoal-950 hover:bg-charcoal-900 text-white rounded-md"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isPlaceModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/40">
+          <div className="bg-white rounded-lg w-full max-w-xl border border-sand-200 shadow-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-sand-200">
+              <div>
+                <h3 className="text-sm font-medium text-charcoal-950">
+                  {editingPlace ? 'Edit place' : 'New place'}
+                </h3>
+                <p className="text-xs text-stone-500">Place details</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPlaceModalOpen(false)}
-                className="text-stone-400 hover:text-stone-800 p-1"
-                aria-label="Close modal"
+                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSavePlace} className="space-y-4 text-xs">
+            <form onSubmit={handleSavePlace} className="px-5 py-4 space-y-3 text-sm">
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Place Name</label>
+                <label className="block text-xs text-stone-600 mb-1">Name</label>
                 <input
                   type="text"
                   required
                   value={placeForm.name}
                   onChange={(e) => setPlaceForm({ ...placeForm, name: e.target.value })}
-                  placeholder="e.g. Polonnaruwa Royal Quadrangle"
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Category</label>
+                <label className="block text-xs text-stone-600 mb-1">Category</label>
                 <select
                   value={placeForm.category_id}
                   onChange={(e) => setPlaceForm({ ...placeForm, category_id: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900 font-semibold"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
@@ -1307,87 +2433,97 @@ export const AdminDashboardPage: React.FC = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Latitude</label>
+                  <label className="block text-xs text-stone-600 mb-1">Latitude</label>
                   <input
                     type="number"
                     step="any"
                     required
                     value={placeForm.lat}
                     onChange={(e) => setPlaceForm({ ...placeForm, lat: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Longitude</label>
+                  <label className="block text-xs text-stone-600 mb-1">Longitude</label>
                   <input
                     type="number"
                     step="any"
                     required
                     value={placeForm.lng}
                     onChange={(e) => setPlaceForm({ ...placeForm, lng: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Address / Access Route</label>
+                <label className="block text-xs text-stone-600 mb-1">Address</label>
                 <input
                   type="text"
                   value={placeForm.address}
                   onChange={(e) => setPlaceForm({ ...placeForm, address: e.target.value })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Opening Hours</label>
+                <label className="block text-xs text-stone-600 mb-1">Opening hours</label>
                 <input
                   type="text"
                   value={placeForm.opening_hours}
                   onChange={(e) => setPlaceForm({ ...placeForm, opening_hours: e.target.value })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Description</label>
+                <label className="block text-xs text-stone-600 mb-1">Description</label>
                 <textarea
                   rows={3}
                   required
                   value={placeForm.description}
                   onChange={(e) => setPlaceForm({ ...placeForm, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-stone-600 mb-1">Travel tips</label>
+                <textarea
+                  rows={2}
+                  value={placeForm.travel_tips}
+                  onChange={(e) => setPlaceForm({ ...placeForm, travel_tips: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               {!editingPlace && (
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Initial Photograph URL</label>
+                  <label className="block text-xs text-stone-600 mb-1">Photo URL</label>
                   <input
                     type="url"
                     value={placeForm.photo_url}
                     onChange={(e) => setPlaceForm({ ...placeForm, photo_url: e.target.value })}
-                    className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                   />
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-sand-200">
+              <div className="flex justify-end gap-1.5 pt-3 border-t border-sand-200">
                 <button
                   type="button"
                   onClick={() => setIsPlaceModalOpen(false)}
-                  className="px-4 py-2 bg-sand-100 hover:bg-sand-200 text-stone-700 rounded-xl font-bold transition-colors"
+                  className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gold-500 hover:bg-gold-400 text-charcoal-950 rounded-xl font-bold shadow-sm transition-colors"
+                  className="px-2.5 py-1 text-xs bg-charcoal-950 hover:bg-charcoal-900 text-white rounded-md"
                 >
-                  Save Place
+                  Save
                 </button>
               </div>
             </form>
@@ -1397,79 +2533,74 @@ export const AdminDashboardPage: React.FC = () => {
 
       {/* Category Modal */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 border border-sand-200 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-sand-200 pb-3">
-              <div>
-                <h3 className="font-bold text-base text-charcoal-950">
-                  {editingCategory ? 'Edit Category' : 'Create Category'}
-                </h3>
-                <p className="text-[11px] text-stone-500">FR-09 taxonomy management</p>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/40">
+          <div className="bg-white rounded-lg w-full max-w-md border border-sand-200 shadow-lg">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-sand-200">
+              <h3 className="text-sm font-medium text-charcoal-950">
+                {editingCategory ? 'Edit category' : 'New category'}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsCategoryModalOpen(false)}
-                className="text-stone-400 hover:text-stone-800 p-1"
-                aria-label="Close modal"
+                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveCategory} className="px-5 py-4 space-y-3 text-sm">
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Name</label>
+                <label className="block text-xs text-stone-600 mb-1">Name</label>
                 <input
                   type="text"
                   required
                   value={categoryForm.name}
                   onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                  placeholder="e.g. Wildlife & Safaris"
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Color Token (Hex)</label>
+                <label className="block text-xs text-stone-600 mb-1">Color</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={categoryForm.color}
                     onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                    className="w-10 h-8 rounded-lg border border-sand-300 cursor-pointer"
+                    className="w-9 h-7 rounded-md border border-sand-200 cursor-pointer"
                   />
                   <input
                     type="text"
                     value={categoryForm.color}
                     onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                    className="flex-1 px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl font-mono text-stone-900"
+                    className="flex-1 px-2.5 py-1.5 border border-sand-200 rounded-md font-mono text-charcoal-950"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Description</label>
+                <label className="block text-xs text-stone-600 mb-1">Description</label>
                 <textarea
                   rows={2}
                   value={categoryForm.description}
                   onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-sand-200">
+              <div className="flex justify-end gap-1.5 pt-3 border-t border-sand-200">
                 <button
                   type="button"
                   onClick={() => setIsCategoryModalOpen(false)}
-                  className="px-4 py-2 bg-sand-100 hover:bg-sand-200 text-stone-700 rounded-xl font-bold transition-colors"
+                  className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gold-500 hover:bg-gold-400 text-charcoal-950 rounded-xl font-bold shadow-sm transition-colors"
+                  className="px-2.5 py-1 text-xs bg-charcoal-950 hover:bg-charcoal-900 text-white rounded-md"
                 >
-                  Save Category
+                  Save
                 </button>
               </div>
             </form>
@@ -1477,24 +2608,17 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Media Upload Modal (FR-11) */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 border border-sand-200 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-sand-200 pb-3">
-              <div>
-                <h3 className="font-bold text-base text-charcoal-950">
-                  Upload Place Photograph
-                </h3>
-                <p className="text-[11px] text-stone-500">FR-11 validated media upload</p>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/40">
+          <div className="bg-white rounded-lg w-full max-w-md border border-sand-200 shadow-lg">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-sand-200">
+              <h3 className="text-sm font-medium text-charcoal-950">Upload photo</h3>
               <button
                 type="button"
                 onClick={() => setIsUploadModalOpen(false)}
-                className="text-stone-400 hover:text-stone-800 p-1"
-                aria-label="Close modal"
+                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -1546,28 +2670,28 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Select Image File</label>
+                <label className="block text-xs text-stone-600 mb-1">File</label>
                 <input
                   type="file"
                   required
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(e) => setUploadFile(e.target.files ? e.target.files[0] : null)}
-                  className="w-full text-xs text-stone-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gold-500 file:text-charcoal-950 hover:file:bg-gold-400"
+                  className="w-full text-xs text-stone-600 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-sand-100 file:text-charcoal-950"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-sand-200">
+              <div className="flex justify-end gap-1.5 pt-3 border-t border-sand-200">
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="px-4 py-2 bg-sand-100 hover:bg-sand-200 text-stone-700 rounded-xl font-bold transition-colors"
+                  className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!uploadFile}
-                  className="px-5 py-2 bg-gold-500 hover:bg-gold-400 text-charcoal-950 rounded-xl font-bold shadow-sm disabled:opacity-50 transition-colors"
+                  className="px-2.5 py-1 text-xs bg-charcoal-950 hover:bg-charcoal-900 text-white rounded-md disabled:opacity-50"
                 >
                   {editingMedia ? 'Replace & Validate' : 'Upload & Validate'}
                 </button>

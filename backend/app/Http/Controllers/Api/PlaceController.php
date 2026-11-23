@@ -15,6 +15,7 @@ class PlaceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Place::query()
+            ->withinLocalArea()
             ->where('is_active', true)
             ->with(['category', 'media']);
 
@@ -62,6 +63,7 @@ class PlaceController extends Controller
                 'name' => $place->name,
                 'slug' => $place->slug,
                 'description' => $place->description,
+                'travel_tips' => $place->travel_tips,
                 'address' => $place->address,
                 'lat' => (float) $place->lat,
                 'lng' => (float) $place->lng,
@@ -100,6 +102,7 @@ class PlaceController extends Controller
     public function show(string $idOrSlug): JsonResponse
     {
         $query = Place::query()
+            ->withinLocalArea()
             ->where('is_active', true)
             ->with(['category', 'media']);
 
@@ -119,6 +122,7 @@ class PlaceController extends Controller
 
         // Nearby recommendations in same category or geographically near
         $nearby = Place::query()
+            ->withinLocalArea()
             ->where('is_active', true)
             ->where('id', '!=', $place->id)
             ->where('category_id', $place->category_id)
@@ -139,6 +143,7 @@ class PlaceController extends Controller
                 'name' => $place->name,
                 'slug' => $place->slug,
                 'description' => $place->description,
+                'travel_tips' => $place->travel_tips,
                 'address' => $place->address,
                 'lat' => (float) $place->lat,
                 'lng' => (float) $place->lng,

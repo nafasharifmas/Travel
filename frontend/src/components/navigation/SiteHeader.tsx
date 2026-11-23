@@ -12,7 +12,6 @@ import {
   X,
   ChevronDown,
   Route,
-  Search,
   MapPin,
   User as UserIcon,
 } from 'lucide-react';
@@ -29,7 +28,8 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', hash: '', to: '/', match: '/' },
-  { label: 'Destinations', hash: '#destinations', to: '/explore', match: '/explore' },
+  { label: 'Explore', hash: '', to: '/explore', match: '/explore' },
+  { label: 'Destinations', hash: '#destinations', to: '/#destinations' },
   { label: 'Experiences', hash: '#experiences', to: '/#experiences' },
   { label: 'How It Works', hash: '#how-it-works', to: '/#how-it-works' },
   { label: 'Journal', hash: '#journal', to: '/#journal' },
@@ -37,7 +37,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export const SiteHeader: React.FC = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
-  const { stops, setIsDrawerOpen } = useItinerary();
+  const { visibleStops, setIsDrawerOpen } = useItinerary();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -151,16 +151,6 @@ export const SiteHeader: React.FC = () => {
     navigate(item.to);
   };
 
-  const handleSearchAction = () => {
-    setIsMobileMenuOpen(false);
-    if (isHome) {
-      const el = document.getElementById('travel-search');
-      el?.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
-    navigate('/explore');
-  };
-
   const isNavActive = (item: NavItem) => {
     if (isHome) {
       if (item.hash) {
@@ -176,13 +166,13 @@ export const SiteHeader: React.FC = () => {
       <header
         className={`fixed top-0 left-0 right-0 z-50 liquid-glass-header transition-all duration-300 ease-premium ${
           isScrolled ? 'is-scrolled py-2' : 'py-3 lg:py-4'
-        }`}
+        } ${!isHome ? 'bg-white/95 backdrop-blur-md border-b border-navy-100 shadow-sm' : ''}`}
       >
         <div className="container-page">
-          <div className="flex h-14 sm:h-16 items-center justify-between gap-4">
+          <div className="flex min-h-14 sm:min-h-16 items-center justify-between gap-4">
             
             {/* Zone 1: Left Brand Block */}
-            <div className="flex items-center shrink-0">
+            <div className="flex min-w-0 shrink-0 items-center lg:min-w-[220px]">
               <Link
                 to="/"
                 onClick={() => window.scrollTo({ top: 0, behavior: isHome ? 'smooth' : 'auto' })}
@@ -192,29 +182,20 @@ export const SiteHeader: React.FC = () => {
                 <div className="relative flex items-center justify-center">
                   <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-turquoise-500/20 to-ocean-500/20 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <img
-                    src="/visitflow-emblem.png"
+                    src="/visitflow-mark.png"
                     alt="Visitflow emblem"
-                    className="relative h-8 sm:h-9 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-300 group-hover:scale-105"
+                    className="relative h-8 sm:h-9 w-auto rounded-lg object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center tracking-tight">
-                    <span className="text-lg sm:text-xl font-serif font-black tracking-tight text-white drop-shadow-sm">
-                      Visit
-                    </span>
-                    <span className="text-lg sm:text-xl font-serif font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-turquoise-300 via-turquoise-400 to-ocean-300 drop-shadow-sm">
-                      flow
-                    </span>
-                  </div>
-                  <span className="text-[8.5px] font-sans font-bold tracking-[0.25em] uppercase text-white/50 -mt-0.5">
-                    Sri Lanka
+                <div className="min-w-0 flex flex-col">
+                  <span className="whitespace-nowrap text-[10px] sm:text-[11px] font-sans font-extrabold tracking-[0.22em] uppercase text-ocean-700">
+                    Visitflow
                   </span>
                 </div>
               </Link>
             </div>
 
-            {/* Zone 2: Redesigned Hero Nav (Clean, Refined Editorial Typography) */}
-            <nav className="hidden lg:flex items-center gap-7 xl:gap-8" aria-label="Primary">
+            <nav className="hidden flex-1 justify-center lg:flex items-center gap-4 xl:gap-7" aria-label="Primary">
               {NAV_ITEMS.map((item) => {
                 const active = isNavActive(item);
                 return (
@@ -224,7 +205,7 @@ export const SiteHeader: React.FC = () => {
                     onClick={() => handleNavClick(item)}
                     aria-current={active ? 'page' : undefined}
                     className={`relative py-1.5 text-[13px] font-medium tracking-wide transition-colors duration-200 group ${
-                      active ? 'text-white font-semibold' : 'text-white/70 hover:text-white'
+                      active ? 'text-ocean-600 font-semibold' : 'text-navy-900 hover:text-ocean-600'
                     }`}
                   >
                     <span>{item.label}</span>
@@ -242,18 +223,7 @@ export const SiteHeader: React.FC = () => {
             </nav>
 
             {/* Zone 3: Right Controls & Actions (Plan Your Trip Removed) */}
-            <div className="hidden md:flex items-center gap-2.5 shrink-0">
-              {/* Quick Search */}
-              <button
-                type="button"
-                onClick={handleSearchAction}
-                aria-label="Search destinations"
-                title="Search destinations"
-                className="liquid-glass-btn-round grid place-items-center w-10 h-10 rounded-full"
-              >
-                <Search className="w-4 h-4 text-white" />
-              </button>
-
+            <div className="hidden min-w-[220px] justify-end md:flex items-center gap-2.5 shrink-0">
               {/* Theme Toggle */}
               <ThemeToggleButton className="shrink-0" />
 
@@ -261,14 +231,14 @@ export const SiteHeader: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="liquid-glass-pill relative inline-flex items-center gap-2 h-10 px-4 rounded-full text-white text-xs font-semibold"
+                className="liquid-glass-pill relative inline-flex items-center gap-2 h-10 px-4 rounded-full text-navy-900 text-xs font-semibold"
                 title="Open your trip plan"
               >
                 <MapPin className="w-4 h-4 text-turquoise-300" />
                 <span>My Trip</span>
-                {stops.length > 0 && (
+                {visibleStops.length > 0 && (
                   <span className="grid place-items-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold bg-ocean-500 text-white rounded-full shadow-sm">
-                    {stops.length}
+                    {visibleStops.length}
                   </span>
                 )}
               </button>
@@ -286,7 +256,7 @@ export const SiteHeader: React.FC = () => {
                     <span className="grid place-items-center w-7 h-7 rounded-full bg-gradient-to-r from-ocean-500 to-turquoise-500 text-white text-xs font-bold shadow-inner">
                       {user.name.charAt(0).toUpperCase()}
                     </span>
-                    <span className="hidden xl:inline max-w-[80px] truncate text-xs font-bold text-white">
+                    <span className="hidden xl:inline max-w-[80px] truncate text-xs font-bold text-navy-900">
                       {user.name.split(' ')[0]}
                     </span>
                     <ChevronDown
@@ -335,9 +305,9 @@ export const SiteHeader: React.FC = () => {
                             <MapPin className="w-4 h-4 text-turquoise-400" />
                             Current Trip Plan
                           </span>
-                          {stops.length > 0 && (
+                          {visibleStops.length > 0 && (
                             <span className="text-[10px] font-bold text-turquoise-300 bg-white/10 px-2 py-0.5 rounded-full">
-                              {stops.length}
+                              {visibleStops.length}
                             </span>
                           )}
                         </button>
@@ -376,7 +346,7 @@ export const SiteHeader: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => openAuth('login')}
-                  className="liquid-glass-pill flex items-center h-10 px-4 rounded-full text-xs font-semibold text-white hover:text-white"
+                  className="liquid-glass-pill flex items-center h-10 px-4 rounded-full text-xs font-semibold text-navy-900 hover:text-navy-950"
                 >
                   Sign In
                 </button>
@@ -394,9 +364,9 @@ export const SiteHeader: React.FC = () => {
                 aria-label="Open trip plan"
               >
                 <MapPin className="w-4 h-4 text-turquoise-300" />
-                {stops.length > 0 && (
+                {visibleStops.length > 0 && (
                   <span className="absolute -top-1 -right-1 grid place-items-center min-w-[18px] h-4.5 px-1 text-[10px] font-bold bg-ocean-500 text-white rounded-full shadow-sm">
-                    {stops.length}
+                    {visibleStops.length}
                   </span>
                 )}
               </button>
@@ -515,5 +485,3 @@ export const SiteHeader: React.FC = () => {
     </>
   );
 };
-
-export default SiteHeader;

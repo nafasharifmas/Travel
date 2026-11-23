@@ -34,8 +34,8 @@ type ScopeTab = 'eastern' | 'all' | 'coastal' | 'heritage';
 type DistanceFilter = 'all' | '5' | '10' | '25';
 
 const SCOPE_TABS: { id: ScopeTab; label: string; icon: React.ElementType; hint?: string }[] = [
-  { id: 'eastern', label: 'Eastern Coast Corridor', icon: Navigation, hint: '10 stops' },
-  { id: 'all', label: 'All Sri Lanka', icon: Compass },
+  { id: 'eastern', label: 'Local attractions', icon: Navigation, hint: 'Within 25 km' },
+  { id: 'all', label: 'All local places', icon: Compass },
   { id: 'coastal', label: 'Coastal & Marine', icon: Waves },
   { id: 'heritage', label: 'Sacred & Cultural', icon: Landmark },
 ];
@@ -77,7 +77,7 @@ export const PublicDiscoveryPage: React.FC = () => {
   const [selectedPlaceForMap, setSelectedPlaceForMap] = useState<Place | null>(null);
   const [hoveredPlace, setHoveredPlace] = useState<Place | null>(null);
 
-  // Geographic scope: 'eastern' (the 10 core destinations), 'all', 'coastal', 'heritage'
+  // Local scope uses the fixed project reference and a strict 25 km radius.
   const [scopeTab, setScopeTab] = useState<ScopeTab>('eastern');
 
   // Desktop view mode: 'split' | 'cards' | 'map'
@@ -161,9 +161,10 @@ export const PublicDiscoveryPage: React.FC = () => {
           DEFAULT_USER_LOCATION[0],
           DEFAULT_USER_LOCATION[1],
           p.lat,
-          p.lng
+          p.lng,
+          false
         );
-        return d <= 26 || (p.slug && EASTERN_PROVINCE_ORDER[p.slug] !== undefined);
+        return d <= 25;
       });
     } else if (scopeTab === 'heritage') {
       list = list.filter((p) => {
@@ -350,7 +351,7 @@ export const PublicDiscoveryPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-ivory-100 pt-16 lg:pt-[76px]">
+    <div className="min-h-screen bg-ivory-100 pt-24 lg:pt-[112px]">
       {/* ---------- Compact discovery hero ---------- */}
       <section className="hidden">
         <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-turquoise-500/20 blur-3xl pointer-events-none" />
@@ -393,12 +394,10 @@ export const PublicDiscoveryPage: React.FC = () => {
 
           <div className="max-w-3xl space-y-3">
             <h1 className="text-h1 text-white">
-              Explore the <span className="italic text-turquoise-300">Eastern Corridor</span> &amp;
-              Beyond
+              Explore the Eastern Corridor
             </h1>
             <p className="text-sm sm:text-base text-navy-100 leading-relaxed max-w-2xl">
-              Verified coastal sanctuaries, sacred temples and living heritage museums — every
-              distance measured from {originLabel} at{' '}
+              Destinations with verified coordinates. Distances measured from {originLabel} at{' '}
               <strong className="font-semibold text-white">
                 {origin[0].toFixed(4)}, {origin[1].toFixed(4)}
               </strong>
@@ -621,7 +620,7 @@ export const PublicDiscoveryPage: React.FC = () => {
               Try a different keyword, widen the distance, or return to the Eastern Coast Corridor.
             </p>
             <button type="button" onClick={handleResetFilters} className="btn-primary">
-              Back to the 10 Eastern stops
+              Back to local attractions
             </button>
           </div>
         ) : (

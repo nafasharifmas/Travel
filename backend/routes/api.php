@@ -41,13 +41,18 @@ Route::middleware('auth:sanctum')->group(function () {
 // --- Admin Scoped Routes (FR-08, FR-09, FR-10, FR-11, FR-12) ---
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard']);
+    Route::get('/analytics', [AdminController::class, 'analytics']);
+    Route::get('/system-health', [AdminController::class, 'systemHealth']);
+    Route::get('/data-quality', [AdminController::class, 'dataQuality']);
 
     // Places CRUD & Archival (FR-08)
     Route::get('/places', [AdminController::class, 'places']);
     Route::post('/places', [AdminController::class, 'storePlace']);
     Route::put('/places/{id}', [AdminController::class, 'updatePlace']);
+    Route::delete('/places/{id}/permanent', [AdminController::class, 'destroyPlace']);
     Route::delete('/places/{id}', [AdminController::class, 'archivePlace']);
     Route::post('/places/{id}/restore', [AdminController::class, 'restorePlace']);
+    Route::post('/places/{id}/verify', [AdminController::class, 'verifyPlace']);
 
     // Categories CRUD (FR-09)
     Route::get('/categories', [AdminController::class, 'categories']);
@@ -60,9 +65,20 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::put('/users/{id}/role', [AdminController::class, 'updateUserRole']);
     Route::put('/users/{id}/status', [AdminController::class, 'updateUserStatus']);
 
+    // Itineraries Management (Admin)
+    Route::get('/itineraries', [AdminController::class, 'itineraries']);
+    Route::get('/itineraries/{id}', [AdminController::class, 'showItinerary']);
+    Route::post('/itineraries', [AdminController::class, 'storeItinerary']);
+    Route::put('/itineraries/{id}', [AdminController::class, 'updateItinerary']);
+    Route::delete('/itineraries/{id}', [AdminController::class, 'destroyItinerary']);
+
     // Media Uploads (FR-11)
     Route::post('/places/{id}/media', [AdminController::class, 'uploadMedia']);
     Route::delete('/media/{id}', [AdminController::class, 'deleteMedia']);
+
+    // Settings
+    Route::get('/settings', [\App\Http\Controllers\Api\Admin\SettingsController::class, 'index']);
+    Route::put('/settings', [\App\Http\Controllers\Api\Admin\SettingsController::class, 'update']);
 
     // Audit Trail
     Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
