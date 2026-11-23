@@ -62,9 +62,9 @@ export const SiteFooter: React.FC = () => {
               aria-label="Visitflow home"
             >
               <img
-                src="/visitflow-emblem.png"
+                src="/visitflow-mark.png"
                 alt="Visitflow"
-                className="h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-md"
+                className="h-10 w-auto rounded-xl object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-md"
               />
               <span className="text-2xl font-bold tracking-tight text-white font-sans group-hover:text-turquoise-300 transition-colors">
                 Visitflow

@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Place, ItineraryStop } from '../types';
+import { Place, Itinerary, ItineraryStop } from '../types';
 import { api } from '../services/api';
+import { useAuth } from './AuthContext';
 
 interface ItineraryContextType {
   stops: ItineraryStop[];
+  visibleStops: ItineraryStop[];
+  currentTrip: Itinerary | null;
   addPlaceToPlan: (place: Place, notes?: string, visitTime?: string) => void;
   removeStop: (placeId: number) => void;
   updateStop: (placeId: number, notes?: string, visitTime?: string) => void;
@@ -23,6 +26,7 @@ const STORAGE_KEY = 'visitflow_guest_itinerary';
 const ItineraryContext = createContext<ItineraryContextType | undefined>(undefined);
 
 export const ItineraryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [stops, setStops] = useState<ItineraryStop[]>(() => {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY);
@@ -35,6 +39,29 @@ export const ItineraryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSavePromptOpen, setIsSavePromptOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [currentTrip, setCurrentTrip] = useState<{ userId: number; trip: Itinerary } | null>(null);
+  const activeTrip = currentTrip && user && currentTrip.userId === user.id ? currentTrip.trip : null;
+
+  // Show the newest saved route whenever there is no in-progress draft.
+  useEffect(() => {
+    let cancelled = false;
+    if (authLoading || !isAuthenticated || !user) return;
+
+    (async () => {
+      try {
+        const { itineraries } = await api.getItineraries();
+        if (cancelled || itineraries.length === 0) return;
+        const { itinerary } = await api.getItineraryDetail(itineraries[0].id);
+        if (!cancelled) setCurrentTrip({ userId: user.id, trip: itinerary });
+      } catch {
+        // A failed fetch just leaves the draft as the only visible plan.
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [authLoading, isAuthenticated, user]);
+
+  const visibleStops = stops.length > 0 ? stops : (activeTrip?.items ?? []);
 
   useEffect(() => {
     try {
@@ -123,7 +150,7 @@ export const ItineraryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (stops.length === 0) return;
     setIsSyncing(true);
     try {
-      await api.syncGuestItinerary({
+      const { itinerary } = await api.syncGuestItinerary({
         title: title || 'Curated One-Day Route',
         start_date: startDate || new Date().toISOString().split('T')[0],
         notes: notes || 'Draft day trip saved from planner',
@@ -134,6 +161,7 @@ export const ItineraryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           notes: s.notes,
         })),
       });
+      setCurrentTrip({ userId: user?.id ?? 0, trip: itinerary });
       clearPlan();
       setIsDrawerOpen(false);
       setIsSavePromptOpen(false);
@@ -146,6 +174,8 @@ export const ItineraryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     <ItineraryContext.Provider
       value={{
         stops,
+        visibleStops,
+        currentTrip: activeTrip,
         addPlaceToPlan,
         removeStop,
         updateStop,

@@ -37,7 +37,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export const SiteHeader: React.FC = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
-  const { stops, setIsDrawerOpen } = useItinerary();
+  const { visibleStops, setIsDrawerOpen } = useItinerary();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -182,9 +182,9 @@ export const SiteHeader: React.FC = () => {
                 <div className="relative flex items-center justify-center">
                   <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-turquoise-500/20 to-ocean-500/20 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <img
-                    src="/visitflow-emblem.png"
+                    src="/visitflow-mark.png"
                     alt="Visitflow emblem"
-                    className="relative h-8 sm:h-9 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-300 group-hover:scale-105"
+                    className="relative h-8 sm:h-9 w-auto rounded-lg object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
                 <div className="min-w-0 flex flex-col">
@@ -195,7 +195,6 @@ export const SiteHeader: React.FC = () => {
               </Link>
             </div>
 
-            {/* Zone 2: Redesigned Hero Nav (Clean, Refined Editorial Typography) */}
             <nav className="hidden flex-1 justify-center lg:flex items-center gap-4 xl:gap-7" aria-label="Primary">
               {NAV_ITEMS.map((item) => {
                 const active = isNavActive(item);
@@ -237,9 +236,9 @@ export const SiteHeader: React.FC = () => {
               >
                 <MapPin className="w-4 h-4 text-turquoise-300" />
                 <span>My Trip</span>
-                {stops.length > 0 && (
+                {visibleStops.length > 0 && (
                   <span className="grid place-items-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold bg-ocean-500 text-white rounded-full shadow-sm">
-                    {stops.length}
+                    {visibleStops.length}
                   </span>
                 )}
               </button>
@@ -306,9 +305,9 @@ export const SiteHeader: React.FC = () => {
                             <MapPin className="w-4 h-4 text-turquoise-400" />
                             Current Trip Plan
                           </span>
-                          {stops.length > 0 && (
+                          {visibleStops.length > 0 && (
                             <span className="text-[10px] font-bold text-turquoise-300 bg-white/10 px-2 py-0.5 rounded-full">
-                              {stops.length}
+                              {visibleStops.length}
                             </span>
                           )}
                         </button>
@@ -365,9 +364,9 @@ export const SiteHeader: React.FC = () => {
                 aria-label="Open trip plan"
               >
                 <MapPin className="w-4 h-4 text-turquoise-300" />
-                {stops.length > 0 && (
+                {visibleStops.length > 0 && (
                   <span className="absolute -top-1 -right-1 grid place-items-center min-w-[18px] h-4.5 px-1 text-[10px] font-bold bg-ocean-500 text-white rounded-full shadow-sm">
-                    {stops.length}
+                    {visibleStops.length}
                   </span>
                 )}
               </button>
@@ -486,5 +485,3 @@ export const SiteHeader: React.FC = () => {
     </>
   );
 };
-
-export default SiteHeader;

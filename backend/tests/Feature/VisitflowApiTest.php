@@ -58,6 +58,34 @@ class VisitflowApiTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('travel_tips');
     }
 
+    public function test_admin_can_permanently_delete_place_and_remove_its_itinerary_stops(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->deleteJson("/api/admin/places/{$this->place->id}/permanent")
+            ->assertOk();
+        $this->assertDatabaseMissing('places', ['id' => $this->place->id]);
+
+        $protectedPlace = Place::create([
+            'category_id' => $this->category->id,
+            'name' => 'Itinerary place',
+            'slug' => 'itinerary-place',
+            'description' => 'This place must remain for an itinerary.',
+            'lat' => 7.44,
+            'lng' => 81.82,
+            'created_by' => $this->adminUser->id,
+            'is_active' => true,
+        ]);
+        $itinerary = Itinerary::create(['user_id' => $this->regularUser->id, 'title' => 'Protected itinerary']);
+        ItineraryItem::create(['itinerary_id' => $itinerary->id, 'place_id' => $protectedPlace->id]);
+
+        $this->actingAs($this->adminUser)
+            ->deleteJson("/api/admin/places/{$protectedPlace->id}/permanent")
+            ->assertOk();
+        $this->assertDatabaseMissing('places', ['id' => $protectedPlace->id]);
+        $this->assertDatabaseMissing('itinerary_items', ['place_id' => $protectedPlace->id]);
+        $this->assertDatabaseHas('itineraries', ['id' => $itinerary->id]);
+    }
+
     public function test_public_catalogue_excludes_places_beyond_25_km(): void
     {
         $outside = Place::create([

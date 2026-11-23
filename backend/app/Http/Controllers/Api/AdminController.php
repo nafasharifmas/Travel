@@ -237,6 +237,43 @@ class AdminController extends Controller
     }
 
     /**
+     * Permanently remove a place, its media, and its itinerary stops.
+     */
+    public function destroyPlace(Request $request, int $id, CloudinaryService $cloudinary): JsonResponse
+    {
+        $place = Place::withTrashed()->with('media')->findOrFail($id);
+
+        foreach ($place->media as $media) {
+            if ($media->cloudinary_public_id && $cloudinary->isConfigured()) {
+                try {
+                    $cloudinary->destroy($media->cloudinary_public_id);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            } elseif (!str_starts_with($media->file_path, 'http')) {
+                Storage::disk('local')->delete($media->file_path);
+            }
+        }
+
+        $removedItineraryItems = DB::transaction(function () use ($place): int {
+            $count = $place->itineraryItems()->count();
+            $place->itineraryItems()->delete();
+            $place->forceDelete();
+
+            return $count;
+        });
+
+        AuditLog::record('place.delete', $place, [
+            'name' => $place->name,
+            'removed_itinerary_items' => $removedItineraryItems,
+        ], $request->user());
+
+        return response()->json([
+            'message' => 'Place permanently deleted.',
+        ]);
+    }
+
+    /**
      * Restore archived place (FR-08).
      */
     public function restorePlace(Request $request, int $id): JsonResponse
@@ -538,7 +575,7 @@ class AdminController extends Controller
      */
     public function itineraries(Request $request): JsonResponse
     {
-        $itineraries = Itinerary::with(['user', 'items'])
+        $itineraries = Itinerary::with(['user', 'items.place'])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($itinerary) {
@@ -554,12 +591,200 @@ class AdminController extends Controller
                         'email' => $itinerary->user->email,
                     ] : null,
                     'items_count' => $itinerary->items->count(),
+                    'items' => $itinerary->items->sortBy('sequence_order')->values()->map(function ($item) {
+                        $place = $item->place;
+                        return [
+                            'id' => $item->id,
+                            'place_id' => $item->place_id,
+                            'day_no' => $item->day_no,
+                            'sequence_order' => $item->sequence_order,
+                            'visit_time' => $item->visit_time,
+                            'notes' => $item->notes,
+                            'place' => $place ? [
+                                'id' => $place->id,
+                                'name' => $place->name,
+                                'is_archived' => $place->trashed(),
+                            ] : null,
+                        ];
+                    }),
                     'created_at' => $itinerary->created_at->toIso8601String(),
                 ];
             });
 
         return response()->json([
             'itineraries' => $itineraries,
+        ]);
+    }
+
+    public function showItinerary(Request $request, int $id): JsonResponse
+    {
+        $itinerary = Itinerary::with(['user', 'items.place' => fn ($q) => $q->withTrashed()->with('category')])->findOrFail($id);
+
+        return response()->json([
+            'itinerary' => [
+                'id' => $itinerary->id,
+                'title' => $itinerary->title,
+                'start_date' => $itinerary->start_date ? $itinerary->start_date->format('Y-m-d') : null,
+                'notes' => $itinerary->notes,
+                'is_public' => (bool) $itinerary->is_public,
+                'user' => $itinerary->user ? [
+                    'id' => $itinerary->user->id,
+                    'name' => $itinerary->user->name,
+                    'email' => $itinerary->user->email,
+                ] : null,
+                'items' => $itinerary->items->sortBy('sequence_order')->values()->map(function ($item) {
+                    $place = $item->place;
+                    return [
+                        'id' => $item->id,
+                        'place_id' => $item->place_id,
+                        'day_no' => $item->day_no,
+                        'sequence_order' => $item->sequence_order,
+                        'visit_time' => $item->visit_time,
+                        'notes' => $item->notes,
+                        'place' => $place ? [
+                            'id' => $place->id,
+                            'name' => $place->name,
+                            'slug' => $place->slug,
+                            'address' => $place->address,
+                            'category' => $place->category ? $place->category->name : null,
+                            'is_archived' => $place->trashed(),
+                        ] : null,
+                    ];
+                }),
+                'created_at' => $itinerary->created_at->toIso8601String(),
+                'updated_at' => $itinerary->updated_at->toIso8601String(),
+            ],
+        ]);
+    }
+
+    public function storeItinerary(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'title' => 'required|string|max:255',
+            'start_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:1000',
+            'is_public' => 'boolean',
+            'items' => 'nullable|array',
+            'items.*.place_id' => 'required|exists:places,id',
+            'items.*.day_no' => 'nullable|integer|min:1',
+            'items.*.sequence_order' => 'nullable|integer|min:0',
+            'items.*.visit_time' => 'nullable|string',
+            'items.*.notes' => 'nullable|string|max:500',
+        ]);
+
+        $admin = $request->user();
+
+        $itinerary = DB::transaction(function () use ($validated, $admin) {
+            $itinerary = Itinerary::create([
+                'user_id' => $validated['user_id'],
+                'title' => $validated['title'],
+                'start_date' => $validated['start_date'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'is_public' => $validated['is_public'] ?? false,
+            ]);
+
+            if (!empty($validated['items'])) {
+                $seq = 1;
+                foreach ($validated['items'] as $item) {
+                    \App\Models\ItineraryItem::create([
+                        'itinerary_id' => $itinerary->id,
+                        'place_id' => $item['place_id'],
+                        'day_no' => $item['day_no'] ?? 1,
+                        'sequence_order' => $item['sequence_order'] ?? $seq++,
+                        'visit_time' => !empty($item['visit_time']) ? $item['visit_time'] : null,
+                        'notes' => $item['notes'] ?? null,
+                    ]);
+                }
+            }
+
+            AuditLog::record('itinerary.create', $itinerary, [
+                'title' => $itinerary->title,
+                'user_id' => $itinerary->user_id,
+            ], $admin);
+
+            return $itinerary;
+        });
+
+        return response()->json([
+            'message' => 'Itinerary created successfully.',
+            'itinerary' => $itinerary->load(['user', 'items.place']),
+        ], 201);
+    }
+
+    public function updateItinerary(Request $request, int $id): JsonResponse
+    {
+        $itinerary = Itinerary::findOrFail($id);
+        $admin = $request->user();
+
+        $validated = $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'title' => 'required|string|max:255',
+            'start_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:1000',
+            'is_public' => 'boolean',
+            'items' => 'nullable|array',
+            'items.*.place_id' => 'required|exists:places,id',
+            'items.*.day_no' => 'nullable|integer|min:1',
+            'items.*.sequence_order' => 'nullable|integer|min:0',
+            'items.*.visit_time' => 'nullable|string',
+            'items.*.notes' => 'nullable|string|max:500',
+        ]);
+
+        DB::transaction(function () use ($itinerary, $validated) {
+            $updateData = [
+                'title' => $validated['title'],
+                'start_date' => $validated['start_date'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'is_public' => $validated['is_public'] ?? false,
+            ];
+            if (isset($validated['user_id'])) {
+                $updateData['user_id'] = $validated['user_id'];
+            }
+            $itinerary->update($updateData);
+
+            if (isset($validated['items'])) {
+                $itinerary->items()->delete();
+                $seq = 1;
+                foreach ($validated['items'] as $item) {
+                    \App\Models\ItineraryItem::create([
+                        'itinerary_id' => $itinerary->id,
+                        'place_id' => $item['place_id'],
+                        'day_no' => $item['day_no'] ?? 1,
+                        'sequence_order' => $item['sequence_order'] ?? $seq++,
+                        'visit_time' => !empty($item['visit_time']) ? $item['visit_time'] : null,
+                        'notes' => $item['notes'] ?? null,
+                    ]);
+                }
+            }
+        });
+
+        AuditLog::record('itinerary.update', $itinerary, [
+            'title' => $itinerary->title,
+        ], $admin);
+
+        return response()->json([
+            'message' => 'Itinerary updated successfully.',
+            'itinerary' => $itinerary->fresh(['user', 'items.place']),
+        ]);
+    }
+
+    public function destroyItinerary(Request $request, int $id): JsonResponse
+    {
+        $itinerary = Itinerary::findOrFail($id);
+        $admin = $request->user();
+
+        $title = $itinerary->title;
+        $itinerary->items()->delete();
+        $itinerary->delete();
+
+        AuditLog::record('itinerary.delete', null, [
+            'title' => $title,
+            'itinerary_id' => $id,
+        ], $admin);
+
+        return response()->json([
+            'message' => 'Itinerary deleted successfully.',
         ]);
     }
 

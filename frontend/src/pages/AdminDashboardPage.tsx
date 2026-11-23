@@ -41,51 +41,83 @@ import {
   Mail,
   Palette,
   Info,
+  Activity,
+  Sparkles,
 } from 'lucide-react';
 import { SettingsCard } from '../components/admin/settings/SettingsCard';
 import { SettingsInput } from '../components/admin/settings/SettingsInput';
 import { SettingsToggle } from '../components/admin/settings/SettingsToggle';
 import { SettingsSelect } from '../components/admin/settings/SettingsSelect';
-
-type Tone = 'gold' | 'emerald' | 'amber' | 'stone';
-
-const TONE_CLASSES: Record<Tone, string> = {
-  gold: 'bg-gold-500/15 text-gold-700 ring-gold-500/25',
-  emerald: 'bg-emerald-50 text-emerald-600 ring-emerald-200',
-  amber: 'bg-amber-50 text-amber-600 ring-amber-200',
-  stone: 'bg-sand-100 text-stone-600 ring-sand-200',
-};
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface KpiCardProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number;
   note: string;
-  tone: Tone;
+  gradient: string;
+  destination: string;
+  onOpen: () => void;
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ icon: Icon, label, value, note, tone }) => (
-  <div className="bg-white p-4 rounded-lg border border-sand-200">
-    <div className="flex items-start justify-between gap-2">
-      <span className="text-xs text-stone-500">{label}</span>
-      <span className={`w-7 h-7 rounded-md flex items-center justify-center ring-1 shrink-0 ${TONE_CLASSES[tone]}`}>
-        <Icon className="w-3.5 h-3.5" />
-      </span>
-    </div>
-    <p className="mt-2 text-2xl font-semibold text-charcoal-950 tabular-nums leading-none">{value}</p>
-    <p className="mt-1 text-xs text-stone-500">{note}</p>
-  </div>
+const KpiCard: React.FC<KpiCardProps> = ({
+  icon: Icon,
+  label,
+  value,
+  note,
+  gradient,
+  destination,
+  onOpen,
+}) => (
+  <Card
+    role="button"
+    tabIndex={0}
+    aria-label={`${label}: ${value.toLocaleString()}. Open ${destination} management`}
+    onClick={onOpen}
+    onKeyDown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onOpen();
+      }
+    }}
+    className="relative cursor-pointer overflow-hidden border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_14px_28px_rgba(8,32,51,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 focus-visible:ring-offset-2 group"
+  >
+    <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${gradient}`} />
+    <CardContent className="p-5 pt-6 relative">
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-slate-600">{label}</p>
+          <p className="text-3xl font-bold text-[#082033] tabular-nums tracking-tight">{value.toLocaleString()}</p>
+          <p className="text-xs text-slate-500">{note}</p>
+        </div>
+        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+          <Icon className="w-6 h-6 text-white" />
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-cyan-800 transition-colors group-hover:text-cyan-600">
+        Open {destination}
+        <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </CardContent>
+  </Card>
 );
 
 const KpiSkeleton: React.FC = () => (
-  <div className="bg-white p-4 rounded-lg border border-sand-200 animate-pulse">
-    <div className="flex items-start justify-between">
-      <div className="h-3 w-16 bg-sand-100 rounded" />
-      <div className="w-7 h-7 rounded-md bg-sand-100" />
-    </div>
-    <div className="h-6 w-12 bg-sand-100 rounded mt-3" />
-    <div className="h-2.5 w-20 bg-sand-100 rounded mt-2" />
-  </div>
+  <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)] animate-pulse">
+    <CardContent className="p-5">
+      <div className="flex items-start justify-between">
+        <div className="space-y-3 flex-1">
+          <div className="h-4 w-24 bg-[#dfe9e5] rounded" />
+          <div className="h-8 w-16 bg-[#dfe9e5] rounded" />
+          <div className="h-3 w-32 bg-[#dfe9e5] rounded" />
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-[#dfe9e5]" />
+      </div>
+    </CardContent>
+  </Card>
 );
 
 const EmptyState: React.FC<{
@@ -93,12 +125,12 @@ const EmptyState: React.FC<{
   title: string;
   hint: string;
 }> = ({ icon: Icon, title, hint }) => (
-  <div className="py-10 flex flex-col items-center text-center">
-    <div className="w-9 h-9 rounded-md bg-sand-50 border border-sand-200 flex items-center justify-center">
-      <Icon className="w-4 h-4 text-stone-400" />
+  <div className="py-12 flex flex-col items-center text-center">
+    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+      <Icon className="w-6 h-6 text-slate-400" />
     </div>
-    <p className="mt-2 text-sm font-medium text-charcoal-950">{title}</p>
-    <p className="mt-1 text-xs text-stone-500 max-w-xs">{hint}</p>
+    <p className="text-sm font-semibold text-slate-900">{title}</p>
+    <p className="mt-1 text-sm text-slate-500 max-w-sm">{hint}</p>
   </div>
 );
 
@@ -119,7 +151,36 @@ const formatTime = (iso: string) =>
     minute: '2-digit',
   });
 
-const SRS_BASELINE = 10;
+const OperationalPulse: React.FC<{
+  label: string;
+  detail: string;
+  value: string;
+  progress: number;
+  tone?: 'cyan' | 'amber';
+}> = ({ label, detail, value, progress, tone = 'cyan' }) => {
+  const signal = tone === 'amber' ? 'bg-amber-500' : 'bg-cyan-500';
+  const fill = tone === 'amber' ? 'from-amber-400 to-amber-500' : 'from-cyan-500 to-teal-500';
+
+  return (
+    <div className="rounded-xl border border-[#d7e5e1] bg-[#f4f8f5] px-3.5 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`relative flex h-2 w-2 ${signal} rounded-full`}>
+              <span className={`absolute inset-0 animate-ping rounded-full ${signal} opacity-40`} />
+            </span>
+            <p className="text-xs font-semibold text-[#163a56]">{label}</p>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">{detail}</p>
+        </div>
+        <span className="text-sm font-bold tabular-nums text-[#082033]">{value}</span>
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#dfe9e5]">
+        <div className={`h-full rounded-full bg-gradient-to-r ${fill} transition-all duration-700`} style={{ width: `${progress}%` }} />
+      </div>
+    </div>
+  );
+};
 
 interface AdminDashboardPageProps {
   defaultTab?: AdminTab;
@@ -138,6 +199,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('admin-sidebar-collapsed') === 'true';
+  });
 
   // Settings Data
   const [settings, setSettings] = useState<Record<string, any>>({});
@@ -166,6 +231,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
 
   // Itineraries Data
   const [adminItineraries, setAdminItineraries] = useState<any[]>([]);
+  const [isItineraryModalOpen, setIsItineraryModalOpen] = useState(false);
+  const [editingItinerary, setEditingItinerary] = useState<any | null>(null);
+  const [itineraryForm, setItineraryForm] = useState({
+    user_id: 0,
+    title: '',
+    start_date: '',
+    notes: '',
+    is_public: false,
+    items: [] as Array<{ place_id: number; day_no: number; sequence_order: number; visit_time: string; notes: string }>,
+  });
+  const [itineraryItemForm, setItineraryItemForm] = useState({
+    place_id: '',
+    day_no: 1,
+    visit_time: '',
+    notes: '',
+  });
 
   // Data Quality & Health
   const [dataQuality, setDataQuality] = useState<any>(null);
@@ -342,6 +423,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
   }, [defaultTab, location.pathname]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('admin-sidebar-collapsed', sidebarCollapsed ? 'true' : 'false');
+    }
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
     if (!isAdmin) return;
     setLoading(true);
     Promise.all([
@@ -365,14 +452,20 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
 
   if (!isAuthenticated || !isAdmin) {
     return (
-      <div className="max-w-md mx-auto my-24 p-8 bg-white rounded-3xl border border-red-200 shadow-md text-center space-y-4">
-        <ShieldAlert className="w-12 h-12 text-red-600 mx-auto" />
-        <h2 className="text-xl font-bold text-charcoal-950">
-          Admin Privileges Required
-        </h2>
-        <p className="text-xs text-stone-600">
-          FR-12 Authorization guard: privileged console actions require verified administrator credentials.
-        </p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full border-0 shadow-2xl">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+              <ShieldAlert className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">
+              Admin Privileges Required
+            </h2>
+            <p className="text-sm text-slate-600">
+              Privileged console actions require verified administrator credentials.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -483,6 +576,20 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
     }
   };
 
+  const handleDeletePlace = async (place: Place) => {
+    if (!window.confirm(`Permanently delete "${place.name}", its photos, and its stops in saved itineraries? This cannot be undone.`)) return;
+
+    try {
+      await api.deleteAdminPlace(place.id);
+      setMessage(`"${place.name}" permanently deleted.`);
+      loadPlaces();
+      loadDashboard();
+      loadAuditLogs();
+    } catch (err: any) {
+      alert(err.message || 'Failed to permanently delete place.');
+    }
+  };
+
   // --- Category Actions ---
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -588,13 +695,114 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
     setIsCategoryModalOpen(true);
   };
 
+  const handleOpenItineraryCreate = () => {
+    setEditingItinerary(null);
+    setItineraryForm({
+      user_id: usersList[0]?.id || 0,
+      title: '',
+      start_date: '',
+      notes: '',
+      is_public: false,
+      items: [],
+    });
+    setItineraryItemForm({ place_id: '', day_no: 1, visit_time: '', notes: '' });
+    setIsItineraryModalOpen(true);
+  };
+
+  const handleOpenItineraryEdit = async (it: any) => {
+    try {
+      const res = await api.getAdminItinerary(it.id);
+      const itin = res.itinerary;
+      setEditingItinerary(itin);
+      setItineraryForm({
+        user_id: itin.user?.id || 0,
+        title: itin.title || '',
+        start_date: itin.start_date || '',
+        notes: itin.notes || '',
+        is_public: !!itin.is_public,
+        items: (itin.items || []).map((item: any, idx: number) => ({
+          place_id: item.place_id,
+          day_no: item.day_no || 1,
+          sequence_order: item.sequence_order ?? idx + 1,
+          visit_time: item.visit_time || '',
+          notes: item.notes || '',
+        })),
+      });
+      setItineraryItemForm({ place_id: '', day_no: 1, visit_time: '', notes: '' });
+      setIsItineraryModalOpen(true);
+    } catch (err: any) {
+      alert(err.message || 'Failed to load itinerary');
+    }
+  };
+
+  const handleAddItineraryItem = () => {
+    if (!itineraryItemForm.place_id) return;
+    const placeId = Number(itineraryItemForm.place_id);
+    if (Number.isNaN(placeId)) return;
+    setItineraryForm((prev) => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          place_id: placeId,
+          day_no: Number(itineraryItemForm.day_no) || 1,
+          sequence_order: prev.items.length + 1,
+          visit_time: itineraryItemForm.visit_time,
+          notes: itineraryItemForm.notes,
+        },
+      ],
+    }));
+    setItineraryItemForm({ place_id: '', day_no: 1, visit_time: '', notes: '' });
+  };
+
+  const handleRemoveItineraryItem = (idx: number) => {
+    setItineraryForm((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== idx).map((item, i) => ({ ...item, sequence_order: i + 1 })),
+    }));
+  };
+
+  const handleSaveItinerary = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!itineraryForm.user_id) {
+        alert('Please select a user');
+        return;
+      }
+      if (editingItinerary) {
+        await api.updateAdminItinerary(editingItinerary.id, itineraryForm);
+        setMessage('Itinerary updated successfully.');
+      } else {
+        await api.createAdminItinerary(itineraryForm);
+        setMessage('Itinerary created successfully.');
+      }
+      setIsItineraryModalOpen(false);
+      loadAdminItineraries();
+      loadDashboard();
+      loadAuditLogs();
+    } catch (err: any) {
+      alert(err.message || 'Error saving itinerary.');
+    }
+  };
+
+  const handleDeleteItinerary = async (it: any) => {
+    if (!window.confirm(`Delete itinerary "${it.title}"? This cannot be undone.`)) return;
+    try {
+      await api.deleteAdminItinerary(it.id);
+      setMessage('Itinerary deleted successfully.');
+      loadAdminItineraries();
+      loadDashboard();
+      loadAuditLogs();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete itinerary.');
+    }
+  };
+
   // Derived overview figures
   const totalPlaces = metrics ? metrics.total_places : 0;
   const activeShare =
     totalPlaces > 0 && metrics ? Math.round((metrics.active_places / totalPlaces) * 100) : 0;
-  const compliancePct = metrics
-    ? Math.min(100, Math.round((metrics.active_places / SRS_BASELINE) * 100))
-    : 0;
+  const qualityIssueCount = dataQuality?.issues?.length ?? 0;
   const topCategories = [...categories]
     .sort((a, b) => (b.places_count || 0) - (a.places_count || 0))
     .slice(0, 6);
@@ -608,7 +816,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
   const uploadPlace = uploadPlaceId ? places.find((place) => place.id === uploadPlaceId) : null;
 
   return (
-    <div className="min-h-screen bg-ivory-100 text-charcoal-950">
+    <div className="admin-console min-h-screen bg-[#f7f4ed] text-[#082033]">
       <AdminSidebar
         activeTab={activeTab}
         onSelect={setActiveTab}
@@ -621,9 +829,15 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
         mobileOpen={isMobileNavOpen}
         onCloseMobile={() => setIsMobileNavOpen(false)}
         onLogout={handleLogout}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
       />
 
-      <div className="lg:pl-60 flex flex-col min-h-screen">
+      <div
+        className={`flex flex-col min-h-screen transition-all duration-300 ${
+          sidebarCollapsed ? 'lg:pl-[76px]' : 'lg:pl-64'
+        }`}
+      >
         <AdminTopbar
           activeTab={activeTab}
           user={user}
@@ -631,18 +845,18 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
           onAddPlace={handleOpenPlaceCreate}
         />
 
-        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6 max-w-[1600px] w-full mx-auto">
           {/* Feedback banners */}
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-bold">
+            <div className="p-4 bg-red-50/80 backdrop-blur border border-red-200 text-red-800 rounded-xl flex items-center justify-between shadow-lg animate-in slide-in-from-top-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
                 <AlertTriangle className="w-4 h-4 text-red-600" />
                 {error}
               </div>
               <button
                 type="button"
                 onClick={() => setError(null)}
-                className="text-red-500 hover:text-red-800 p-1"
+                className="text-red-500 hover:text-red-700 p-1 transition-colors"
                 aria-label="Dismiss error"
               >
                 <X className="w-4 h-4" />
@@ -651,15 +865,15 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
           )}
 
           {message && (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-bold">
+            <div className="p-4 bg-emerald-50/80 backdrop-blur border border-emerald-200 text-emerald-800 rounded-xl flex items-center justify-between shadow-lg animate-in slide-in-from-top-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 {message}
               </div>
               <button
                 type="button"
                 onClick={() => setMessage(null)}
-                className="text-emerald-700 hover:text-emerald-950 p-1"
+                className="text-emerald-600 hover:text-emerald-700 p-1 transition-colors"
                 aria-label="Dismiss message"
               >
                 <X className="w-4 h-4" />
@@ -670,7 +884,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+              <section className="flex flex-col gap-3 border-l-4 border-cyan-500 pl-4 sm:flex-row sm:items-end sm:justify-between" aria-labelledby="operations-briefing-title">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-700">Operations briefing</p>
+                  <h2 id="operations-briefing-title" className="mt-1 text-2xl font-bold tracking-tight text-[#082033]">Today&apos;s platform status</h2>
+                  <p className="mt-1 text-sm text-slate-600">Catalogue, quality checks, and administrator activity in one working view.</p>
+                </div>
+                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-600" />
+                  </span>
+                  {metrics ? `${metrics.active_places} active place${metrics.active_places === 1 ? '' : 's'}` : 'Loading status'}
+                </span>
+              </section>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
                 {loading || !metrics ? (
                   Array.from({ length: 6 }).map((_, i) => <KpiSkeleton key={i} />)
                 ) : (
@@ -680,607 +909,733 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
                       label="Total Places"
                       value={metrics.total_places}
                       note="Catalogue records"
-                      tone="stone"
+                      gradient="from-[#163a56] to-cyan-500"
+                      destination="Places"
+                      onOpen={() => setActiveTab('places')}
                     />
                     <KpiCard
                       icon={CheckCircle2}
                       label="Active (Live)"
                       value={metrics.active_places}
                       note="Visible in discovery"
-                      tone="emerald"
+                      gradient="from-cyan-500 to-teal-500"
+                      destination="Places"
+                      onOpen={() => setActiveTab('places')}
                     />
                     <KpiCard
                       icon={Archive}
                       label="Archived"
                       value={metrics.archived_places}
                       note="Soft-deleted records"
-                      tone="amber"
+                      gradient="from-amber-400 to-amber-600"
+                      destination="Places"
+                      onOpen={() => setActiveTab('places')}
                     />
                     <KpiCard
                       icon={FolderTree}
                       label="Categories"
                       value={metrics.categories}
                       note="Taxonomy terms"
-                      tone="gold"
+                      gradient="from-[#163a56] to-cyan-500"
+                      destination="Categories"
+                      onOpen={() => setActiveTab('categories')}
                     />
                     <KpiCard
                       icon={Users}
                       label="Registered Users"
                       value={metrics.users}
                       note="All accounts"
-                      tone="stone"
+                      gradient="from-[#163a56] to-[#285d7d]"
+                      destination="Users"
+                      onOpen={() => setActiveTab('users')}
                     />
                     <KpiCard
                       icon={CalendarDays}
                       label="Itineraries"
                       value={metrics.itineraries}
                       note="Trips planned"
-                      tone="gold"
+                      gradient="from-teal-500 to-cyan-600"
+                      destination="Itineraries"
+                      onOpen={() => setActiveTab('itineraries')}
                     />
                   </>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <section className="lg:col-span-7 bg-white p-5 rounded-lg border border-sand-200 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-charcoal-950">Catalogue health</h3>
-                    <span className="text-xs text-stone-500">{activeShare}% live</span>
-                  </div>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <Card className="lg:col-span-7 border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg font-semibold text-[#082033]">Catalogue health</CardTitle>
+                        <CardDescription>Current availability and category coverage</CardDescription>
+                      </div>
+                      <Badge variant="info">{activeShare}% Live</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
 
                   {metrics ? (
                     <>
-                      <div className="space-y-2">
-                        <div className="h-3 rounded-full bg-sand-100 overflow-hidden flex">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-700">Status Distribution</span>
+                        </div>
+                        <div className="h-3 rounded-full bg-[#dfe9e5] overflow-hidden flex shadow-inner">
                           <div
-                            className="h-full bg-emerald-500 transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-700 ease-out"
                             style={{ width: `${activeShare}%` }}
                           />
                           <div
-                            className="h-full bg-amber-400 transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-amber-400 to-orange-400 transition-all duration-700 ease-out"
                             style={{ width: `${100 - activeShare}%` }}
                           />
                         </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="flex items-center gap-1.5 font-semibold text-emerald-700">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                            Active: {metrics.active_places}
-                          </span>
-                          <span className="flex items-center gap-1.5 font-semibold text-amber-700">
-                            <span className="w-2 h-2 rounded-full bg-amber-400" />
-                            Archived: {metrics.archived_places}
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+                            <span className="text-sm text-slate-600">
+                              Active: <span className="font-semibold text-slate-900">{metrics.active_places}</span>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-400 to-orange-400" />
+                            <span className="text-sm text-slate-600">
+                              Archived: <span className="font-semibold text-slate-900">{metrics.archived_places}</span>
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="pt-4 border-t border-sand-200 space-y-3">
-                        <p className="text-xs text-stone-500">Places by category</p>
+                      <div className="pt-6 border-t border-[#dfe9e5] space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold text-slate-900">Top Categories</h4>
+                          <Button variant="ghost" size="sm" onClick={() => setActiveTab('categories')} className="text-xs">
+                            View all
+                            <ArrowRight className="w-3 h-3 ml-1" />
+                          </Button>
+                        </div>
                         {topCategories.length === 0 ? (
-                          <p className="text-xs text-stone-500">No categories created yet.</p>
+                          <p className="text-sm text-slate-500 text-center py-4">No categories created yet.</p>
                         ) : (
-                          topCategories.map((cat) => (
-                            <div key={cat.id} className="space-y-1">
-                              <div className="flex items-center justify-between text-[11px]">
-                                <span className="font-semibold text-stone-700 truncate">
-                                  {cat.name}
-                                </span>
-                                <span className="font-bold text-stone-500 tabular-nums">
-                                  {cat.places_count || 0}
-                                </span>
+                          <div className="space-y-3">
+                            {topCategories.map((cat) => (
+                              <div key={cat.id} className="space-y-2 group">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div
+                                      className="w-2 h-2 rounded-full"
+                                      style={{ backgroundColor: cat.color || '#06b6d4' }}
+                                    />
+                                    <span className="text-sm font-medium text-slate-700 truncate group-hover:text-slate-900 transition-colors">
+                                      {cat.name}
+                                    </span>
+                                  </div>
+                                  <Badge variant="secondary" className="tabular-nums">
+                                    {cat.places_count || 0}
+                                  </Badge>
+                                </div>
+                                <div className="h-2 rounded-full bg-[#dfe9e5] overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-700 ease-out"
+                                    style={{
+                                      width: `${((cat.places_count || 0) / maxCategoryCount) * 100}%`,
+                                      background: `linear-gradient(90deg, ${cat.color || '#06b6d4'} 0%, ${cat.color || '#14b8a6'} 100%)`,
+                                    }}
+                                  />
+                                </div>
                               </div>
-                              <div className="h-2 rounded-full bg-sand-100 overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all duration-500"
-                                  style={{
-                                    width: `${((cat.places_count || 0) / maxCategoryCount) * 100}%`,
-                                    backgroundColor: cat.color || '#d4af37',
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))
+                            ))}
+                          </div>
                         )}
                       </div>
                     </>
                   ) : (
-                    <div className="py-8 flex justify-center text-stone-400">
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                    <div className="py-12 flex justify-center text-slate-400">
+                      <Loader2 className="w-6 h-6 animate-spin" />
                     </div>
                   )}
-                </section>
+                  </CardContent>
+                </Card>
 
-                <section className="lg:col-span-5 bg-white p-5 rounded-lg border border-sand-200 space-y-4">
-                  <h3 className="text-sm font-medium text-charcoal-950">Quick actions</h3>
-                  <div className="space-y-1.5">
-                    <button
-                      type="button"
-                      onClick={handleOpenPlaceCreate}
-                      className="w-full py-2 px-3 bg-charcoal-950 hover:bg-charcoal-900 text-white text-sm rounded-md flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      New place
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleOpenCategoryCreate}
-                      className="w-full py-2 px-3 bg-white hover:bg-sand-50 text-charcoal-950 border border-sand-200 text-sm rounded-md flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      New category
-                    </button>
-                  </div>
+                <Card className="lg:col-span-5 border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-cyan-500" />
+                      Quick actions
+                    </CardTitle>
+                    <CardDescription>Common administrative tasks</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Button
+                        onClick={handleOpenPlaceCreate}
+                        className="w-full justify-start bg-[#0f766e] text-white shadow-sm hover:bg-[#0b625c]"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add New Place
+                      </Button>
+                      <Button
+                        onClick={handleOpenCategoryCreate}
+                        variant="outline"
+                        className="w-full justify-start"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add New Category
+                      </Button>
+                      <Button
+                        onClick={() => setActiveTab('users')}
+                        variant="outline"
+                        className="w-full justify-start"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Manage Users
+                      </Button>
+                    </div>
 
-                  <div className="p-3 rounded-md border border-sand-200 space-y-2">
-                    <p className="text-xs font-medium text-charcoal-950 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-stone-500" />
-                      Launch baseline
-                    </p>
-                    {metrics ? (
-                      <>
-                        <p className="text-xs text-stone-600">
-                          <span className="font-medium text-charcoal-950">{metrics.active_places}</span> / {SRS_BASELINE} active
-                        </p>
-                        <div className="h-1.5 rounded-full bg-sand-100 overflow-hidden">
-                          <div
-                            className="h-full bg-charcoal-950 transition-all duration-500"
-                            style={{ width: `${compliancePct}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-stone-500">
-                          {compliancePct >= 100 ? 'Satisfied' : `${SRS_BASELINE - metrics.active_places} remaining`}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-xs text-stone-500">Loading…</p>
-                    )}
-                  </div>
-                </section>
+                    <div className="space-y-2">
+                      <OperationalPulse
+                        label="Active catalogue"
+                        detail={`${metrics?.active_places ?? 0} of ${totalPlaces} places are visible in discovery`}
+                        value={`${activeShare}%`}
+                        progress={activeShare}
+                      />
+                      <OperationalPulse
+                        label="Data quality"
+                        detail={dataQuality ? (qualityIssueCount === 0 ? 'All checks returned clear' : `${qualityIssueCount} issue${qualityIssueCount === 1 ? '' : 's'} need review`) : 'Checking current validation results'}
+                        value={dataQuality ? (qualityIssueCount === 0 ? 'Clear' : 'Review') : 'Checking'}
+                        progress={dataQuality ? (qualityIssueCount === 0 ? 100 : 0) : 0}
+                        tone={qualityIssueCount > 0 ? 'amber' : 'cyan'}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              <section className="bg-white p-5 rounded-lg border border-sand-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="text-sm font-medium text-charcoal-950">Recent activity</h3>
-                    <p className="text-xs text-stone-500">Latest administrative actions</p>
+              <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-cyan-500" />
+                        Recent Activity
+                      </CardTitle>
+                      <CardDescription>Latest administrative actions across the platform</CardDescription>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('audit')}>
+                      View all
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('audit')}
-                    className="inline-flex items-center gap-1 text-xs text-stone-600 hover:text-charcoal-950"
-                  >
-                    View all
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {recentAudits.length === 0 ? (
-                  <EmptyState
-                    icon={History}
-                    title="No activity yet"
-                    hint="Actions will appear here."
-                  />
-                ) : (
-                  <ul className="divide-y divide-sand-100">
-                    {recentAudits.slice(0, 8).map((a) => {
-                      const Icon = actionIcon(a.action);
-                      return (
-                        <li key={a.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
-                          <span className="mt-0.5 w-7 h-7 rounded-md bg-sand-50 border border-sand-200 flex items-center justify-center shrink-0">
-                            <Icon className="w-3.5 h-3.5 text-stone-500" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm text-charcoal-950 truncate">{a.action}</p>
-                            <p className="text-xs text-stone-500 truncate">
-                              {a.actor ? a.actor.name : 'System'} · {a.ip_address || '127.0.0.1'}
-                            </p>
+                </CardHeader>
+                <CardContent>
+                  {recentAudits.length === 0 ? (
+                    <EmptyState
+                      icon={History}
+                      title="No activity yet"
+                      hint="Administrative actions will appear here as they occur."
+                    />
+                  ) : (
+                    <div className="space-y-1">
+                      {recentAudits.slice(0, 8).map((a, idx) => {
+                        const Icon = actionIcon(a.action);
+                        return (
+                          <div
+                            key={a.id}
+                            className="flex items-center gap-4 border-l-2 border-transparent p-3 rounded-lg hover:border-cyan-400 hover:bg-cyan-50/50 transition-colors group"
+                            style={{ animationDelay: `${idx * 50}ms` }}
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                              <Icon className="w-4 h-4 text-slate-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-slate-900 truncate">{a.action}</p>
+                              <p className="text-xs text-slate-500 truncate">
+                                by {a.actor ? a.actor.name : 'System'} • {a.ip_address || '127.0.0.1'}
+                              </p>
+                            </div>
+                            <span className="text-xs text-slate-400 whitespace-nowrap">{formatTime(a.created_at)}</span>
                           </div>
-                          <span className="text-xs text-stone-400 whitespace-nowrap">{formatTime(a.created_at)}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </section>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 
           {/* TAB 2: PLACES CRUD & ARCHIVE (FR-08) */}
           {activeTab === 'places' && (
-            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-medium text-charcoal-950">Places</h3>
-                  <p className="text-xs text-stone-500">Catalogue management</p>
+            <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-[#082033]">Places management</CardTitle>
+                    <CardDescription>Manage your destination catalogue</CardDescription>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="search"
+                        value={placeSearch}
+                        onChange={(e) => setPlaceSearch(e.target.value)}
+                        placeholder="Search places..."
+                        className="pl-9 pr-4 py-2 w-full sm:w-64 text-sm bg-[#f4f8f5] border border-[#c9dcd6] rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-600 transition-all"
+                      />
+                    </div>
+
+                    <select
+                      value={placeStatusFilter || ''}
+                      onChange={(e) =>
+                        setPlaceStatusFilter((e.target.value as 'active' | 'archived') || undefined)
+                      }
+                      aria-label="Filter Places by status"
+                      className="px-3 py-2 text-sm bg-[#f4f8f5] border border-[#c9dcd6] rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-600 transition-all"
+                    >
+                      <option value="">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                  </div>
                 </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5">
-                  <label className="relative block">
-                    <span className="sr-only">Search places</span>
-                    <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="search"
-                      value={placeSearch}
-                      onChange={(e) => setPlaceSearch(e.target.value)}
-                      placeholder="Search"
-                      className="w-full sm:w-48 pl-7 pr-2.5 py-1.5 text-sm bg-white border border-sand-200 rounded-md text-charcoal-950 placeholder:text-stone-400"
-                    />
-                  </label>
-
-                  <select
-                    value={placeStatusFilter || ''}
-                    onChange={(e) =>
-                      setPlaceStatusFilter((e.target.value as 'active' | 'archived') || undefined)
-                    }
-                    aria-label="Filter Places by status"
-                    className="px-2.5 py-1.5 text-sm bg-white border border-sand-200 rounded-md text-charcoal-950"
-                  >
-                    <option value="">All</option>
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-sand-200">
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Place</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Category</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Coordinates</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Status</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Media</th>
-                      <th className="py-2 text-right text-xs font-medium text-stone-500">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-sand-100">
-                    {places.length === 0 && (
-                      <tr>
-                        <td colSpan={6}>
-                          <EmptyState
-                            icon={MapPin}
-                            title="No places found"
-                            hint="Adjust your filters, or add a verified destination to the catalogue."
-                          />
-                        </td>
-                      </tr>
-                    )}
-                    {places.map((place) => (
-                      <tr key={place.id} className="border-b border-sand-100 last:border-0">
-                        <td className="py-2.5 pr-3">
-                          <div className="flex items-center gap-2.5">
-                            {place.primary_photo ? (
-                              <img
-                                src={place.primary_photo}
-                                alt={place.name}
-                                className="w-8 h-8 object-cover rounded-md border border-sand-200"
-                              />
-                            ) : (
-                              <span className="w-8 h-8 rounded-md bg-sand-50 border border-sand-200 flex items-center justify-center">
-                                <MapPin className="w-3.5 h-3.5 text-stone-400" />
-                              </span>
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-sm text-charcoal-950 truncate">{place.name}</p>
-                              <p className="text-xs text-stone-500 truncate max-w-xs">
-                                {place.address || '—'}
-                              </p>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-xl border border-[#d7e5e1] overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#edf5f1]">
+                        <TableHead className="font-semibold text-[#163a56]">Place</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Category</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Coordinates</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Status</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Media</TableHead>
+                        <TableHead className="text-right font-semibold text-[#163a56]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {places.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6}>
+                            <EmptyState
+                              icon={MapPin}
+                              title="No places found"
+                              hint="Adjust your filters, or add a new destination to get started."
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {places.map((place) => (
+                        <TableRow key={place.id} className="hover:bg-cyan-50/40 transition-colors">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              {place.primary_photo ? (
+                                <img
+                                  src={place.primary_photo}
+                                  alt={place.name}
+                                  className="w-10 h-10 object-cover rounded-lg border border-slate-200"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200 flex items-center justify-center">
+                                  <MapPin className="w-4 h-4 text-slate-400" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-slate-900 truncate">{place.name}</p>
+                                <p className="text-xs text-slate-500 truncate max-w-xs">
+                                  {place.address || 'No address'}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </TableCell>
 
-                        <td className="py-2.5 pr-3 text-sm text-stone-600">
-                          {place.category ? place.category.name : '—'}
-                        </td>
+                          <TableCell>
+                            <Badge variant="secondary">{place.category ? place.category.name : 'Uncategorized'}</Badge>
+                          </TableCell>
 
-                        <td className="py-2.5 pr-3 text-xs font-mono text-stone-500">
-                          {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
-                        </td>
+                          <TableCell>
+                            <span className="text-xs font-mono text-slate-600">
+                              {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
+                            </span>
+                          </TableCell>
 
-                        <td className="py-2.5 pr-3">
-                          {place.is_archived ? (
-                            <span className="text-xs text-stone-500">Archived</span>
-                          ) : (
-                            <span className="text-xs text-emerald-700">Active</span>
-                          )}
-                        </td>
-
-                        <td className="py-2.5 pr-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setUploadPlaceId(place.id);
-                              setIsUploadModalOpen(true);
-                            }}
-                            className="text-xs text-stone-600 hover:text-charcoal-950"
-                          >
-                            {place.media_count || place.photos_count || 0} photos
-                          </button>
-                        </td>
-
-                        <td className="py-2.5 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenPlaceEdit(place)}
-                              className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-
+                          <TableCell>
                             {place.is_archived ? (
-                              <button
-                                type="button"
-                                onClick={() => handleRestorePlace(place)}
-                                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
-                                title="Restore"
-                              >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                              </button>
+                              <Badge variant="warning">Archived</Badge>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleArchivePlace(place)}
-                                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
-                                title="Archive"
-                              >
-                                <Archive className="w-3.5 h-3.5" />
-                              </button>
+                              <Badge variant="success">Active</Badge>
                             )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                          </TableCell>
+
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setUploadPlaceId(place.id);
+                                setIsUploadModalOpen(true);
+                              }}
+                              className="text-xs"
+                            >
+                              <Upload className="w-3 h-3 mr-1" />
+                              {place.media_count || place.photos_count || 0} photos
+                            </Button>
+                          </TableCell>
+
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenPlaceEdit(place)}
+                                className="h-8 w-8"
+                                aria-label={`Edit ${place.name}`}
+                                title="Edit place"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+
+                              {place.is_archived ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleRestorePlace(place)}
+                                  className="h-8 w-8"
+                                  aria-label={`Restore ${place.name}`}
+                                  title="Restore place"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleArchivePlace(place)}
+                                  className="h-8 w-8"
+                                  aria-label={`Archive ${place.name}`}
+                                  title="Archive place"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </Button>
+                              )}
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeletePlace(place)}
+                                className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                aria-label={`Permanently delete ${place.name}`}
+                                title="Permanently delete place"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* TAB 3: CATEGORIES CRUD (FR-09) */}
           {activeTab === 'categories' && (
-            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-medium text-charcoal-950">Categories</h3>
-                  <p className="text-xs text-stone-500">Taxonomy</p>
+            <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg font-semibold">Categories</CardTitle>
+                    <CardDescription>Organize destinations by themes and interests</CardDescription>
+                  </div>
+
+                  <Button
+                    onClick={handleOpenCategoryCreate}
+                    className="bg-[#0f766e] text-white shadow-sm hover:bg-[#0b625c]"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Category
+                  </Button>
                 </div>
+              </CardHeader>
+              <CardContent>
+                {categories.length === 0 ? (
+                  <EmptyState
+                    icon={FolderTree}
+                    title="No categories yet"
+                    hint="Create taxonomy terms so travellers can filter destinations by interest."
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categories.map((cat) => (
+                      <Card
+                        key={cat.id}
+                        className="border border-[#d7e5e1] bg-[#fffefa] hover:border-cyan-300 hover:shadow-md transition-all duration-200 group"
+                      >
+                        <CardContent className="p-5 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md"
+                                style={{ background: `linear-gradient(135deg, ${cat.color || '#06b6d4'} 0%, ${cat.color}dd 100%)` }}
+                              >
+                                <FolderTree className="w-5 h-5 text-white" />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-semibold text-slate-900 truncate group-hover:text-cyan-700 transition-colors">{cat.name}</h4>
+                                <p className="text-xs text-slate-500 truncate">{cat.slug}</p>
+                              </div>
+                            </div>
 
-                <button
-                  type="button"
-                  onClick={handleOpenCategoryCreate}
-                  className="px-3 py-1.5 bg-charcoal-950 hover:bg-charcoal-900 text-white text-xs rounded-md flex items-center gap-1.5 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  New category
-                </button>
-              </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingCategory(cat);
+                                  setCategoryForm({
+                                    name: cat.name,
+                                    description: cat.description || '',
+                                    icon: cat.icon || 'MapPin',
+                                    color: cat.color || '#06b6d4',
+                                  });
+                                  setIsCategoryModalOpen(true);
+                                }}
+                                className="h-8 w-8"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteCategory(cat)}
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
 
-              {categories.length === 0 ? (
-                <EmptyState
-                  icon={FolderTree}
-                  title="No categories yet"
-                  hint="Create taxonomy terms so travellers can filter destinations by interest."
-                />
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {categories.map((cat) => (
-                    <div
-                      key={cat.id}
-                      className="p-4 rounded-lg border border-sand-200 space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: cat.color || '#94a3b8' }}
-                          />
-                          <h4 className="text-sm font-medium text-charcoal-950 truncate">{cat.name}</h4>
-                        </div>
+                          <p className="text-sm text-slate-600 line-clamp-2 min-h-[40px]">
+                            {cat.description || 'No description provided'}
+                          </p>
 
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingCategory(cat);
-                              setCategoryForm({
-                                name: cat.name,
-                                description: cat.description || '',
-                                icon: cat.icon || 'MapPin',
-                                color: cat.color || '#f59e0b',
-                              });
-                              setIsCategoryModalOpen(true);
-                            }}
-                            className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCategory(cat)}
-                            className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-stone-500 line-clamp-2">
-                        {cat.description || '—'}
-                      </p>
-
-                      <div className="flex items-center justify-between text-xs text-stone-500 pt-2 border-t border-sand-100">
-                        <span className="truncate">{cat.slug}</span>
-                        <span>{cat.places_count || 0} places</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                          <div className="pt-3 border-t border-[#dfe9e5] flex items-center justify-between">
+                            <span className="text-xs text-slate-500">Destinations</span>
+                            <Badge variant="info">{cat.places_count || 0}</Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {/* TAB 4: USERS MANAGEMENT (FR-10) */}
           {activeTab === 'users' && (
-            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-medium text-charcoal-950">Users</h3>
-                  <p className="text-xs text-stone-500">Accounts and permissions</p>
+            <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-[#082033]">User management</CardTitle>
+                    <CardDescription>Manage accounts, roles and permissions</CardDescription>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">{usersList.length} Total</Badge>
+                    <Badge variant="info">{adminCount} Admins</Badge>
+                    <Badge variant="success">{activeUserCount} Active</Badge>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2 text-xs text-stone-500">
-                  <span>{usersList.length} total</span>
-                  <span>·</span>
-                  <span>{adminCount} admins</span>
-                  <span>·</span>
-                  <span>{activeUserCount} active</span>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-sand-200">
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">User</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Email</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Role</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Status</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Itineraries</th>
-                      <th className="py-2 text-right text-xs font-medium text-stone-500">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-sand-100">
-                    {usersList.length === 0 && (
-                      <tr>
-                        <td colSpan={6}>
-                          <EmptyState
-                            icon={Users}
-                            title="No user accounts found"
-                            hint="Registered users will appear here once they create an account."
-                          />
-                        </td>
-                      </tr>
-                    )}
-                    {usersList.map((u) => (
-                      <tr key={u.id} className="border-b border-sand-100 last:border-0">
-                        <td className="py-2.5 pr-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-full bg-sand-100 text-charcoal-950 text-xs flex items-center justify-center shrink-0">
-                              {u.name.charAt(0).toUpperCase()}
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-xl border border-[#d7e5e1] overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#edf5f1]">
+                        <TableHead className="font-semibold text-[#163a56]">User</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Email</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Role</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Status</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Itineraries</TableHead>
+                        <TableHead className="text-right font-semibold text-[#163a56]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {usersList.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6}>
+                            <EmptyState
+                              icon={Users}
+                              title="No user accounts found"
+                              hint="Registered users will appear here once they create an account."
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {usersList.map((u) => (
+                        <TableRow key={u.id} className="hover:bg-cyan-50/40 transition-colors">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 text-white text-sm font-semibold flex items-center justify-center shadow-md">
+                                {u.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-sm font-medium text-slate-900">{u.name}</span>
                             </div>
-                            <span className="text-sm text-charcoal-950">{u.name}</span>
-                          </div>
-                        </td>
+                          </TableCell>
 
-                        <td className="py-2.5 pr-3 text-sm text-stone-600">{u.email}</td>
+                          <TableCell className="text-sm text-slate-600">{u.email}</TableCell>
 
-                        <td className="py-2.5 pr-3 text-sm text-stone-600">{u.role}</td>
+                          <TableCell>
+                            {u.role === 'admin' ? (
+                              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">Admin</Badge>
+                            ) : (
+                              <Badge variant="secondary">User</Badge>
+                            )}
+                          </TableCell>
 
-                        <td className="py-2.5 pr-3 text-sm text-stone-600">
-                          {u.is_active ? 'Active' : 'Deactivated'}
-                        </td>
+                          <TableCell>
+                            {u.is_active ? (
+                              <Badge variant="success">Active</Badge>
+                            ) : (
+                              <Badge variant="secondary">Deactivated</Badge>
+                            )}
+                          </TableCell>
 
-                        <td className="py-2.5 pr-3 text-sm text-stone-600">{u.itineraries_count || 0}</td>
+                          <TableCell className="text-sm text-slate-600 tabular-nums">{u.itineraries_count || 0}</TableCell>
 
-                        <td className="py-2.5 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleUserRole(u)}
-                              className="px-2 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
-                            >
-                              {u.role === 'admin' ? 'Make user' : 'Make admin'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleUserStatus(u)}
-                              className="px-2 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
-                            >
-                              {u.is_active ? 'Deactivate' : 'Activate'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleUserRole(u)}
+                              >
+                                {u.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+                              </Button>
+                              <Button
+                                variant={u.is_active ? 'outline' : 'default'}
+                                size="sm"
+                                onClick={() => handleToggleUserStatus(u)}
+                                className={u.is_active ? '' : 'bg-[#0f766e] hover:bg-[#0b625c]'}
+                              >
+                                {u.is_active ? 'Deactivate' : 'Activate'}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* TAB 5: ITINERARIES ADMINISTRATION */}
           {activeTab === 'itineraries' && (
-            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-medium text-charcoal-950">Itineraries</h3>
-                  <p className="text-xs text-stone-500">Saved trips</p>
+            <Card className="border border-[#d7e5e1] bg-[#fffefa] shadow-[0_10px_24px_rgba(8,32,51,0.06)]">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg font-semibold">Itineraries</CardTitle>
+                    <CardDescription>Manage user travel plans</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{adminItineraries.length} Total</Badge>
+                    <Button
+                      onClick={handleOpenItineraryCreate}
+                      className="bg-[#0f766e] text-white shadow-sm hover:bg-[#0b625c]"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Itinerary
+                    </Button>
+                  </div>
                 </div>
-                <span className="text-xs text-stone-500">{adminItineraries.length} total</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[680px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-sand-200">
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Itinerary</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Owner</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Items</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Start date</th>
-                      <th className="py-2 text-right text-xs font-medium text-stone-500">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {adminItineraries.length === 0 && (
-                      <tr>
-                        <td colSpan={5}>
-                          <EmptyState icon={CalendarDays} title="No itineraries" hint="None yet." />
-                        </td>
-                      </tr>
-                    )}
-                    {adminItineraries.map((it: any) => (
-                      <tr key={it.id} className="border-b border-sand-100 last:border-0">
-                        <td className="py-2.5 pr-3">
-                          <p className="text-sm text-charcoal-950">{it.title}</p>
-                          {it.notes && <p className="text-xs text-stone-500 truncate max-w-xs">{it.notes}</p>}
-                        </td>
-                        <td className="py-2.5 pr-3">
-                          {it.user ? (
-                            <div>
-                              <p className="text-sm text-charcoal-950">{it.user.name}</p>
-                              <p className="text-xs text-stone-500">{it.user.email}</p>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-xl border border-[#d7e5e1] overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#edf5f1]">
+                        <TableHead className="font-semibold text-[#163a56]">Itinerary</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Owner</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Items</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Start date</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Public</TableHead>
+                        <TableHead className="font-semibold text-[#163a56]">Created</TableHead>
+                        <TableHead className="text-right font-semibold text-[#163a56]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {adminItineraries.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7}>
+                            <EmptyState icon={CalendarDays} title="No itineraries" hint="Create one to get started." />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {adminItineraries.map((it: any) => (
+                        <TableRow key={it.id} className="hover:bg-cyan-50/40 transition-colors">
+                          <TableCell>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-900 truncate">{it.title}</p>
+                              {it.notes && <p className="text-xs text-slate-500 truncate max-w-xs">{it.notes}</p>}
                             </div>
-                          ) : (
-                            <span className="text-xs text-stone-400">—</span>
-                          )}
-                        </td>
-                        <td className="py-2.5 pr-3 text-sm text-stone-600">{it.items_count}</td>
-                        <td className="py-2.5 pr-3 text-sm text-stone-600">{it.start_date || '—'}</td>
-                        <td className="py-2.5 text-right text-sm text-stone-500">{it.created_at ? new Date(it.created_at).toLocaleDateString() : '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                          </TableCell>
+                          <TableCell>
+                            {it.user ? (
+                              <div>
+                                <p className="text-sm text-slate-900">{it.user.name}</p>
+                                <p className="text-xs text-slate-500">{it.user.email}</p>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-slate-600 tabular-nums">{it.items_count}</TableCell>
+                          <TableCell className="text-sm text-slate-600">{it.start_date || '—'}</TableCell>
+                          <TableCell>
+                            {it.is_public ? <Badge variant="success">Public</Badge> : <Badge variant="secondary">Private</Badge>}
+                          </TableCell>
+                          <TableCell className="text-sm text-slate-500">{it.created_at ? new Date(it.created_at).toLocaleDateString() : '—'}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => handleOpenItineraryEdit(it)} className="h-8 w-8">
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteItinerary(it)} className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* TAB 6: DATA QUALITY */}
           {activeTab === 'data-quality' && (
-            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
+            <section className="bg-[#fffefa] rounded-xl border border-[#d7e5e1] p-5 shadow-[0_10px_24px_rgba(8,32,51,0.06)] space-y-4" aria-labelledby="data-quality-heading">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-medium text-charcoal-950">Data quality</h3>
-                  <p className="text-xs text-stone-500">Validation checks</p>
+                  <h3 id="data-quality-heading" className="text-base font-semibold text-[#082033]">Data quality</h3>
+                  <p className="text-xs text-slate-500">Validation checks that need an administrator&apos;s attention.</p>
                 </div>
-                <button type="button" onClick={loadDataQuality} className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md">Recheck</button>
+                <button type="button" onClick={loadDataQuality} className="px-2.5 py-1 text-xs font-semibold text-cyan-800 hover:text-cyan-600 hover:bg-cyan-50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600">Recheck</button>
               </div>
               {dataQuality?.issues?.length === 0 ? (
                 <EmptyState icon={CheckCircle2} title="No issues" hint="All checks passed." />
               ) : (
-                <ul className="divide-y divide-sand-100">
+                <ul className="divide-y divide-[#dfe9e5]">
                   {(dataQuality?.issues || []).map((issue: any, idx: number) => (
                     <li key={idx} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                       <div className="flex items-center gap-2.5">
@@ -1295,23 +1650,23 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
                   ))}
                 </ul>
               )}
-            </div>
+            </section>
           )}
 
           {/* TAB 7: SYSTEM HEALTH */}
           {activeTab === 'system-health' && (
-            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
+            <section className="bg-[#fffefa] rounded-xl border border-[#d7e5e1] p-5 shadow-[0_10px_24px_rgba(8,32,51,0.06)] space-y-4" aria-labelledby="system-health-heading">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-medium text-charcoal-950">System health</h3>
-                  <p className="text-xs text-stone-500">Operational checks</p>
+                  <h3 id="system-health-heading" className="text-base font-semibold text-[#082033]">System health</h3>
+                  <p className="text-xs text-slate-500">Current service and performance checks.</p>
                 </div>
-                <button type="button" onClick={loadSystemHealth} className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md">Refresh</button>
+                <button type="button" onClick={loadSystemHealth} className="px-2.5 py-1 text-xs font-semibold text-cyan-800 hover:text-cyan-600 hover:bg-cyan-50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600">Refresh</button>
               </div>
               {systemHealth && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {Object.entries(systemHealth.checks || {}).map(([key, val]: [string, any]) => (
-                    <div key={key} className="p-3 rounded-md border border-sand-200 flex items-center justify-between">
+                    <div key={key} className="p-3 rounded-lg border border-[#d7e5e1] bg-[#f4f8f5] flex items-center justify-between">
                       <p className="text-sm text-charcoal-950 capitalize">{key}</p>
                       <span className="text-xs text-stone-600">{val.status}</span>
                     </div>
@@ -1319,16 +1674,16 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
                 </div>
               )}
               {systemHealth?.timestamp && <p className="text-xs text-stone-500">Last checked: {new Date(systemHealth.timestamp).toLocaleString()}</p>}
-            </div>
+            </section>
           )}
 
           {/* TAB 8: AUDIT LOG (Page 6 & 7) */}
           {activeTab === 'audit' && (
-            <div className="bg-white rounded-lg border border-sand-200 p-5 space-y-4">
+            <section className="bg-[#fffefa] rounded-xl border border-[#d7e5e1] p-5 shadow-[0_10px_24px_rgba(8,32,51,0.06)] space-y-4" aria-labelledby="audit-heading">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-medium text-charcoal-950">Audit trail</h3>
-                  <p className="text-xs text-stone-500">Activity log</p>
+                  <h3 id="audit-heading" className="text-base font-semibold text-[#082033]">Audit trail</h3>
+                  <p className="text-xs text-slate-500">A durable record of administrator activity.</p>
                 </div>
                 <span className="text-xs text-stone-500">{allAuditLogs.length} entries</span>
               </div>
@@ -1336,13 +1691,13 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-sand-200">
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Time</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Actor</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Action</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">Target</th>
-                      <th className="py-2 pr-3 text-xs font-medium text-stone-500">IP</th>
-                      <th className="py-2 text-right text-xs font-medium text-stone-500">Details</th>
+                    <tr className="border-b border-[#d7e5e1] bg-[#edf5f1]">
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">Time</th>
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">Actor</th>
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">Action</th>
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">Target</th>
+                      <th className="py-2 pr-3 text-xs font-semibold text-[#163a56]">IP</th>
+                      <th className="py-2 text-right text-xs font-semibold text-[#163a56]">Details</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1354,7 +1709,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
                       </tr>
                     )}
                     {allAuditLogs.map((log) => (
-                      <tr key={log.id} className="border-b border-sand-100 last:border-0">
+                      <tr key={log.id} className="border-b border-[#e8efeb] last:border-0 hover:bg-cyan-50/40">
                         <td className="py-2.5 pr-3 text-xs text-stone-500 whitespace-nowrap">
                           {new Date(log.created_at).toLocaleString()}
                         </td>
@@ -1374,7 +1729,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
                   </tbody>
                 </table>
               </div>
-            </div>
+            </section>
           )}
 
           {/* TAB 9: SETTINGS */}
@@ -1841,6 +2196,198 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
         </div>
       </div>
 
+      {isItineraryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/40">
+          <div className="bg-white rounded-lg w-full max-w-2xl border border-sand-200 shadow-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-sand-200">
+              <div>
+                <h3 className="text-sm font-medium text-charcoal-950">
+                  {editingItinerary ? 'Edit itinerary' : 'New itinerary'}
+                </h3>
+                <p className="text-xs text-stone-500">Itinerary details and items</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsItineraryModalOpen(false)}
+                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveItinerary} className="px-5 py-4 space-y-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-600 mb-1">User</label>
+                  <select
+                    required
+                    value={itineraryForm.user_id}
+                    onChange={(e) => setItineraryForm({ ...itineraryForm, user_id: Number(e.target.value) })}
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                  >
+                    <option value={0} disabled>Select user</option>
+                    {usersList.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-600 mb-1">Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={itineraryForm.title}
+                    onChange={(e) => setItineraryForm({ ...itineraryForm, title: e.target.value })}
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-600 mb-1">Start date</label>
+                  <input
+                    type="date"
+                    value={itineraryForm.start_date}
+                    onChange={(e) => setItineraryForm({ ...itineraryForm, start_date: e.target.value })}
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 text-xs text-stone-600">
+                    <input
+                      type="checkbox"
+                      checked={itineraryForm.is_public}
+                      onChange={(e) => setItineraryForm({ ...itineraryForm, is_public: e.target.checked })}
+                      className="rounded border-sand-300"
+                    />
+                    Public
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-stone-600 mb-1">Notes</label>
+                <textarea
+                  rows={2}
+                  value={itineraryForm.notes}
+                  onChange={(e) => setItineraryForm({ ...itineraryForm, notes: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-charcoal-950">Items</p>
+                  <p className="text-xs text-stone-500">{itineraryForm.items.length} added</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs text-stone-600 mb-1">Place</label>
+                    <select
+                      value={itineraryItemForm.place_id}
+                      onChange={(e) => setItineraryItemForm({ ...itineraryItemForm, place_id: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                    >
+                      <option value="">Select place</option>
+                      {places.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-stone-600 mb-1">Day</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={itineraryItemForm.day_no}
+                      onChange={(e) => setItineraryItemForm({ ...itineraryItemForm, day_no: Number(e.target.value) })}
+                      className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-stone-600 mb-1">Visit time</label>
+                    <input
+                      type="text"
+                      placeholder="09:00"
+                      value={itineraryItemForm.visit_time}
+                      onChange={(e) => setItineraryItemForm({ ...itineraryItemForm, visit_time: e.target.value })}
+                      className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                    />
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={handleAddItineraryItem}
+                      className="px-2.5 py-1.5 text-xs bg-slate-900 text-white rounded-md"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Item notes (optional)"
+                  value={itineraryItemForm.notes}
+                  onChange={(e) => setItineraryItemForm({ ...itineraryItemForm, notes: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
+                />
+
+                {itineraryForm.items.length > 0 && (
+                  <div className="rounded-lg border border-slate-200 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50/50">
+                          <TableHead className="font-semibold">#</TableHead>
+                          <TableHead className="font-semibold">Place</TableHead>
+                          <TableHead className="font-semibold">Day</TableHead>
+                          <TableHead className="font-semibold">Time</TableHead>
+                          <TableHead className="font-semibold">Notes</TableHead>
+                          <TableHead className="text-right font-semibold">Remove</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {itineraryForm.items.map((item, idx) => {
+                          const place = places.find((p) => p.id === item.place_id);
+                          return (
+                            <TableRow key={idx}>
+                              <TableCell className="text-xs text-slate-500">{idx + 1}</TableCell>
+                              <TableCell className="text-sm text-slate-900">{place?.name || item.place_id}</TableCell>
+                              <TableCell className="text-sm text-slate-600">{item.day_no}</TableCell>
+                              <TableCell className="text-sm text-slate-600">{item.visit_time || '—'}</TableCell>
+                              <TableCell className="text-xs text-slate-500 max-w-[160px] truncate">{item.notes || '—'}</TableCell>
+                              <TableCell className="text-right">
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveItineraryItem(idx)} className="h-7 w-7">
+                                  <X className="w-3.5 h-3.5" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-1.5 pt-3 border-t border-sand-200">
+                <button
+                  type="button"
+                  onClick={() => setIsItineraryModalOpen(false)}
+                  className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-2.5 py-1 text-xs bg-charcoal-950 hover:bg-charcoal-900 text-white rounded-md"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {isPlaceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/40">
           <div className="bg-white rounded-lg w-full max-w-xl border border-sand-200 shadow-lg space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1861,25 +2408,24 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
               </button>
             </div>
 
-            <form onSubmit={handleSavePlace} className="space-y-4 text-xs">
+            <form onSubmit={handleSavePlace} className="px-5 py-4 space-y-3 text-sm">
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Place Name</label>
+                <label className="block text-xs text-stone-600 mb-1">Name</label>
                 <input
                   type="text"
                   required
                   value={placeForm.name}
                   onChange={(e) => setPlaceForm({ ...placeForm, name: e.target.value })}
-                  placeholder="e.g. Polonnaruwa Royal Quadrangle"
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Category</label>
+                <label className="block text-xs text-stone-600 mb-1">Category</label>
                 <select
                   value={placeForm.category_id}
                   onChange={(e) => setPlaceForm({ ...placeForm, category_id: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900 font-semibold"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
@@ -1887,98 +2433,97 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Latitude</label>
+                  <label className="block text-xs text-stone-600 mb-1">Latitude</label>
                   <input
                     type="number"
                     step="any"
                     required
                     value={placeForm.lat}
                     onChange={(e) => setPlaceForm({ ...placeForm, lat: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Longitude</label>
+                  <label className="block text-xs text-stone-600 mb-1">Longitude</label>
                   <input
                     type="number"
                     step="any"
                     required
                     value={placeForm.lng}
                     onChange={(e) => setPlaceForm({ ...placeForm, lng: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Address / Access Route</label>
+                <label className="block text-xs text-stone-600 mb-1">Address</label>
                 <input
                   type="text"
                   value={placeForm.address}
                   onChange={(e) => setPlaceForm({ ...placeForm, address: e.target.value })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Opening Hours</label>
+                <label className="block text-xs text-stone-600 mb-1">Opening hours</label>
                 <input
                   type="text"
                   value={placeForm.opening_hours}
                   onChange={(e) => setPlaceForm({ ...placeForm, opening_hours: e.target.value })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Description</label>
+                <label className="block text-xs text-stone-600 mb-1">Description</label>
                 <textarea
                   rows={3}
                   required
                   value={placeForm.description}
                   onChange={(e) => setPlaceForm({ ...placeForm, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Travel Tips</label>
+                <label className="block text-xs text-stone-600 mb-1">Travel tips</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={placeForm.travel_tips}
                   onChange={(e) => setPlaceForm({ ...placeForm, travel_tips: e.target.value })}
-                  placeholder="Practical advice for visitors, access, clothing, or timing"
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               {!editingPlace && (
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Initial Photograph URL</label>
+                  <label className="block text-xs text-stone-600 mb-1">Photo URL</label>
                   <input
                     type="url"
                     value={placeForm.photo_url}
                     onChange={(e) => setPlaceForm({ ...placeForm, photo_url: e.target.value })}
-                    className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                    className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                   />
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-sand-200">
+              <div className="flex justify-end gap-1.5 pt-3 border-t border-sand-200">
                 <button
                   type="button"
                   onClick={() => setIsPlaceModalOpen(false)}
-                  className="px-4 py-2 bg-sand-100 hover:bg-sand-200 text-stone-700 rounded-xl font-bold transition-colors"
+                  className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gold-500 hover:bg-gold-400 text-charcoal-950 rounded-xl font-bold shadow-sm transition-colors"
+                  className="px-2.5 py-1 text-xs bg-charcoal-950 hover:bg-charcoal-900 text-white rounded-md"
                 >
-                  Save Place
+                  Save
                 </button>
               </div>
             </form>
@@ -1988,79 +2533,74 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
 
       {/* Category Modal */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 border border-sand-200 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-sand-200 pb-3">
-              <div>
-                <h3 className="font-bold text-base text-charcoal-950">
-                  {editingCategory ? 'Edit Category' : 'Create Category'}
-                </h3>
-                <p className="text-[11px] text-stone-500">FR-09 taxonomy management</p>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/40">
+          <div className="bg-white rounded-lg w-full max-w-md border border-sand-200 shadow-lg">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-sand-200">
+              <h3 className="text-sm font-medium text-charcoal-950">
+                {editingCategory ? 'Edit category' : 'New category'}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsCategoryModalOpen(false)}
-                className="text-stone-400 hover:text-stone-800 p-1"
-                aria-label="Close modal"
+                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveCategory} className="px-5 py-4 space-y-3 text-sm">
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Name</label>
+                <label className="block text-xs text-stone-600 mb-1">Name</label>
                 <input
                   type="text"
                   required
                   value={categoryForm.name}
                   onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                  placeholder="e.g. Wildlife & Safaris"
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Color Token (Hex)</label>
+                <label className="block text-xs text-stone-600 mb-1">Color</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={categoryForm.color}
                     onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                    className="w-10 h-8 rounded-lg border border-sand-300 cursor-pointer"
+                    className="w-9 h-7 rounded-md border border-sand-200 cursor-pointer"
                   />
                   <input
                     type="text"
                     value={categoryForm.color}
                     onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                    className="flex-1 px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl font-mono text-stone-900"
+                    className="flex-1 px-2.5 py-1.5 border border-sand-200 rounded-md font-mono text-charcoal-950"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Description</label>
+                <label className="block text-xs text-stone-600 mb-1">Description</label>
                 <textarea
                   rows={2}
                   value={categoryForm.description}
                   onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-sand-50 border border-sand-300 rounded-xl text-stone-900"
+                  className="w-full px-2.5 py-1.5 border border-sand-200 rounded-md text-charcoal-950"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-sand-200">
+              <div className="flex justify-end gap-1.5 pt-3 border-t border-sand-200">
                 <button
                   type="button"
                   onClick={() => setIsCategoryModalOpen(false)}
-                  className="px-4 py-2 bg-sand-100 hover:bg-sand-200 text-stone-700 rounded-xl font-bold transition-colors"
+                  className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gold-500 hover:bg-gold-400 text-charcoal-950 rounded-xl font-bold shadow-sm transition-colors"
+                  className="px-2.5 py-1 text-xs bg-charcoal-950 hover:bg-charcoal-900 text-white rounded-md"
                 >
-                  Save Category
+                  Save
                 </button>
               </div>
             </form>
@@ -2068,56 +2608,46 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
         </div>
       )}
 
-      {/* Media Upload Modal (FR-11) */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 border border-sand-200 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-sand-200 pb-3">
-              <div>
-                <h3 className="font-bold text-base text-charcoal-950">
-                  Upload Place Photograph
-                </h3>
-                <p className="text-[11px] text-stone-500">FR-11 validated media upload</p>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/40">
+          <div className="bg-white rounded-lg w-full max-w-md border border-sand-200 shadow-lg">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-sand-200">
+              <h3 className="text-sm font-medium text-charcoal-950">Upload photo</h3>
               <button
                 type="button"
                 onClick={() => setIsUploadModalOpen(false)}
-                className="text-stone-400 hover:text-stone-800 p-1"
-                aria-label="Close modal"
+                className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleUploadPhoto} className="space-y-4 text-xs">
+            <form onSubmit={handleUploadPhoto} className="px-5 py-4 space-y-3 text-sm">
               {uploadPlace?.media && uploadPlace.media.length > 0 && (
                 <div className="space-y-2">
-                  <p className="font-bold text-stone-700">Existing photographs</p>
-                  <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                  <p className="text-xs text-stone-600">Existing</p>
+                  <div className="max-h-36 space-y-1 overflow-y-auto">
                     {uploadPlace.media.map((media) => (
-                      <div key={media.id} className="flex items-center gap-3 rounded-xl border border-sand-200 p-2">
-                        <img src={media.url} alt={media.original_name || 'Place photograph'} className="h-12 w-16 rounded-lg object-cover" />
+                      <div key={media.id} className="flex items-center gap-2 rounded-md border border-sand-200 p-1.5">
+                        <img src={media.url} alt={media.original_name || 'Photo'} className="h-9 w-12 rounded object-cover" />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[11px] font-semibold text-charcoal-950">{media.original_name || 'Photograph'}</p>
-                          {media.is_primary && <span className="text-[10px] font-bold text-amber-700">Primary photo</span>}
+                          <p className="truncate text-xs text-charcoal-950">{media.original_name || 'Photo'}</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => { setEditingMedia(media); setUploadFile(null); }}
-                          className="rounded-lg p-1.5 text-stone-500 hover:bg-sand-100 hover:text-charcoal-950"
-                          title="Replace photo"
-                          aria-label={`Replace ${media.original_name || 'photograph'}`}
+                          className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                          title="Replace"
                         >
-                          <Edit2 className="h-3.5 w-3.5" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeletePhoto(media)}
-                          className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700"
-                          title="Delete photo"
-                          aria-label={`Delete ${media.original_name || 'photograph'}`}
+                          className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
+                          title="Delete"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ))}
@@ -2126,41 +2656,37 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
               )}
 
               {editingMedia && (
-                <div className="flex items-center justify-between rounded-xl bg-ocean-50 px-3 py-2 text-[11px] text-ocean-700">
-                  <span>Replacing {editingMedia.original_name || 'selected photograph'}</span>
-                  <button type="button" onClick={() => setEditingMedia(null)} className="font-bold hover:underline">Clear</button>
+                <div className="flex items-center justify-between text-xs text-stone-600">
+                  <span>Replacing {editingMedia.original_name || 'photo'}</span>
+                  <button type="button" onClick={() => setEditingMedia(null)} className="hover:text-charcoal-950">Clear</button>
                 </div>
               )}
 
-              <div className="p-3 bg-gold-500/[0.07] rounded-xl border border-gold-500/25 text-stone-700 text-[11px] leading-relaxed">
-                Server-side validated: Accepted types: JPEG, PNG, WEBP. Max size: 5 MB. Stored outside the public code tree.
-              </div>
-
               <div>
-                <label className="block font-bold text-stone-700 mb-1">Select Image File</label>
+                <label className="block text-xs text-stone-600 mb-1">File</label>
                 <input
                   type="file"
                   required
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(e) => setUploadFile(e.target.files ? e.target.files[0] : null)}
-                  className="w-full text-xs text-stone-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gold-500 file:text-charcoal-950 hover:file:bg-gold-400"
+                  className="w-full text-xs text-stone-600 file:mr-3 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-sand-100 file:text-charcoal-950"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-sand-200">
+              <div className="flex justify-end gap-1.5 pt-3 border-t border-sand-200">
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="px-4 py-2 bg-sand-100 hover:bg-sand-200 text-stone-700 rounded-xl font-bold transition-colors"
+                  className="px-2.5 py-1 text-xs text-stone-600 hover:text-charcoal-950 hover:bg-sand-50 rounded-md"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!uploadFile}
-                  className="px-5 py-2 bg-gold-500 hover:bg-gold-400 text-charcoal-950 rounded-xl font-bold shadow-sm disabled:opacity-50 transition-colors"
+                  className="px-2.5 py-1 text-xs bg-charcoal-950 hover:bg-charcoal-900 text-white rounded-md disabled:opacity-50"
                 >
-                  {editingMedia ? 'Replace & Validate' : 'Upload & Validate'}
+                  {editingMedia ? 'Replace' : 'Upload'}
                 </button>
               </div>
             </form>
