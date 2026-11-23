@@ -845,7 +845,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
           onAddPlace={handleOpenPlaceCreate}
         />
 
-        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6 max-w-[1600px] w-full mx-auto">
+      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           {/* Feedback banners */}
           {error && (
             <div className="p-4 bg-red-50/80 backdrop-blur border border-red-200 text-red-800 rounded-xl flex items-center justify-between shadow-lg animate-in slide-in-from-top-2">
@@ -2622,32 +2622,35 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
               </button>
             </div>
 
-            <form onSubmit={handleUploadPhoto} className="px-5 py-4 space-y-3 text-sm">
+            <form onSubmit={handleUploadPhoto} className="space-y-4 text-xs">
               {uploadPlace?.media && uploadPlace.media.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs text-stone-600">Existing</p>
-                  <div className="max-h-36 space-y-1 overflow-y-auto">
+                  <p className="font-bold text-stone-700">Existing photographs</p>
+                  <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
                     {uploadPlace.media.map((media) => (
-                      <div key={media.id} className="flex items-center gap-2 rounded-md border border-sand-200 p-1.5">
-                        <img src={media.url} alt={media.original_name || 'Photo'} className="h-9 w-12 rounded object-cover" />
+                      <div key={media.id} className="flex items-center gap-3 rounded-xl border border-sand-200 p-2">
+                        <img src={media.url} alt={media.original_name || 'Place photograph'} className="h-12 w-16 rounded-lg object-cover" />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs text-charcoal-950">{media.original_name || 'Photo'}</p>
+                          <p className="truncate text-[11px] font-semibold text-charcoal-950">{media.original_name || 'Photograph'}</p>
+                          {media.is_primary && <span className="text-[10px] font-bold text-amber-700">Primary photo</span>}
                         </div>
                         <button
                           type="button"
                           onClick={() => { setEditingMedia(media); setUploadFile(null); }}
-                          className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
-                          title="Replace"
+                          className="rounded-lg p-1.5 text-stone-500 hover:bg-sand-100 hover:text-charcoal-950"
+                          title="Replace photo"
+                          aria-label={`Replace ${media.original_name || 'photograph'}`}
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Edit2 className="h-3.5 w-3.5" />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeletePhoto(media)}
-                          className="p-1 rounded-md text-stone-500 hover:text-charcoal-950 hover:bg-sand-50"
-                          title="Delete"
+                          className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700"
+                          title="Delete photo"
+                          aria-label={`Delete ${media.original_name || 'photograph'}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ))}
@@ -2656,11 +2659,15 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
               )}
 
               {editingMedia && (
-                <div className="flex items-center justify-between text-xs text-stone-600">
-                  <span>Replacing {editingMedia.original_name || 'photo'}</span>
-                  <button type="button" onClick={() => setEditingMedia(null)} className="hover:text-charcoal-950">Clear</button>
+                <div className="flex items-center justify-between rounded-xl bg-ocean-50 px-3 py-2 text-[11px] text-ocean-700">
+                  <span>Replacing {editingMedia.original_name || 'selected photograph'}</span>
+                  <button type="button" onClick={() => setEditingMedia(null)} className="font-bold hover:underline">Clear</button>
                 </div>
               )}
+
+              <div className="p-3 bg-gold-500/[0.07] rounded-xl border border-gold-500/25 text-stone-700 text-[11px] leading-relaxed">
+                Server-side validated: Accepted types: JPEG, PNG, WEBP. Max size: 5 MB. Stored outside the public code tree.
+              </div>
 
               <div>
                 <label className="block text-xs text-stone-600 mb-1">File</label>
@@ -2686,7 +2693,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ defaultT
                   disabled={!uploadFile}
                   className="px-2.5 py-1 text-xs bg-charcoal-950 hover:bg-charcoal-900 text-white rounded-md disabled:opacity-50"
                 >
-                  {editingMedia ? 'Replace' : 'Upload'}
+                  {editingMedia ? 'Replace & Validate' : 'Upload & Validate'}
                 </button>
               </div>
             </form>

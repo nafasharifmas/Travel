@@ -110,17 +110,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <div className="px-3 py-4 border-b border-white/10 shrink-0 flex items-center gap-2">
         <Link
           to="/"
-          className={`flex items-center gap-3 group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 transition-all flex-1 min-w-0 ${
-            collapsed ? 'justify-center px-1' : 'px-2'
-          }`}
-          title="VisitFlow Home"
+          className="flex items-center gap-3 group rounded-lg focus-visible:ring-2 focus-visible:ring-ocean-500"
         >
-          <div className="relative shrink-0">
-            <img
-              src="/visitflow-mark.png"
-              alt="VisitFlow"
-              className="w-10 h-10 rounded-xl object-contain shadow-lg shadow-cyan-500/25 group-hover:shadow-cyan-400/40 transition-shadow"
-            />
+          <div className="flex flex-col leading-none gap-1.5">
+            <span className="inline-flex w-fit rounded-lg bg-white px-2 py-1 shadow-card">
+              <img src="/visitflow-logo.png" alt="Visitflow" className="h-5 w-auto object-contain" />
+            </span>
+            <span className="text-[9px] tracking-[0.25em] text-navy-300 uppercase">
+              Admin Console
+            </span>
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-none gap-0.5 whitespace-nowrap overflow-hidden">
